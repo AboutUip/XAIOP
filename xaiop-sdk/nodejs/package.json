@@ -1,0 +1,39 @@
+{
+  "name": "xaiop",
+  "version": "0.1.0",
+  "description": "XAIOP protocol SDK for Node.js (v0.1.0 Frozen)",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/engine.test.js",
+    "build": "npm test && node scripts/build.js",
+    "pack": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "xaiop",
+    "llm",
+    "structured-output",
+    "protocol"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AboutUip/XAIOP.git",
+    "directory": "xaiop-sdk/nodejs"
+  }
+}
