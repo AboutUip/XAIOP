@@ -95,8 +95,9 @@ An empty Content line **MUST** be a Content syntax error.
 
 ## 8. Array Content interaction
 
-See [syntax.md](syntax.md) §5:
+See [syntax.md](syntax.md) §6 / §6.1:
 
-- **Array level:** `:value` / one-line `key:value` add elements; `>` opens object element and enters.  
-- **Inside element after `>`:** Content accumulates; **`<`** returns to the array before the next sibling.  
-- Empty object elements **MUST** use `>` (then usually `<` if more siblings follow).
+- **Array level — scalar:** `:value` pushes one scalar element.  
+- **Array level — one-line object (normative):** non-empty-key `key:value` pushes one complete element `{ "key": <typed value> }`. Cursor **stays** at array level (does not enter).  
+- **Array level — fillable object:** `>` creates an object element **and enters** it; Content accumulates; **`<`** returns to the array before the next sibling.  
+- Empty object elements **MUST** use `>`.

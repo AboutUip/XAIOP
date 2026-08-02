@@ -6,7 +6,7 @@ Official **SDK** docs for XAIOP v0.1.0. Protocol wire rules live under [../proto
 
 | Stack | Status | Docs |
 | --- | --- | --- |
-| [Node.js](nodejs/) | **Active** | API reference + guide |
+| [Node.js](nodejs/) | **Active** | API reference + guide · [Compatibility mode](nodejs/README.md#compatibility-mode) |
 | [Java](java/) | **Pending update** | Placeholder |
 | [Python](python/) | **Pending update** | Placeholder |
 

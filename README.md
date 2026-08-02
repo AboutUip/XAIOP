@@ -1,63 +1,162 @@
 # XAIOP
 
-> **eXtensible AI Output Protocol** — structured output between LLMs and software
+<p align="center">
+  <img src="resources/xaiop-mark.svg" width="96" height="96" alt="XAIOP mark" />
+</p>
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+<p align="center">
+  <strong>eXtensible AI Output Protocol</strong><br/>
+  <sub>Models write lines. Programs parse them deterministically.</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.1.0_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
+  <img alt="AI-native" src="https://img.shields.io/badge/output-AI--native-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Line-oriented" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
+</p>
+
+<p align="center">
+  <a href="README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-0ea5e9?style=flat-square&labelColor=0b1220" /></a>
+  <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-64748b?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/protocol/syntax.md"><img alt="Protocol docs" src="https://img.shields.io/badge/docs-Protocol-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/sdk/nodejs/"><img alt="SDK docs" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/performance.md"><img alt="Metrics" src="https://img.shields.io/badge/docs-Metrics-f59e0b?style=flat-square&labelColor=0b1220" /></a>
+</p>
 
 ---
 
-XAIOP is an **AI-native** wire protocol. Models write it; programs parse it deterministically. It is **not** a replacement for JSON between services — it is the bridge from generation to your application.
+<p align="center">
+  <img alt="LLM" src="https://img.shields.io/badge/LLM-0b1220?style=for-the-badge&logoColor=white" />
+  <img alt="to" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
+  <img alt="XAIOP" src="https://img.shields.io/badge/XAIOP-14b8a6?style=for-the-badge&labelColor=0b1220" />
+  <img alt="to" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
+  <img alt="Parser" src="https://img.shields.io/badge/Parser-0ea5e9?style=for-the-badge&labelColor=0b1220" />
+  <img alt="to" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
+  <img alt="JSON · App" src="https://img.shields.io/badge/JSON%20·%20App-22c55e?style=for-the-badge&labelColor=0b1220" />
+</p>
+
+<p align="center">
+  Not a service-to-service JSON replacement — the bridge from <em>generation</em> to <em>software</em>.
+</p>
+
+---
+
+### The problem with JSON-shaped generation
+
+Long streams demand perfect braces, commas, and nesting. Under truncation and depth, that contract fails quietly — or loudly — at the worst moment.
+
+### What XAIOP changes
+
+Structure is **line-oriented**. Position is a **cursor**. There is **no brace pairing**, no model-side hashing, and — by default — **no silent repair**. The wire stays honest.
+
+→ [Design principles](docs/overview/design-principles.md) · [Introduction](docs/overview/introduction.md)
+
+---
+
+### On the wire
 
 ```text
-LLM  →  XAIOP  →  SDK / Parser  →  JSON & your app
+>
+>meta
+name:demo
+version:1
+.
+>tags-
+:alpha
+:beta
+.
+>users-
+>
+id:1
+name:alice
+<
 ```
 
-**Protocol v0.1.0 is Frozen.** Node.js SDK is available; Java and Python are pending.
+Materializes as:
 
----
-
-## Start here
-
-| I want to… | Go to |
-| --- | --- |
-| Understand the idea | [Why XAIOP](#why-xaiop) below, then [docs overview](docs/overview/introduction.md) |
-| Read the wire format | [docs/protocol/syntax.md](docs/protocol/syntax.md) |
-| Use the SDK | [docs/sdk/](docs/sdk/) · code in [xaiop-sdk/](xaiop-sdk/) |
-| Teach a model the format | [skills/xaiop/SKILL.md](skills/xaiop/SKILL.md) |
-| Try a quick parse | [demos/nodejs/](demos/nodejs/) |
-| See a full example | [docs/examples/complex.xaiop](docs/examples/complex.xaiop) |
-
-Documentation is split into **Protocol** and **SDK**. English is authoritative; `*.zh-CN.md` mirrors exist throughout.
-
----
-
-## Why XAIOP?
-
-JSON asks models to keep braces, commas, and nesting perfect over long generations. That is brittle under streaming and long context.
-
-XAIOP is built the other way around: **line-oriented structure**, **cursor navigation**, **no brace pairing**, **no hashes or length math for the model**, **deterministic parse with no silent repair**.
-
-Details live in the [design principles](docs/overview/design-principles.md) — this page stays a front door.
-
----
-
-## Repository map
-
-```text
-docs/           Protocol + SDK documentation
-xaiop-sdk/      Runtimes (nodejs · java · python)
-skills/         Single Skill for model integration
-demos/          Runnable examples
+```json
+{
+  "meta": { "name": "demo", "version": 1 },
+  "tags": ["alpha", "beta"],
+  "users": [{ "id": 1, "name": "alice" }]
+}
 ```
 
-| Stack | Status |
-| --- | --- |
-| **Node.js** | Parse + Engine APIs · [docs](docs/sdk/nodejs/) · [code](xaiop-sdk/nodejs/) |
-| Java | Pending update |
-| Python | Pending update |
+[Syntax](docs/protocol/syntax.md) · [Full fixture](docs/examples/complex.xaiop) · [Node demo](demos/nodejs/)
 
 ---
 
-## License
+### Paths
 
-[MIT](LICENSE)
+- **Grammar** — [docs/protocol/](docs/protocol/)
+- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [xaiop-sdk/nodejs/](xaiop-sdk/nodejs/)
+- **Teach the model** — [classic Skill](skills/xaiop/SKILL.md) · [allowlist Skill](skills/xaiop-allowlist/SKILL.md)
+- **Bench harness** — [dev/perf/](dev/perf/)
+- **Metrics package** — [JSON](dev/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [guide](dev/bench-metrics-gpt-gemini-compat-2026-08-02.md)
+
+Java and Python SDKs are pending update. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
+
+---
+
+### Evidence
+
+Native dual channel · no JSON→XAIOP translation · structure rate among non-empty completions  
+Definitions: [docs/performance.md](docs/performance.md)
+
+<p align="center">
+  <img alt="GPT classic JSON" src="https://img.shields.io/badge/GPT%20classic%20·%20JSON-86.1%25-ef4444?style=flat-square&labelColor=0b1220" />
+  <img alt="GPT classic XAIOP" src="https://img.shields.io/badge/GPT%20classic%20·%20XAIOP-94.4%25-14b8a6?style=flat-square&labelColor=0b1220" />
+  <br/>
+  <img alt="GPT allowlist JSON" src="https://img.shields.io/badge/GPT%20allowlist%20·%20JSON-80.6%25-ef4444?style=flat-square&labelColor=0b1220" />
+  <img alt="GPT allowlist XAIOP" src="https://img.shields.io/badge/GPT%20allowlist%20·%20XAIOP-88.9%25-14b8a6?style=flat-square&labelColor=0b1220" />
+  <br/>
+  <img alt="Gemini classic JSON" src="https://img.shields.io/badge/Gemini%20classic%20·%20JSON-91.7%25-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="Gemini classic XAIOP" src="https://img.shields.io/badge/Gemini%20classic%20·%20XAIOP-97.2%25-14b8a6?style=flat-square&labelColor=0b1220" />
+  <br/>
+  <img alt="Gemini allowlist JSON" src="https://img.shields.io/badge/Gemini%20allowlist%20·%20JSON-91.7%25-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="Gemini allowlist XAIOP" src="https://img.shields.io/badge/Gemini%20allowlist%20·%20XAIOP-100%25-22c55e?style=flat-square&labelColor=0b1220" />
+</p>
+
+<p align="center">
+  <img alt="DEEPWIDE JSON" src="https://img.shields.io/badge/DEEPWIDE%20·%20JSON-0%25-ef4444?style=for-the-badge&labelColor=0b1220" />
+  <img alt="DEEPWIDE XAIOP" src="https://img.shields.io/badge/DEEPWIDE%20·%20XAIOP-100%25-22c55e?style=for-the-badge&labelColor=0b1220" />
+  <br/>
+  <sub>Deep trees; JSON left braces unclosed — all four runs.</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><sub>GPT · allowlist · compatibility</sub></p>
+      <img src="resources/ChatGPT模型对于XAIOP兼容模式的白名单SKILL测试.png" alt="GPT allowlist compatibility suite" />
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><sub>GPT · classic · compatibility</sub></p>
+      <img src="resources/ChatGPT模型对于XAIOP兼容模式的非白名单SKILL测试.png" alt="GPT classic compatibility suite" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><sub>Gemini · allowlist · compatibility</sub></p>
+      <img src="resources/Gemini模型对于XAIOP兼容模式的白名单SKILL测试.png" alt="Gemini allowlist compatibility suite" />
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><sub>Gemini · classic · compatibility</sub></p>
+      <img src="resources/Gemini模型对于XAIOP兼容模式的非白名单SKILL测试.png" alt="Gemini classic compatibility suite" />
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <sub>Additional screenshots (native mode, DeepSeek) → <a href="resources/">resources/</a></sub>
+</p>
+
+---
+
+<p align="center">
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.1.0-14b8a6?style=flat-square&labelColor=0b1220" />
+  <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-index-64748b?style=flat-square&labelColor=0b1220" /></a>
+</p>

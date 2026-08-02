@@ -31,8 +31,9 @@
 | 4 | [content.zh-CN.md](content.zh-CN.md) | `:` 类型与强制字符串 |
 | 5 | [streaming.zh-CN.md](streaming.zh-CN.md) | 流式有效性与 JSON API |
 
-**核心对：** `>` 创建并进入匿名对象 · `<` 仅上浮一层（Root 非法）· 禁止裸 Label。  
-**根：** 意图根对象/数组 → 以 `>` / `-` 开头；无根容器 → 省略。
+**核心对：** `>` 创建/再进入匿名对象（数组内 → 新元素）· `<` 仅上浮一层（Root 非法）· 禁止裸 Label。  
+**根开启符：** `>` / `-` → 完整匿名根文档；省略 → **根片段** `"a":{}`（无外层对象）— **不等于** `{"a":{}}`。见 [syntax.zh-CN.md](syntax.zh-CN.md) §2。  
+**数组单行 `k:v`：** 数组层完整单属性元素（[syntax.zh-CN.md](syntax.zh-CN.md) §6.1）。
 
 ---
 

@@ -66,7 +66,8 @@ A **Cursor** is the Parser’s current reference position in the hierarchy tree,
 
 **Root** is the initial / top-level reference position of the hierarchy tree, the default starting point of the Cursor, and the target of the `.` operator.
 
-When a Stream **declares** a root container, it **MUST** open with `>` (root object) or `-` (root array). When no root object/array is intended, that opener is omitted (`PROT-SYNTAX` §2).
+When a Stream opens with `>` or `-`, that anonymous container is the complete document root value.  
+Omitting them and using `>name` yields a **root fragment** (notation `"a":{}`) with **no** outer anonymous object — **not** `{"a":{}}` (`PROT-SYNTAX` §2).
 
 ### 3.5 Content
 

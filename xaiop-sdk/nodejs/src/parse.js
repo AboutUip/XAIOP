@@ -1,4 +1,4 @@
-/** @typedef {'object'|'array'} NodeKind */
+/** @typedef {'object'|'array'|'fragment'} NodeKind */
 
 /**
  * Deterministic XAIOP parser (protocol v0.1.0 Frozen).
@@ -18,38 +18,88 @@ export class XaiopSyntaxError extends Error {
 }
 
 /**
- * @param {string} source
- * @returns {unknown}
+ * Root fragment: named bindings at Root **without** an entered anonymous outer object.
+ * Semantic notation is `"a":{}` (not a standalone JSON document `{"a":{}}`).
  */
-export function parseSync(source) {
-  if (typeof source !== "string") {
-    throw new TypeError("XAIOP source must be a string");
+export class XaiopFragment {
+  /** @param {Record<string, unknown>} entries */
+  constructor(entries) {
+    /** @type {Record<string, unknown>} */
+    this.entries = entries;
   }
-  return new Parser(source).parse();
+
+  get isFragment() {
+    return true;
+  }
+
+  /** @returns {string} e.g. `"a":{}` or `"a":{},"b":1` */
+  notation() {
+    return Object.entries(this.entries)
+      .map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`)
+      .join(",");
+  }
 }
 
 /**
  * @param {string} source
- * @returns {Promise<unknown>}
+ * @param {boolean} [compatibilityMode=false] — when true: force complete root if needed; pop-and-retry on syntax errors
+ * @returns {unknown|XaiopFragment}
  */
-export async function parseAsync(source) {
-  return parseSync(source);
+export function parseSync(source, compatibilityMode = false) {
+  if (typeof source !== "string") {
+    throw new TypeError("XAIOP source must be a string");
+  }
+  return new Parser(source, { compatibilityMode: !!compatibilityMode }).parse();
+}
+
+/**
+ * @param {string} source
+ * @param {boolean} [compatibilityMode=false]
+ * @returns {Promise<unknown|XaiopFragment>}
+ */
+export async function parseAsync(source, compatibilityMode = false) {
+  return parseSync(source, compatibilityMode);
 }
 
 class Parser {
-  /** @param {string} source */
-  constructor(source) {
+  /**
+   * @param {string} source
+   * @param {{ compatibilityMode?: boolean }} [options]
+   */
+  constructor(source, options = {}) {
     this.lines = splitLines(source);
     this.lineNo = 0;
     /** @type {unknown} */
     this.root = undefined;
+    /** @type {Record<string, unknown>|null} */
+    this.fragmentEntries = null;
+    /** @type {'none'|'object'|'array'|'fragment'} */
+    this.docKind = "none";
     /** @type {{ kind: NodeKind, value: object|unknown[] }[]} */
     this.stack = [];
     /** @type {'init'|'active'} */
     this.phase = "init";
+    /**
+     * When true:
+     * - If the first line is not a root opener `>` / `-`, force an empty anonymous object root
+     *   (complete document; no root fragment).
+     * - On `=path not found`, retry: trim edges; strip all whitespace; then treat a segment
+     *   trailing `-` as create-array postfix (match key without `-` only if that value is an array).
+     * - Line rewrites (deterministic LLM slips): trailing trim; bare `name-` → `>name-`;
+     *   `>` + only whitespace → `>`; `>key:value` (name contains `:`) → Content `key:value`;
+     *   `>  name` / `>  name-` → trim after `>`.
+     * - Bare `<` while Cursor is already at document Root → no-op (e.g. `.` then `<`).
+     * - On XaiopSyntaxError, pop Cursor one level and retry the same line until success,
+     *   the error changes, or Root is reached.
+     * @type {boolean}
+     */
+    this.compatibilityMode = !!options.compatibilityMode;
   }
 
   parse() {
+    if (this.compatibilityMode) {
+      this.ensureCompatRootOpener();
+    }
     for (let i = 0; i < this.lines.length; i++) {
       this.lineNo = i + 1;
       const raw = this.lines[i];
@@ -59,12 +109,135 @@ class Parser {
           line: this.lineNo,
         });
       }
-      this.handleLine(line);
+      this.handleLineCompat(line);
+    }
+    if (this.docKind === "fragment") {
+      return new XaiopFragment({ .../** @type {Record<string, unknown>} */ (this.fragmentEntries) });
     }
     if (this.root === undefined) {
       return {};
     }
     return this.root;
+  }
+
+  /**
+   * Compatibility only: outer document must be a complete anonymous object or array.
+   * First line `>` or `-` → leave as declared. Otherwise inject an empty object root
+   * (same effect as a missing leading `>`), so `>name` / Content do not enter fragment mode.
+   */
+  ensureCompatRootOpener() {
+    if (this.lines.length === 0) {
+      return;
+    }
+    const first = this.rewriteCompatLine(stripBom(this.lines[0]));
+    if (first === ">" || first === "-") {
+      return;
+    }
+    this.root = {};
+    this.docKind = "object";
+    this.fragmentEntries = null;
+    this.stack = [{ kind: "object", value: /** @type {object} */ (this.root) }];
+    this.phase = "active";
+  }
+
+  /**
+   * Compatibility-only deterministic line rewrites for common LLM slips.
+   * @param {string} line
+   * @returns {string}
+   */
+  rewriteCompatLine(line) {
+    // Trailing spaces on the whole line (common model padding); does not touch "key: value" forced-string rule.
+    let s = line.replace(/\s+$/, "");
+    if (!s) return line;
+
+    // bare `aliases-` / `tags-` (missing `>`) → `>aliases-`
+    if (/^[A-Za-z_][A-Za-z0-9_]*-$/.test(s)) {
+      return `>${s}`;
+    }
+
+    if (s.startsWith(">") && s.length > 1) {
+      const rest = s.slice(1);
+      const trimmedRest = rest.trim();
+      // `>  ` / `>   ` → bare `>`
+      if (!trimmedRest) {
+        return ">";
+      }
+      // `>  characters-` → `>characters-`
+      if (/^[A-Za-z_][A-Za-z0-9_]*-$/.test(trimmedRest)) {
+        return `>${trimmedRest}`;
+      }
+      // `>shard_index:1` / `> id:x` — Label names cannot contain `:`; unique intent is Content
+      if (trimmedRest.includes(":")) {
+        return trimmedRest;
+      }
+      // `>  meta` → `>meta`
+      if (trimmedRest !== rest) {
+        return `>${trimmedRest}`;
+      }
+    }
+
+    return s;
+  }
+
+  /**
+   * Strict handle, or compatibility recover-by-pop on syntax errors.
+   * @param {string} line
+   */
+  handleLineCompat(line) {
+    if (!this.compatibilityMode) {
+      this.handleLine(line);
+      return;
+    }
+    const effective = this.rewriteCompatLine(line);
+    if (!effective) {
+      throw new XaiopSyntaxError("empty line is a Content syntax error", {
+        line: this.lineNo,
+      });
+    }
+    // Root 上多余的裸 `<`（典型：`.` 后再写 `<`）无合法语义 → 忽略
+    if (effective === "<" && this.isAtDocumentRoot()) {
+      return;
+    }
+    try {
+      this.handleLine(effective);
+    } catch (err) {
+      if (!(err instanceof XaiopSyntaxError)) throw err;
+      this.recoverByPopping(effective, err);
+    }
+  }
+
+  /** Cursor is on the document root frame (or empty); bare `<` is illegal here. */
+  isAtDocumentRoot() {
+    return this.stack.length <= 1;
+  }
+
+  /**
+   * Pop one level at a time and re-apply `line` until:
+   * - it succeeds, or
+   * - the error message changes (stop; throw the new error), or
+   * - Cursor cannot pop further (throw the original error).
+   * @param {string} line
+   * @param {XaiopSyntaxError} originalErr
+   */
+  recoverByPopping(line, originalErr) {
+    const originalKey = syntaxErrorKey(originalErr);
+    while (this.stack.length > 1) {
+      try {
+        this.popOnly();
+      } catch {
+        throw originalErr;
+      }
+      try {
+        this.handleLine(line);
+        return;
+      } catch (err2) {
+        if (!(err2 instanceof XaiopSyntaxError)) throw err2;
+        if (syntaxErrorKey(err2) !== originalKey) {
+          throw err2;
+        }
+      }
+    }
+    throw originalErr;
   }
 
   /** @param {string} line */
@@ -153,18 +326,49 @@ class Parser {
     this.writeContent(key, value);
   }
 
-  ensureImplicitObjectRoot() {
-    if (this.phase === "init") {
+  ensureDocumentObjectRoot() {
+    if (this.phase === "init" || this.docKind === "none") {
       this.root = {};
+      this.docKind = "object";
+      this.fragmentEntries = null;
       this.stack = [{ kind: "object", value: /** @type {object} */ (this.root) }];
       this.phase = "active";
     }
   }
 
+  /** Enter fragment mode: bindings at Root without anonymous outer object. */
+  ensureFragmentRoot() {
+    if (this.docKind === "object" || this.docKind === "array") {
+      return;
+    }
+    if (this.docKind !== "fragment") {
+      this.docKind = "fragment";
+      this.fragmentEntries = {};
+      this.root = undefined;
+      this.stack = [
+        {
+          kind: "fragment",
+          value: /** @type {object} */ (this.fragmentEntries),
+        },
+      ];
+      this.phase = "active";
+    }
+  }
+
   resetToRoot() {
-    if (this.root === undefined) {
+    if (this.docKind === "none") {
       this.stack = [];
       this.phase = "init";
+      return;
+    }
+    if (this.docKind === "fragment") {
+      this.stack = [
+        {
+          kind: "fragment",
+          value: /** @type {object} */ (this.fragmentEntries),
+        },
+      ];
+      this.phase = "active";
       return;
     }
     this.stack = [
@@ -187,41 +391,57 @@ class Parser {
 
   popOnly() {
     if (this.stack.length <= 1) {
-      // Only root container (or empty) — pop would leave Root
       throw new XaiopSyntaxError("< at Root is illegal", { line: this.lineNo });
     }
     this.stack.pop();
   }
 
   createEnterAnonymousObject() {
-    if (this.phase === "init") {
+    if (this.phase === "init" || this.docKind === "none") {
       this.root = {};
+      this.docKind = "object";
+      this.fragmentEntries = null;
       this.stack = [{ kind: "object", value: this.root }];
       this.phase = "active";
       return;
     }
+    if (this.docKind === "fragment") {
+      throw new XaiopSyntaxError(
+        "bare > after fragment bindings: declare anonymous root first with a leading >, or stay in fragment with >name",
+        { line: this.lineNo },
+      );
+    }
     const cur = this.current();
-    const obj = {};
     if (cur.kind === "array") {
+      const obj = {};
       /** @type {unknown[]} */ (cur.value).push(obj);
       this.stack.push({ kind: "object", value: obj });
       return;
     }
-    // Object context: create nested anonymous object as overwrite of a transient —
-    // protocol: create at cursor. Attach under "" is invalid; treat as syntax for
-    // non-array unless at init (handled). Require array context for bare > after init.
+    if (cur.kind === "object") {
+      // Already on an object: create-or-update — re-enter current (modify), do not nest.
+      return;
+    }
     throw new XaiopSyntaxError(
-      "bare > creates an array element or root object; inside an object use >name",
+      "bare > creates an array element or root object; unexpected Cursor kind",
       { line: this.lineNo },
     );
   }
 
   createEnterAnonymousArray() {
-    if (this.phase === "init") {
+    if (this.phase === "init" || this.docKind === "none") {
       this.root = [];
+      this.docKind = "array";
+      this.fragmentEntries = null;
       this.stack = [{ kind: "array", value: this.root }];
       this.phase = "active";
       return;
+    }
+    if (this.docKind === "fragment") {
+      throw new XaiopSyntaxError(
+        "bare - cannot open root array after fragment mode began; start the Stream with -",
+        { line: this.lineNo },
+      );
     }
     const cur = this.current();
     const arr = [];
@@ -238,11 +458,13 @@ class Parser {
 
   /** @param {string} name */
   createEnterNamedObject(name) {
-    this.ensureImplicitObjectRoot();
+    if (this.phase === "init" || this.docKind === "none") {
+      this.ensureFragmentRoot();
+    } else if (this.docKind === "fragment" && this.stack.length === 0) {
+      this.ensureFragmentRoot();
+    }
     const cur = this.current();
     if (cur.kind === "array") {
-      // Strict: named child of array is not JSON-natural. Pop to parent object first
-      // is Generator duty. Reject to avoid silent repair.
       throw new XaiopSyntaxError(
         `>name while Cursor is inside an array (use < to leave array first): >${name}`,
         { line: this.lineNo },
@@ -259,7 +481,6 @@ class Parser {
       this.stack.push({ kind: "object", value: /** @type {object} */ (existing) });
       return;
     }
-    // create or overwrite
     const next = {};
     obj[name] = next;
     this.stack.push({ kind: "object", value: next });
@@ -267,7 +488,9 @@ class Parser {
 
   /** @param {string} name */
   createEnterNamedArray(name) {
-    this.ensureImplicitObjectRoot();
+    if (this.phase === "init" || this.docKind === "none") {
+      this.ensureFragmentRoot();
+    }
     const cur = this.current();
     if (cur.kind === "array") {
       throw new XaiopSyntaxError(
@@ -277,7 +500,7 @@ class Parser {
     }
     const obj = /** @type {Record<string, unknown>} */ (cur.value);
     const next = [];
-    obj[name] = next; // overwrite/discard
+    obj[name] = next;
     this.stack.push({ kind: "array", value: next });
   }
 
@@ -286,14 +509,16 @@ class Parser {
    * @param {unknown} value
    */
   writeContent(key, value) {
-    this.ensureImplicitObjectRoot();
+    if (this.phase === "init" || this.docKind === "none") {
+      // Content at Root without `>` / `-` → fragment binding(s), not an outer `{}`
+      this.ensureFragmentRoot();
+    }
     const cur = this.current();
     if (cur.kind === "array") {
       if (key === "") {
         /** @type {unknown[]} */ (cur.value).push(value);
         return;
       }
-      // one-line object element
       /** @type {unknown[]} */ (cur.value).push({ [key]: value });
       return;
     }
@@ -309,13 +534,41 @@ class Parser {
 
   /** @param {string} path */
   locatePath(path) {
-    this.ensureImplicitObjectRoot();
+    if (this.docKind === "none") {
+      throw new XaiopSyntaxError("=path before any tree exists", {
+        line: this.lineNo,
+      });
+    }
     if (!path) {
       throw new XaiopSyntaxError("empty = path", { line: this.lineNo });
     }
-    // Fuzzy: find first object node whose key path matches segments
-    const segments = path.split(">").filter(Boolean);
-    const found = fuzzyFind(this.root, segments);
+    const tree =
+      this.docKind === "fragment" ? this.fragmentEntries : this.root;
+
+    let found = fuzzyFind(tree, path.split(">").filter(Boolean));
+    if (!found && this.compatibilityMode) {
+      // Retry 1: trim leading/trailing whitespace (e.g. `= siblings` → `siblings`)
+      const trimmed = path.trim();
+      if (trimmed && trimmed !== path) {
+        found = fuzzyFind(tree, trimmed.split(">").filter(Boolean));
+      }
+      // Retry 2: strip all whitespace (e.g. `=child > inner` → `child>inner`)
+      const cleared = path.replace(/\s+/g, "");
+      if (!found && cleared && cleared !== path && cleared !== trimmed) {
+        found = fuzzyFind(tree, cleared.split(">").filter(Boolean));
+      }
+      // Retry 3: `=siblings-` → locate `siblings` only if that value is an array
+      // (LLM reused `>name-` create postfix on `=`). Prefer space-cleared path text.
+      if (!found) {
+        const forSuffix = cleared || trimmed || path;
+        if (forSuffix.split(">").some((s) => s.length > 1 && s.endsWith("-"))) {
+          found = fuzzyFindCompatArrayCreateSuffix(
+            tree,
+            forSuffix.split(">").filter(Boolean),
+          );
+        }
+      }
+    }
     if (!found) {
       throw new XaiopSyntaxError(`=path not found: ${path}`, {
         line: this.lineNo,
@@ -327,15 +580,20 @@ class Parser {
 
   /** @param {string} name */
   broadcastEnter(name) {
-    this.ensureImplicitObjectRoot();
+    if (this.docKind === "none") {
+      throw new XaiopSyntaxError("!name before any tree exists", {
+        line: this.lineNo,
+      });
+    }
     const matches = [];
-    collectNamed(this.root, name, matches);
+    const tree =
+      this.docKind === "fragment" ? this.fragmentEntries : this.root;
+    collectNamed(tree, name, matches);
     if (matches.length === 0) {
       throw new XaiopSyntaxError(`!name no match: ${name}`, {
         line: this.lineNo,
       });
     }
-    // Enter first match for subsequent Content (broadcast append semantics simplified)
     this.stack = matches[0];
     this.phase = "active";
   }
@@ -359,6 +617,11 @@ function splitLines(source) {
 /** @param {string} s */
 function stripBom(s) {
   return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
+
+/** Compare syntax errors ignoring the `line N:` prefix. */
+function syntaxErrorKey(err) {
+  return String(err.message || "").replace(/^line \d+:\s*/, "");
 }
 
 /**
@@ -408,13 +671,37 @@ function isIntToken(s) {
  * @returns {{ kind: NodeKind, value: object|unknown[] }[]|null}
  */
 function fuzzyFind(node, segments, trail = []) {
+  return fuzzyFindInner(node, segments, trail, false);
+}
+
+/**
+ * Compat-only: a segment `name-` may match key `name` when that value is an array
+ * (`>` create postfix reused on `=`). Never matches object/scalar under the stripped name.
+ *
+ * @param {unknown} node
+ * @param {string[]} segments
+ * @param {{ kind: NodeKind, value: object|unknown[] }[]} [trail]
+ * @returns {{ kind: NodeKind, value: object|unknown[] }[]|null}
+ */
+function fuzzyFindCompatArrayCreateSuffix(node, segments, trail = []) {
+  return fuzzyFindInner(node, segments, trail, true);
+}
+
+/**
+ * @param {unknown} node
+ * @param {string[]} segments
+ * @param {{ kind: NodeKind, value: object|unknown[] }[]} trail
+ * @param {boolean} allowArrayCreateSuffix
+ * @returns {{ kind: NodeKind, value: object|unknown[] }[]|null}
+ */
+function fuzzyFindInner(node, segments, trail, allowArrayCreateSuffix) {
   if (segments.length === 0) return trail.length ? trail : null;
   if (node === null || typeof node !== "object") return null;
 
   if (Array.isArray(node)) {
     const frame = { kind: /** @type {NodeKind} */ ("array"), value: node };
     for (const el of node) {
-      const hit = fuzzyFind(el, segments, [...trail, frame]);
+      const hit = fuzzyFindInner(el, segments, [...trail, frame], allowArrayCreateSuffix);
       if (hit) return hit;
     }
     return null;
@@ -424,8 +711,8 @@ function fuzzyFind(node, segments, trail = []) {
   const frame = { kind: /** @type {NodeKind} */ ("object"), value: obj };
   const [head, ...rest] = segments;
 
-  if (Object.prototype.hasOwnProperty.call(obj, head)) {
-    const child = obj[head];
+  /** @param {string} key @param {unknown} child */
+  const tryChild = (key, child) => {
     if (rest.length === 0) {
       if (child !== null && typeof child === "object") {
         const kind = Array.isArray(child) ? "array" : "object";
@@ -438,7 +725,26 @@ function fuzzyFind(node, segments, trail = []) {
       return [...trail, frame];
     }
     if (child !== null && typeof child === "object") {
-      return fuzzyFind(child, rest, [...trail, frame]);
+      return fuzzyFindInner(child, rest, [...trail, frame], allowArrayCreateSuffix);
+    }
+    return null;
+  };
+
+  if (Object.prototype.hasOwnProperty.call(obj, head)) {
+    const hit = tryChild(head, obj[head]);
+    if (hit) return hit;
+  } else if (
+    allowArrayCreateSuffix &&
+    head.length > 1 &&
+    head.endsWith("-")
+  ) {
+    const base = head.slice(0, -1);
+    if (
+      Object.prototype.hasOwnProperty.call(obj, base) &&
+      Array.isArray(obj[base])
+    ) {
+      const hit = tryChild(base, obj[base]);
+      if (hit) return hit;
     }
   }
 
@@ -446,7 +752,12 @@ function fuzzyFind(node, segments, trail = []) {
   for (const key of Object.keys(obj)) {
     const child = obj[key];
     if (child !== null && typeof child === "object") {
-      const hit = fuzzyFind(child, segments, [...trail, frame]);
+      const hit = fuzzyFindInner(
+        child,
+        segments,
+        [...trail, frame],
+        allowArrayCreateSuffix,
+      );
       if (hit) return hit;
     }
   }

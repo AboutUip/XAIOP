@@ -21,9 +21,9 @@
 Cursor operators and hierarchy.  
 **Grammar first:** [syntax.md](syntax.md).
 
-**Pair:** `>` = create empty anonymous object **and enter**; `<` = **pop one level only**; `<` at Root = syntax error.
+**Pair:** `>` = create anonymous object **and enter**, or **re-enter** current object when already on one; inside an array = new element. `<` = **pop one level only**; `<` at Root = syntax error.
 
-**Root declaration:** when a root object or root array is intended, the Stream **MUST** open with `>` or `-` respectively; when no such root container is intended, omit them. See [syntax.md](syntax.md) §2.
+**Root opener:** `>` / `-` produce a complete anonymous root document value. Omitting them yields a **root fragment** (e.g. `"a":{}`) with **no** outer anonymous object — **not** `{"a":{}}`. See [syntax.md](syntax.md) §2.
 
 ---
 
@@ -66,19 +66,38 @@ Semantics: Relative to current Cursor, create / enter child object <label>
 
 ```text
 Syntax: >
-Semantics: Create empty anonymous object at current Cursor AND enter it
+Semantics: Context-dependent create-or-update for an anonymous object
 ```
 
-This is the **only** way to create an anonymous object. Uniform in object context and inside arrays. No “create empty element without entering” variant. `>name` never implies a prior anonymous outer object.
+| Cursor | Semantics |
+| --- | --- |
+| Init / no document yet | Create empty anonymous **root** object and enter |
+| Inside an **array** | Create a new empty object **element**, push it, and enter (one element per `>` … `<`) |
+| Already on an **object** (including Root after `.`) | **Re-enter** the current object (modify) — do **not** nest another anonymous object |
+
+This is the **only** way to create an anonymous object. There is no “create empty element without entering” variant. `>name` never implies a prior anonymous outer object.
+
+Same-address revisit (object Cursor + bare `>` again, or later Content on the same keys) follows create-or-update / overwrite (Section 10): later wins. Duplicate counting by a Generator is out of scope for the wire protocol.
 
 ```text
 >
 >data
 ```
 
-- `>`: create/enter anonymous object at current Cursor.  
+- First `>`: create/enter anonymous root.  
 - `>data`: create/enter **named** child `data` inside it.  
-- View of that anonymous object: `{ "data": {} }`.
+- View: `{ "data": {} }`.
+
+```text
+>
+id:1
+.
+>
+id:2
+```
+
+- After `.`, Cursor is at the root object; the second `>` **re-enters** that root (modify).  
+- `id:2` overwrites `id:1` → `{ "id": 2 }`.
 
 ### 4.3 Nesting
 
@@ -208,7 +227,7 @@ Inside an array, another `-` opens a **nested** anonymous array as the next elem
 | At array level | Inside element after `>` |
 | --- | --- |
 | `:v` → scalar element | Content on current object |
-| `key:value` → one-line object element | nested Structure allowed |
+| `key:value` → **one-line object element** (normative: single-property `{k:v}`; Cursor stays at array) | nested Structure allowed |
 | `>` → object element **and enter** | deeper nesting |
 | `-` → nested array element | — |
 | | `<` → return to array |
@@ -264,7 +283,13 @@ a:b
 
 ### 10.1 Create-or-update
 
-No explicit create vs modify declaration. Missing paths are created; compatible continued use appends/updates.
+No explicit create vs modify declaration. Missing paths are created; compatible continued use appends / updates / **re-enters**.
+
+Examples:
+
+- `>name` then later `>name` at the same parent (still an object) → re-enter.  
+- Bare `>` while Cursor is already on an object → re-enter that object (Section 4.2).  
+- Bare `>` while Cursor is inside an array → create a **new** element (not re-enter).
 
 ### 10.2 Overwrite / discard
 

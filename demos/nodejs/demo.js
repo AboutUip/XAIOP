@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 import {
   PROTOCOL_VERSION,
   XaiopEngine,
+  XaiopFragment,
   XaiopSyntaxError,
 } from "../../xaiop-sdk/nodejs/src/index.js";
 
@@ -66,7 +67,14 @@ function render(json, dataId) {
   console.log(` XAIOP → JSON  (protocol ${PROTOCOL_VERSION})`);
   console.log(` data id: ${dataId}`);
   console.log(bar);
-  console.log(JSON.stringify(json, null, 2));
+  if (json instanceof XaiopFragment) {
+    console.log(" (root fragment — no outer anonymous object)");
+    console.log(` notation: ${json.notation()}`);
+    console.log(" entries:");
+    console.log(JSON.stringify(json.entries, null, 2));
+  } else {
+    console.log(JSON.stringify(json, null, 2));
+  }
   console.log(bar);
   console.log("");
 }

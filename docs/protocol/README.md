@@ -31,8 +31,9 @@ Normative grammar and semantics are complete for Structure (boundary, cursor, ar
 | 4 | [content.md](content.md) | `:` typing and forced string |
 | 5 | [streaming.md](streaming.md) | Streaming validity and JSON APIs |
 
-**Core pair:** `>` create-and-enter anonymous object · `<` pop one level (illegal at Root) · never Bare Labels.  
-**Root:** intended root object/array → open with `>` / `-`; no root container → omit.
+**Core pair:** `>` create/re-enter anonymous object (array → new element) · `<` pop one level (illegal at Root) · never Bare Labels.  
+**Root opener:** `>` / `-` → complete anonymous root document; omit → **root fragment** `"a":{}` (no outer object) — **not** the same as `{"a":{}}`. See [syntax.md](syntax.md) §2.  
+**Array one-line `k:v`:** complete single-property element at array level ([syntax.md](syntax.md) §6.1).
 
 ---
 

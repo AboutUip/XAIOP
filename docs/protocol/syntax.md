@@ -24,7 +24,7 @@ Details: [boundary.md](boundary.md) · [hierarchy.md](hierarchy.md) · [content.
 ## 1. Hard rules (MUST)
 
 1. **No Bare Labels** — name-only line (e.g. `data`) is a syntax error.  
-2. **`>`** creates empty anonymous object **and enters** it (only way to create an **anonymous** object).  
+2. **`>`** creates or re-enters an anonymous object by Cursor context (Section 4 / [hierarchy.md](hierarchy.md) §4.2): root open, **new array element**, or **re-enter** current object — only way to create an **anonymous** object.  
 3. **`>name`** creates/enters a **named** child at the current Cursor — **not** an outer anonymous wrap.  
 4. **`<`** pops one level only; **`<` at Root is a syntax error**.  
 5. **`<name`** pops one level, then creates/enters `name`.  
@@ -33,35 +33,44 @@ Details: [boundary.md](boundary.md) · [hierarchy.md](hierarchy.md) · [content.
 8. Value **MUST NOT** contain line endings.  
 9. Content splits on the **first** `:` only.  
 10. **`-` does not separate sibling array elements** — it opens an array (or a nested array element).  
-11. **Root declaration** (Section 2): when a root object or root array is intended, open with `>` or `-`; when no such root container is intended, omit them.
+11. **Root opener** (Section 2): `>` / `-` declare a **complete** anonymous root document value; omitting them yields a **root fragment** (no outer object) — **not** the same as `{"a":{}}`.  
+12. **Array one-line object** (Section 6.1): at array level, `key:value` is one complete single-property object element (Cursor stays at array level).
 
 ---
 
-## 2. Root declaration
+## 2. Root declaration — complete document vs fragment
 
-The Generator **MUST** make root intent explicit when a root container exists:
+A leading standalone `>` or `-` **declares and enters** an anonymous root **object** or **array**. That anonymous container **is** the document root value for JSON materialization.
 
-| Intent | First Structure line | Meaning |
+Starting with `>name` (or Root-level Content) **without** a prior `>` / `-` does **not** create an outer anonymous object. The Stream is a **root fragment**: named bindings at Root. Notation is `"a":{}` — **not** the JSON document `{"a":{}}`.
+
+| Situation | Opener | Result |
 | --- | --- | --- |
-| Root is an **object** | standalone `>` | Create empty anonymous object at Root **and enter** it |
-| Root is an **array** | standalone `-` | Create empty anonymous array at Root **and enter** it |
-| **No** root object/array | omit leading `>` / `-` | Start with `>name`, Content, `=`, `!`, etc. at Root |
+| Complete JSON **array** document | `-` (**MUST**) | e.g. `["a","b"]` |
+| Complete JSON **object** document (entered anonymous root) | `>` (**MUST** when that is the intent) | e.g. `{"a":{}}`, `{"x":1}` |
+| Root **fragment** (no outer anonymous object) | omit `>` / `-`; use `>name` / Content | e.g. semantic `"a":{}` — **not** standalone JSON |
 
-1. If a root **object** or root **array** is intended, the Stream **MUST** begin with `>` or `-` respectively — telling the Parser the root is an empty object or an empty array.  
-2. If **no** root object/array is intended, the Generator **MUST NOT** be required to write a leading `>` or `-`.  
-3. `>name` alone does **not** declare an anonymous root object.
-
-**With root object:**
+**Different products (normative):**
 
 ```text
 >
->meta
-name:demo
+>a
 ```
 
-→ `{ "meta": { "name": "demo" } }`
+→ JSON document `{ "a": {} }` — outer anonymous object **exists** (declared by `>`).
 
-**With root array:**
+```text
+>a
+```
+
+→ root fragment `"a":{}` — **no** outer anonymous object; **cannot** stand alone as a JSON document.
+
+```text
+>
+x:1
+```
+
+→ `{ "x": 1 }` — anonymous root with direct Content.
 
 ```text
 -
@@ -69,16 +78,7 @@ name:demo
 :b
 ```
 
-→ `[ "a", "b" ]`
-
-**Without root container:**
-
-```text
->meta
-name:demo
-```
-
-→ `{ "meta": { "name": "demo" } }` (named child of Root; no anonymous root opener)
+→ `[ "a", "b" ]` — root array.
 
 ---
 
@@ -86,7 +86,7 @@ name:demo
 
 | Line | Kind | Meaning |
 | --- | --- | --- |
-| `>` | Structure | Create/enter **anonymous** object — **always enters**; never implied by `>name` |
+| `>` | Structure | Anonymous object: open root / **new array element** / **re-enter** current object |
 | `>name` | Structure | Create/enter **named** child at current Cursor (no outer anonymous wrap) |
 | `>name-` | Structure | Create/enter named array |
 | `-` | Structure | Create/enter anonymous array (or nested array as next element) |
@@ -104,7 +104,7 @@ name:demo
 
 ## 4. `>` / `<` pair
 
-- **`>`** — create empty anonymous object and enter (same in objects and arrays). Later writes go into it until leave.  
+- **`>`** — by Cursor: open anonymous root, push+enter a new array element, or **re-enter** the current object (modify). Never implied by `>name`. Later writes go into the current object until leave.  
 - **`<`** — pop to parent; no create; illegal at Root.  
 - **`<name`** — pop, then create/enter `name` at parent.
 
@@ -149,8 +149,30 @@ A Stream whose **root** is an array **MUST** open with `-` (Section 2).
 
 | Cursor | Next lines |
 | --- | --- |
-| **Array level** | `:v` · one-line `key:value` · `>` (object element and enter) · `-` (nested array element) |
-| **Inside element** (after `>`) | Content on that object · nested Structure · **`<`** returns to array |
+| **Array level** | `:v` · one-line `key:value` (Section 6.1) · `>` (object element and enter) · `-` (nested array element) |
+| **Inside element** (after `>`)| Content on that object · nested Structure · **`<`** returns to array |
+
+### 6.1 One-line object element (normative)
+
+When the Cursor is at **array level**, a Content line with a **non-empty** key:
+
+```text
+key:value
+```
+
+**MUST** be parsed as **one complete array element** whose value is the single-property object `{ "key": <typed value> }`.
+
+1. The Cursor **MUST remain** at array level (it does **not** enter that object).  
+2. This is a **full** element declaration, not a property of the array.  
+3. It is **distinct** from `>` … Content … `<`, which creates a fillable object element and **enters** it.  
+4. Use `>` when the element needs **zero or multiple** properties, or nested Structure.
+
+```text
+-
+a:solo
+```
+
+→ `[ { "a": "solo" } ]`
 
 ### Scalars
 
@@ -251,11 +273,11 @@ a:b
 
 | Need | Go to |
 | --- | --- |
-| Root `>` / `-` / omit | §2 |
+| Root opener `>` / `-` / omit | §2 |
 | Line forms | §3 |
 | `>` / `<` | §4 |
 | Nesting | §5 |
-| Arrays | §6 |
+| Arrays / one-line object elements | §6 · §6.1 |
 | Types | §7 · [content.md](content.md) |
 | Line endings | [boundary.md](boundary.md) |
 | Operators | [hierarchy.md](hierarchy.md) |

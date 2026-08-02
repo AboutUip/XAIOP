@@ -19,7 +19,7 @@ Start: **[protocol/syntax.md](protocol/syntax.md)**
 Index: [protocol/README.md](protocol/README.md)  
 Fixtures: [examples/](examples/)
 
-Also: [meta/](meta/) · [overview/](overview/) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/)
+Also: [meta/](meta/) · [overview/](overview/) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · **[performance.md](performance.md)** (evaluation metrics)
 
 ---
 

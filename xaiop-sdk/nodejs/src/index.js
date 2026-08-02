@@ -1,19 +1,44 @@
-import { parseAsync, parseSync, XaiopSyntaxError } from "./parse.js";
+import { parseAsync, parseSync, XaiopFragment, XaiopSyntaxError } from "./parse.js";
 
 export const PROTOCOL_VERSION = "0.1.0";
 
 /**
  * Standard XAIOP engine: upload full documents, fetch by runtime data id.
+ *
+ * Compatibility mode (`compatibilityMode`) is **off** by default.
+ * When enabled: force a complete object root if the stream does not start with `>` / `-`;
+ * parse errors trigger Cursor pop-and-retry recovery
+ * (pop until the line succeeds, the error changes, or Root).
  */
 export class XaiopEngine {
-  constructor() {
+  /**
+   * @param {{ compatibilityMode?: boolean }} [options]
+   */
+  constructor(options = {}) {
     /** @type {Map<string, unknown>} */
     this._store = new Map();
     this._seq = 0;
+    /** @type {boolean} */
+    this._compatibilityMode = !!options.compatibilityMode;
+  }
+
+  /** Whether compatibility mode is enabled for this engine instance. */
+  get compatibilityMode() {
+    return this._compatibilityMode;
   }
 
   /**
-   * Upload complete (non-streaming) XAIOP text. Returns a runtime data id.
+   * Enable or disable compatibility mode on this engine.
+   * @param {boolean} enabled
+   * @returns {this}
+   */
+  setCompatibilityMode(enabled) {
+    this._compatibilityMode = !!enabled;
+    return this;
+  }
+
+  /**
+   * Upload XAIOP text. Returns a runtime data id.
    * @param {string} source
    * @returns {Promise<string>}
    */
@@ -26,14 +51,13 @@ export class XaiopEngine {
    * @returns {string}
    */
   uploadSync(source) {
-    const value = parseSync(source);
+    const value = parseSync(source, this._compatibilityMode);
     const id = nextId(++this._seq);
     this._store.set(id, value);
     return id;
   }
 
   /**
-   * Resolve a previously uploaded data id to parsed JSON-compatible value.
    * @param {string} dataId
    * @returns {Promise<unknown>}
    */
@@ -52,25 +76,29 @@ export class XaiopEngine {
     if (!this._store.has(dataId)) {
       throw new Error(`unknown data id: ${dataId}`);
     }
-    return structuredClone(this._store.get(dataId));
+    const v = this._store.get(dataId);
+    if (v instanceof XaiopFragment) {
+      return new XaiopFragment(structuredClone(v.entries));
+    }
+    return structuredClone(v);
   }
 
   /**
-   * Static: parse XAIOP text directly to JSON-compatible value (async).
    * @param {string} source
+   * @param {boolean} [compatibilityMode=false] — omitted / false = strict (default)
    * @returns {Promise<unknown>}
    */
-  static async parse(source) {
-    return parseAsync(source);
+  static async parse(source, compatibilityMode = false) {
+    return parseAsync(source, compatibilityMode);
   }
 
   /**
-   * Static: parse XAIOP text directly (sync).
    * @param {string} source
+   * @param {boolean} [compatibilityMode=false] — omitted / false = strict (default)
    * @returns {unknown}
    */
-  static parseSync(source) {
-    return parseSync(source);
+  static parseSync(source, compatibilityMode = false) {
+    return parseSync(source, compatibilityMode);
   }
 
   /** @returns {boolean} */
@@ -78,23 +106,19 @@ export class XaiopEngine {
     return this._store.has(dataId);
   }
 
-  /** Remove a stored document. @param {string} dataId */
+  /** @param {string} dataId */
   delete(dataId) {
     return this._store.delete(dataId);
   }
 
-  /** Clear all uploaded documents. */
   clear() {
     this._store.clear();
   }
 }
 
-/**
- * @param {number} seq
- * @returns {string}
- */
+/** @param {number} seq @returns {string} */
 function nextId(seq) {
   return `xaiop_${seq}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export { parseAsync, parseSync, XaiopSyntaxError };
+export { parseAsync, parseSync, XaiopFragment, XaiopSyntaxError };
