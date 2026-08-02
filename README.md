@@ -95,8 +95,7 @@ Materializes as:
 - **Grammar** — [docs/protocol/](docs/protocol/)
 - **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [xaiop-sdk/nodejs/](xaiop-sdk/nodejs/)
 - **Teach the model** — [classic Skill](skills/xaiop/SKILL.md) · [allowlist Skill](skills/xaiop-allowlist/SKILL.md)
-- **Bench harness** — [dev/perf/](dev/perf/)
-- **Metrics package** — [JSON](dev/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [guide](dev/bench-metrics-gpt-gemini-compat-2026-08-02.md)
+- **Metrics package** — [JSON](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [guide](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md)
 
 Java and Python SDKs are pending update. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
 
@@ -159,6 +158,6 @@ Definitions: [docs/performance.md](docs/performance.md)
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.1.0-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.0-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-index-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

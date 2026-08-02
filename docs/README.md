@@ -6,7 +6,7 @@ Two documentation trees:
 
 | Tree | Path | Purpose |
 | --- | --- | --- |
-| **Protocol** | [protocol/](protocol/) | Wire format (Frozen v0.1.0) — authoritative grammar |
+| **Protocol** | [protocol/](protocol/) | Wire format (Frozen v0.2.0) — authoritative grammar |
 | **SDK** | [sdk/](sdk/) | Runtime SDKs — per tech stack |
 
 Foundation (conventions, glossary, requirements, conformance) supports the protocol package and remains under this `docs/` root.
@@ -19,7 +19,7 @@ Start: **[protocol/syntax.md](protocol/syntax.md)**
 Index: [protocol/README.md](protocol/README.md)  
 Fixtures: [examples/](examples/)
 
-Also: [meta/](meta/) · [overview/](overview/) ([positioning](overview/positioning.md) — what it solves & when to use) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · **[performance.md](performance.md)** (evaluation metrics)
+Also: [meta/](meta/) ([revisions](meta/revisions.md)) · [overview/](overview/) ([positioning](overview/positioning.md) — what it solves & when to use) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · **[performance.md](performance.md)** (evaluation metrics) · [metrics/](metrics/) (published snapshot)
 
 ---
 

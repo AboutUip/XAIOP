@@ -6,7 +6,7 @@
 
 | 树 | 路径 | 用途 |
 | --- | --- | --- |
-| **协议** | [protocol/](protocol/) | 线格式（Frozen v0.1.0）— 权威文法 |
+| **协议** | [protocol/](protocol/) | 线格式（Frozen v0.2.0）— 权威文法 |
 | **SDK** | [sdk/](sdk/) | 运行时 SDK — 按技术栈分册 |
 
 基础文档（约定、术语、需求、符合性）支撑协议包，仍放在本 `docs/` 根下。
@@ -19,7 +19,7 @@
 索引：[protocol/README.zh-CN.md](protocol/README.zh-CN.md)  
 样例：[examples/](examples/)
 
-另见：[meta/](meta/) · [overview/](overview/)（[定位说明](overview/positioning.zh-CN.md) — 解决什么、何时用） · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · **[performance.zh-CN.md](performance.zh-CN.md)**（评测指标）
+另见：[meta/](meta/)（[修订记录](meta/revisions.zh-CN.md)） · [overview/](overview/)（[定位说明](overview/positioning.zh-CN.md) — 解决什么、何时用） · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · **[performance.zh-CN.md](performance.zh-CN.md)**（评测指标） · [metrics/](metrics/)（已发布快照）
 
 ---
 

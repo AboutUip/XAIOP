@@ -95,8 +95,7 @@ name:alice
 - **文法** — [docs/protocol/](docs/protocol/)
 - **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [xaiop-sdk/nodejs/](xaiop-sdk/nodejs/)
 - **教模型写** — [经典 Skill](skills/xaiop/SKILL.md) · [白名单 Skill](skills/xaiop-allowlist/SKILL.md)
-- **评测脚本** — [dev/perf/](dev/perf/)
-- **指标包** — [JSON](dev/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [导读](dev/bench-metrics-gpt-gemini-compat-2026-08-02.md)
+- **指标包** — [JSON](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [导读](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md)
 
 Java / Python SDK 待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
 
@@ -159,6 +158,6 @@ Java / Python SDK 待更新。英文文档为权威文本；仓库内配有 `*.z
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.1.0-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.0-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/"><img alt="文档" src="https://img.shields.io/badge/docs-%E7%B4%A2%E5%BC%95-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

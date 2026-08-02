@@ -6,9 +6,9 @@
 | --- | --- |
 | Document ID | `PERF-METRICS` |
 | Status | Informative |
-| Last updated | 2026-08-02 |
+| Last updated | 2026-08-03 |
 | Normative | **No** — evaluation methodology & published snapshot |
-| Depends on | Protocol Frozen v0.1.0 · Node.js SDK compatibility mode |
+| Depends on | Protocol Frozen v0.2.0 · Node.js SDK compatibility mode |
 
 ---
 
@@ -38,9 +38,7 @@ It does **not** redefine the wire protocol. Grammar remains in [protocol/](../pr
 2. **Same task prompts** (format-neutral task text + mode-specific output tail).  
 3. **Skill in system** for XAIOP (not user); warmup excluded from timed task metrics.  
 4. **Compatibility mode** may be enabled for structure checks (stated per snapshot).  
-5. Artifacts may keep the **last successful** body when some rounds fail — failed-round payloads are not always on disk; trust `structErrors` on the metrics export for failure reasons.
-
-Harness: [`dev/perf/`](../../dev/perf/) · README: [`dev/perf/README.md`](../../dev/perf/README.md).
+5. Artifacts may keep the **last successful** body when some rounds fail — failed-round payloads are not always retained; trust `structErrors` on the metrics export for failure reasons.
 
 ---
 
@@ -48,8 +46,8 @@ Harness: [`dev/perf/`](../../dev/perf/) · README: [`dev/perf/README.md`](../../
 
 | File | Role |
 | --- | --- |
-| [`dev/bench-metrics-gpt-gemini-compat-2026-08-02.json`](../../dev/bench-metrics-gpt-gemini-compat-2026-08-02.json) | Full metrics (no raw model payloads) |
-| [`dev/bench-metrics-gpt-gemini-compat-2026-08-02.md`](../../dev/bench-metrics-gpt-gemini-compat-2026-08-02.md) | Teacher-oriented field guide |
+| [`metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json`](./metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) | Full metrics (no raw model payloads) |
+| [`metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md`](./metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md) | Teacher-oriented field guide |
 
 ### Headline structure rates
 

@@ -6,9 +6,9 @@
 | --- | --- |
 | 文档 ID | `PERF-METRICS` |
 | 状态 | 说明性（Informative） |
-| 最近更新 | 2026-08-02 |
+| 最近更新 | 2026-08-03 |
 | 是否规范性 | **否** — 评测口径与已发布快照 |
-| 依赖 | 协议 Frozen v0.1.0 · Node.js SDK 兼容模式 |
+| 依赖 | 协议 Frozen v0.2.0 · Node.js SDK 兼容模式 |
 
 ---
 
@@ -40,16 +40,14 @@
 4. 结构校验是否开启 **兼容模式** 在快照中写明。  
 5. 多轮任务 artifact 可能只保留 **最后一次成功体**；失败轮正文不一定落盘 — 失败原因以指标包中的 `structErrors` 为准。
 
-评测脚本：[`dev/perf/`](../../dev/perf/) · 说明：[`dev/perf/README.md`](../../dev/perf/README.md)。
-
 ---
 
 ## 3. 已发布快照（GPT + Gemini · 兼容模式）
 
 | 文件 | 作用 |
 | --- | --- |
-| [`dev/bench-metrics-gpt-gemini-compat-2026-08-02.json`](../../dev/bench-metrics-gpt-gemini-compat-2026-08-02.json) | 完整指标（无模型原始正文） |
-| [`dev/bench-metrics-gpt-gemini-compat-2026-08-02.md`](../../dev/bench-metrics-gpt-gemini-compat-2026-08-02.md) | 教学向字段导读 |
+| [`metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json`](./metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) | 完整指标（无模型原始正文） |
+| [`metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md`](./metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md) | 教学向字段导读 |
 
 ### 结构成功率一览
 
