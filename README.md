@@ -45,13 +45,15 @@
 
 ### The problem with JSON-shaped generation
 
-Long streams demand perfect braces, commas, and nesting. Under truncation and depth, that contract fails quietly — or loudly — at the worst moment.
+Traditional JSON/XML ask the model for a finished, globally correct structure in one pass — a **memory** test of braces and depth. XAIOP asks for a sequence of cursor moves; the SDK materializes JSON. **Memory → logic.**
 
 ### What XAIOP changes
 
 Structure is **line-oriented**. Position is a **cursor**. There is **no brace pairing**, no model-side hashing, and — by default — **no silent repair**. The wire stays honest.
 
-→ [Design principles](docs/overview/design-principles.md) · [Introduction](docs/overview/introduction.md)
+Gains are **conditional** on the model’s JSON strength — not a universal replacement story.
+
+→ [Positioning](docs/overview/positioning.md) · [Design principles](docs/overview/design-principles.md) · [Introduction](docs/overview/introduction.md)
 
 ---
 

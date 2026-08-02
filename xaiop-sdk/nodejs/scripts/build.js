@@ -1,7 +1,7 @@
 /**
  * Build / pack the xaiop npm package into ./dist
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,14 +17,18 @@ for (const name of fs.readdirSync(dist)) {
   if (name.endsWith(".tgz")) fs.unlinkSync(path.join(dist, name));
 }
 
-execFileSync(
-  process.platform === "win32" ? "npm.cmd" : "npm",
-  ["pack", "--pack-destination", dist],
-  {
+// Windows: spawnSync("npm.cmd") can fail with EINVAL; use a shell command string.
+if (process.platform === "win32") {
+  execSync(`npm pack --pack-destination "${dist}"`, {
     cwd: pkgRoot,
     stdio: "inherit",
-  },
-);
+  });
+} else {
+  execFileSync("npm", ["pack", "--pack-destination", dist], {
+    cwd: pkgRoot,
+    stdio: "inherit",
+  });
+}
 
 const tgz = fs.readdirSync(dist).filter((f) => f.endsWith(".tgz"));
 console.log("");

@@ -98,4 +98,6 @@ Related (not in this four-run export): native-mode and DeepSeek shots in the sam
 | Deep / wide trees, dirty strings, long scripts (with Skill + optional compat) | “Always fewer tokens than JSON” |
 | Teaching / demos with reproducible **metric** packages | Byte-identical reproduction without the same gateway models |
 
+**Product stance:** gains are **conditional on model profile** (often larger when JSON baseline is weaker; can be near-zero gain with higher cost when JSON is already strong). Full narrative — problem framing, seven-bench pattern, bottlenecks outside the protocol, current positioning: **[overview/positioning.md](overview/positioning.md)**.
+
 Skills: [`skills/xaiop/`](../../skills/xaiop/) · [`skills/xaiop-allowlist/`](../../skills/xaiop-allowlist/).

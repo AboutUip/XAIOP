@@ -45,13 +45,15 @@
 
 ### JSON 生成的问题
 
-长流式输出要求括号、逗号与嵌套全程正确。一旦截断或嵌套加深，这份契约就会在最糟的时机失效。
+传统 JSON/XML 要求模型一次性吐出全局正确的完整结构——本质是对括号与深度的**记忆**考验。XAIOP 让模型写游标构造指令，由 SDK 物化为 JSON。**记忆 → 逻辑。**
 
 ### XAIOP 改了什么
 
 结构是 **按行** 的。位置是 **游标**。没有括号配对，没有模型侧哈希；默认也 **不静默修复**。线上保持诚实。
 
-→ [设计原则](docs/overview/design-principles.zh-CN.md) · [概览](docs/overview/introduction.zh-CN.md)
+收益**取决于**目标模型自身的 JSON 能力——不是「全面替代 JSON」的故事。
+
+→ [定位说明](docs/overview/positioning.zh-CN.md) · [设计原则](docs/overview/design-principles.zh-CN.md) · [概览](docs/overview/introduction.zh-CN.md)
 
 ---
 

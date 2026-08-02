@@ -98,4 +98,6 @@
 | 深/宽树、脏串、长剧本（配合 Skill + 可选兼容解析） | 「补全 token 一定比 JSON 少」 |
 | 教学/演示：可复现的 **指标包** | 无相同网关模型时的字节级复现 |
 
+**产品定位：** 收益**取决于模型能力画像**（JSON 基线越弱，结构提升往往越大；JSON 已经很强时，结构提升可能趋近于零，但成本更高）。完整叙事——问题定义、七场基准规律、协议外瓶颈、当前立场：见 **[overview/positioning.zh-CN.md](overview/positioning.zh-CN.md)**。
+
 Skill：[`skills/xaiop/`](../../skills/xaiop/) · [`skills/xaiop-allowlist/`](../../skills/xaiop-allowlist/)。

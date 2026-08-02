@@ -34,6 +34,8 @@ Modern AI applications increasingly rely on LLMs to generate structured data. Fo
 
 **Rationale (informative):** XAIOP approaches the problem by designing the protocol around how AI naturally generates structured information, rather than forcing AI to emulate traditional serialization formats.
 
+**Full stance (informative):** turn a *memory* problem (global brace/nesting bookkeeping) into a *logic* problem (local next-step cursor moves). Evidence, conditional gains by model profile, out-of-scope bottlenecks, and current positioning: **[positioning.md](positioning.md)**.
+
 ---
 
 ## 3. Architectural Position
