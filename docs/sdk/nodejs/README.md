@@ -5,9 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Package | `xaiop` |
-| Protocol | v0.1.0 Frozen |
+| Protocol | v0.2.1 Frozen |
 | Runtime | Node.js ≥ 18 (ESM) |
 | Code | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) |
+
+**Isolation:** Protocol = wire only · Practice = model & streaming transport · This package = APIs — [../../SEPARATION.md](../../SEPARATION.md).  
+**Docs:** [Guide](README.md) · [Encode](encode.md) · [Notes](notes/) · [Practice](../../practice/) · [Protocol](../../protocol/)
 
 ---
 
@@ -18,7 +21,7 @@ cd xaiop-sdk/nodejs
 npm install
 npm test
 npm run build
-# → dist/xaiop-0.1.0.tgz
+# → dist/xaiop-0.4.1.tgz
 ```
 
 ```js
@@ -27,7 +30,7 @@ import { XaiopEngine, PROTOCOL_VERSION } from "xaiop";
 
 ---
 
-## Three APIs
+## Primary APIs
 
 All primary methods are **async**. Matching **sync** methods are provided.
 
@@ -66,6 +69,63 @@ const jsonSync = XaiopEngine.parseSync(xaiopText);
 // second argument: compatibility mode (default false)
 const jsonCompat = XaiopEngine.parseSync(xaiopText, true);
 ```
+
+### 4. `encode` / `uploadJson` — JSON → XAIOP
+
+Encode emits **strict** wire only (compatibility mode does not change output).  
+Default `dotPolicy` is `perTopLevelKey` so each top-level key is a `.` phase for `DotCheckpointEngine` / `XaiopStream`.
+
+```js
+import { encodeSync, DOT_POLICY, XaiopEngine } from "xaiop";
+
+const wire = encodeSync(
+  { meta: { name: "demo" }, tags: ["a", "b"] },
+  { dotPolicy: DOT_POLICY.NONE }, // single phase, no `.`
+);
+
+const phased = XaiopEngine.encodeSync(
+  { a: 1, b: 2, c: 3 },
+  { dotPolicy: "perNKeys", phaseEvery: 2, maxPhases: 10 },
+);
+
+const engine = new XaiopEngine();
+const id = await engine.uploadJson({ x: 1 }, { finalDot: false });
+```
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `root` | `auto` | `object` / `array` / `auto` |
+| `dotPolicy` | `perTopLevelKey` | `none` · `perTopLevelKey` · `perNKeys` · `custom` |
+| `phaseEvery` | `1` | Used by `perNKeys` |
+| `maxPhases` | — | Merges the tail when set |
+| `shouldPhase` | — | Required for `custom` |
+| `finalDot` | `false` | Trailing `.` line |
+| `nullPolicy` | `encode` | `encode` (default) · `omit` (object keys) · `error`. Arrays emit typed `null` unless `error`. |
+| `keyOrder` | `insertion` | Or `sorted` |
+
+**Rejected keys** (would corrupt structure): empty / whitespace / `:`, trailing `-`, characters `>` `<` `=` `!`.
+
+Round-trip guarantee: `parseSync(encodeSync(json))` matches `json` for plain JSON values the encoder accepts (no `null` array elements, no non-finite numbers, no CR/LF in strings). Byte-identical `encode(parse(wire))` is **not** required.
+
+**Full encode guide:** [encode.md](encode.md) (stability contract, key hazards, phase options, tests).
+
+### 5. `XaiopWs` — WebSocket listen / connect (SDK 0.4.0+)
+
+First-class skeleton-stream sessions (one package: push + consume). See [notes/ws-session.md](notes/ws-session.md) and [../../practice/skeleton-stream.md](../../practice/skeleton-stream.md).
+
+```js
+import { XaiopWs } from "xaiop";
+const hub = await XaiopWs.listen({ port: 0 });
+hub.onConnection(async (c) => {
+  c.pushJson("a", 1, { final: true });
+  await c.end();
+});
+const client = await XaiopWs.connect(hub.url());
+await client.done;
+await hub.close();
+```
+
+HTTP/SSE/RAW remain on `XaiopStream` for other paths.
 
 ---
 
@@ -284,9 +344,21 @@ When on: failed lines trigger pop-and-retry recovery (see Compatibility mode).
 
 Synchronous counterpart of `upload`.
 
+### `engine.uploadJson(value, encodeOptions?): Promise<string>`
+
+Encode JSON → XAIOP (strict), then `upload`. Same encode options as `encodeSync`.
+
+### `engine.uploadJsonSync(value, encodeOptions?): string`
+
+Synchronous counterpart of `uploadJson`.
+
+### `engine.encode` / `engine.encodeSync`
+
+Instance encode (identical to static / free `encode` — compat flags do not affect wire).
+
 ### `engine.get(dataId): Promise<unknown>`
 
-- **dataId** — id from `upload` / `uploadSync`  
+- **dataId** — id from `upload` / `uploadSync` / `uploadJson`  
 - **returns** — JSON-compatible value (`object` / `array` / …), cloned  
 - Throws if id is unknown  
 
@@ -303,17 +375,25 @@ Second argument optional; default / omitted = compatibility **off**.
 
 Static sync parse. Same compatibility flag as `parse`.
 
+### `XaiopEngine.encode` / `encodeSync` / free `encode` / `encodeSync`
+
+JSON → XAIOP wire text. See **encode / uploadJson** above. Throws `XaiopEncodeError` (optional `.path`).
+
 ### Helpers
 
 | Member | Meaning |
 | --- | --- |
-| `PROTOCOL_VERSION` | `"0.1.0"` |
+| `PROTOCOL_VERSION` | `"0.2.1"` (protocol; package may be newer) |
+| `DOT_POLICY` | Encode phase policy constants |
 | `engine.has(dataId)` | whether id exists |
 | `engine.delete(dataId)` | drop one entry |
 | `engine.clear()` | drop all |
 | `XaiopSyntaxError` | parse error class (`.line`) |
+| `XaiopEncodeError` | encode error class (`.path`) |
+| `XaiopWs` / `XaiopWsConnection` / `XaiopWsHub` | WebSocket sessions (0.4.0+) |
+| `encodePhaseJson` / `encodePhaseObject` | Single-phase encode for WS push |
 
-Low-level exports: `parseSync`, `parseAsync` (same as static parse).
+Low-level exports: `parseSync`, `parseAsync`, `encodeSync`, `encode`.
 
 ---
 
@@ -322,6 +402,7 @@ Low-level exports: `parseSync`, `parseAsync` (same as static parse).
 - Invalid wire → `XaiopSyntaxError`  
   - **Strict (default):** fail immediately; **no** silent repair  
   - **Compatibility:** pop-and-retry as above; still throws if recovery fails or the error changes  
+- Invalid encode input / options → `XaiopEncodeError`  
 - Unknown data id → `Error`  
 - Bad argument types → `TypeError`  
 
@@ -344,6 +425,9 @@ console.log(await engine.get(id));
 // { meta: { name: "demo", count: "2" } }
 
 console.log(await XaiopEngine.parse(text));
+
+const wire = XaiopEngine.encodeSync({ meta: { name: "demo" }, n: 1 });
+console.log(await XaiopEngine.parse(wire));
 ```
 
 ---
@@ -354,7 +438,7 @@ Must match: [../../examples/complex.xaiop](../../examples/complex.xaiop) → [..
 
 ---
 
-## Out of scope (this release)
+## Out of scope (this package slice)
 
-- Streaming Snapshot / Diff APIs (protocol `PROT-STREAM` — later)  
-- Emitter (JSON → XAIOP)  
+- `!name` full broadcast-append (locate-first only today)  
+- Java / Python encode parity  

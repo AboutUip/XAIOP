@@ -22,7 +22,7 @@ const fixtureJson = path.resolve(
 );
 
 test("protocol version", () => {
-  assert.equal(PROTOCOL_VERSION, "0.1.0");
+  assert.equal(PROTOCOL_VERSION, "0.2.1");
 });
 
 test("complex fixture", () => {
@@ -34,6 +34,36 @@ test("complex fixture", () => {
 test("forced string and types", () => {
   const v = parseSync(">\nn:5\ns: 5\nflag:true\ntext:hi");
   assert.deepEqual(v, { n: 5, s: "5", flag: true, text: "hi" });
+});
+
+test("float typing and forced string", () => {
+  const v = parseSync(
+    ">\na:1.5\nb:-2.25\nc:.5\nd:5.\ne:1e3\nf:-2.5E-2\ng: 1.5\nh:1e3x\ni:NaN\nj:Infinity",
+  );
+  assert.strictEqual(typeof v.a, "number");
+  assert.equal(v.a, 1.5);
+  assert.equal(v.b, -2.25);
+  assert.equal(v.c, 0.5);
+  assert.equal(v.d, 5);
+  assert.equal(v.e, 1000);
+  assert.equal(v.f, -0.025);
+  assert.equal(v.g, "1.5");
+  assert.equal(v.h, "1e3x");
+  assert.equal(v.i, "NaN");
+  assert.equal(v.j, "Infinity");
+});
+
+test("float binary64 precision smoke", () => {
+  const v = parseSync(">\nx:0.1\ny:0.2\nz:0.30000000000000004");
+  assert.equal(v.x + v.y, v.z);
+});
+
+test("null typing and forced string", () => {
+  const v = parseSync(">\na:null\nb: null\nc:true\n>arr-\n:null\n:1\n<");
+  assert.equal(v.a, null);
+  assert.equal(v.b, "null");
+  assert.equal(v.c, true);
+  assert.deepEqual(v.arr, [null, 1]);
 });
 
 test("root array", () => {
@@ -466,4 +496,113 @@ test("compatibility mode stops when error changes after pop", () => {
 test("unknown data id", () => {
   const eng = new XaiopEngine();
   assert.throws(() => eng.getSync("missing"), /unknown data id/);
+});
+
+test("compat fix APIs: require compatibility mode; default all on", () => {
+  const eng = new XaiopEngine();
+  assert.equal(eng.compatibilityMode, false);
+  assert.equal(eng.compatForcedRoot, true);
+  assert.equal(eng.compatPopAndRetry, true);
+  assert.equal(eng.setCompatForcedRoot(false), false);
+  assert.equal(eng.compatForcedRoot, true); // unchanged while compat off
+
+  eng.setCompatibilityMode(true);
+  assert.equal(eng.setCompatForcedRoot(false), true);
+  assert.equal(eng.compatForcedRoot, false);
+  assert.equal(eng.setCompatForcedRoot(true), true);
+  assert.equal(eng.compatForcedRoot, true);
+
+  assert.equal(eng.setCompatPopAndRetry("yes"), false); // non-boolean rejected
+  assert.equal(eng.compatPopAndRetry, true);
+});
+
+test("compat fix APIs: disabling popAndRetry fails like strict on that slip", () => {
+  const source = `>
+>tags-
+:a
+>users-
+>
+id:1
+<
+`;
+  const eng = new XaiopEngine({ compatibilityMode: true });
+  assert.equal(eng.setCompatPopAndRetry(false), true);
+  assert.throws(() => eng.uploadSync(source), XaiopSyntaxError);
+
+  assert.equal(eng.setCompatPopAndRetry(true), true);
+  const id = eng.uploadSync(source);
+  assert.deepEqual(eng.getSync(id), {
+    tags: ["a"],
+    users: [{ id: 1 }],
+  });
+});
+
+test("compat fix APIs: disable rewriteBareNameArray only", () => {
+  const eng = new XaiopEngine({ compatibilityMode: true });
+  assert.equal(eng.setCompatRewriteBareNameArray(false), true);
+  assert.throws(() => eng.uploadSync(">\ntags-\n:a"), XaiopSyntaxError);
+
+  assert.equal(eng.setCompatRewriteBareNameArray(true), true);
+  assert.deepEqual(eng.getSync(eng.uploadSync(">\ntags-\n:a")), {
+    tags: ["a"],
+  });
+});
+
+test("compat fix APIs: disable forcedRoot keeps strict fragment path", () => {
+  const eng = new XaiopEngine({ compatibilityMode: true });
+  assert.equal(eng.setCompatForcedRoot(false), true);
+  // Other fixes still on, but no injected root → fragment like strict for >meta alone
+  const id = eng.uploadSync(">meta\nname:demo");
+  const v = eng.getSync(id);
+  assert.equal(v.isFragment, true);
+  assert.deepEqual(v.entries, { meta: { name: "demo" } });
+});
+
+test("compat fix APIs: disable locatePathTrim only", () => {
+  const base = `>
+>meta
+name:demo
+.
+`;
+  const eng = new XaiopEngine({ compatibilityMode: true });
+  assert.equal(eng.setCompatLocatePathTrim(false), true);
+  assert.throws(
+    () => eng.uploadSync(`${base}= meta\nx:1`),
+    /=path not found/,
+  );
+  assert.equal(eng.setCompatLocatePathTrim(true), true);
+  assert.deepEqual(eng.getSync(eng.uploadSync(`${base}= meta\nx:1`)), {
+    meta: { name: "demo", x: 1 },
+  });
+});
+
+test("parseSync accepts fine-grained policy object", () => {
+  // All fixes except popAndRetry — missing leave-array must fail
+  assert.throws(
+    () =>
+      parseSync(
+        `>
+>tags-
+:a
+>users-
+>
+id:1
+`,
+        { popAndRetry: false },
+      ),
+    XaiopSyntaxError,
+  );
+
+  // Forced root alone on fragment-shaped stream
+  const v = parseSync(`>meta\nname:demo`, {
+    forcedRoot: true,
+    rewriteBareNameArray: false,
+    rewriteEnterLine: false,
+    ignoreBareLeaveAtRoot: false,
+    popAndRetry: false,
+    locatePathTrim: false,
+    locatePathStripSpaces: false,
+    locatePathArraySuffix: false,
+  });
+  assert.deepEqual(v, { meta: { name: "demo" } });
 });

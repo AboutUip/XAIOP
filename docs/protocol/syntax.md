@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `PROT-SYNTAX` |
 | Status | **Frozen** |
-| Version | 0.1.0 |
-| Last updated | 2026-08-02 |
+| Version | 0.2.1 |
+| Last updated | 2026-08-03 |
 | Normative | **Normative** — grammar entry point |
 | Depends on | `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT` |
 | Informs | Generators, Parsers, SKILL authors, `CONF` |
@@ -256,9 +256,13 @@ a:b
 | `key:value` | property |
 | `:value` | scalar / anonymous |
 | int-parsable | int |
+| float-parsable | float (JSON number, binary64) |
 | exactly `true`/`false` | bool |
+| exactly `null` | null |
 | else | string |
 | spaces after `:` before value | forced string |
+
+See [content.md](content.md) §5–§6.
 
 ---
 

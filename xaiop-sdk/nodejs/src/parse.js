@@ -1,8 +1,11 @@
+import { resolveCompatOptions } from "./compat.js";
+
 /** @typedef {'object'|'array'|'fragment'} NodeKind */
+/** @typedef {import("./compat.js").CompatFixId} CompatFixId */
 
 /**
- * Deterministic XAIOP parser (protocol v0.1.0 Frozen).
- * No silent repair.
+ * Deterministic XAIOP parser (protocol v0.2.1 Frozen).
+ * Silent repair exists only under an explicit compatibility policy.
  */
 
 export class XaiopSyntaxError extends Error {
@@ -42,29 +45,30 @@ export class XaiopFragment {
 
 /**
  * @param {string} source
- * @param {boolean} [compatibilityMode=false] — when true: force complete root if needed; pop-and-retry on syntax errors
+ * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>} [compat=false]
+ *   `false` = strict; `true` = all fixes on; object / CompatPolicy = fine-grained policy
  * @returns {unknown|XaiopFragment}
  */
-export function parseSync(source, compatibilityMode = false) {
+export function parseSync(source, compat = false) {
   if (typeof source !== "string") {
     throw new TypeError("XAIOP source must be a string");
   }
-  return new Parser(source, { compatibilityMode: !!compatibilityMode }).parse();
+  return new Parser(source, { compat: resolveCompatOptions(compat) }).parse();
 }
 
 /**
  * @param {string} source
- * @param {boolean} [compatibilityMode=false]
+ * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>} [compat=false]
  * @returns {Promise<unknown|XaiopFragment>}
  */
-export async function parseAsync(source, compatibilityMode = false) {
-  return parseSync(source, compatibilityMode);
+export async function parseAsync(source, compat = false) {
+  return parseSync(source, compat);
 }
 
 class Parser {
   /**
    * @param {string} source
-   * @param {{ compatibilityMode?: boolean }} [options]
+   * @param {{ compat?: Readonly<Record<CompatFixId, boolean>>|null }} [options]
    */
   constructor(source, options = {}) {
     this.lines = splitLines(source);
@@ -80,24 +84,27 @@ class Parser {
     /** @type {'init'|'active'} */
     this.phase = "init";
     /**
-     * When true:
-     * - If the first line is not a root opener `>` / `-`, force an empty anonymous object root
-     *   (complete document; no root fragment).
-     * - On `=path not found`, retry: trim edges; strip all whitespace; then treat a segment
-     *   trailing `-` as create-array postfix (match key without `-` only if that value is an array).
-     * - Line rewrites (deterministic LLM slips): trailing trim; bare `name-` → `>name-`;
-     *   `>` + only whitespace → `>`; `>key:value` (name contains `:`) → Content `key:value`;
-     *   `>  name` / `>  name-` → trim after `>`.
-     * - Bare `<` while Cursor is already at document Root → no-op (e.g. `.` then `<`).
-     * - On XaiopSyntaxError, pop Cursor one level and retry the same line until success,
-     *   the error changes, or Root is reached.
-     * @type {boolean}
+     * Fine-grained compatibility policy, or `null` for strict (protocol-faithful) parse.
+     * @type {Readonly<Record<CompatFixId, boolean>>|null}
      */
-    this.compatibilityMode = !!options.compatibilityMode;
+    this.compat = options.compat ?? null;
+  }
+
+  /** @returns {boolean} */
+  get compatibilityMode() {
+    return this.compat != null;
+  }
+
+  /**
+   * @param {CompatFixId} id
+   * @returns {boolean}
+   */
+  fixEnabled(id) {
+    return !!(this.compat && this.compat[id]);
   }
 
   parse() {
-    if (this.compatibilityMode) {
+    if (this.fixEnabled("forcedRoot")) {
       this.ensureCompatRootOpener();
     }
     for (let i = 0; i < this.lines.length; i++) {
@@ -142,20 +149,27 @@ class Parser {
 
   /**
    * Compatibility-only deterministic line rewrites for common LLM slips.
+   * Honours `rewriteBareNameArray` and `rewriteEnterLine` independently.
    * @param {string} line
    * @returns {string}
    */
   rewriteCompatLine(line) {
-    // Trailing spaces on the whole line (common model padding); does not touch "key: value" forced-string rule.
-    let s = line.replace(/\s+$/, "");
+    const bareArray = this.fixEnabled("rewriteBareNameArray");
+    const enterLine = this.fixEnabled("rewriteEnterLine");
+    if (!bareArray && !enterLine) {
+      return line;
+    }
+
+    // Trailing spaces (model padding); does not touch "key: value" forced-string rule.
+    let s = enterLine ? line.replace(/\s+$/, "") : line;
     if (!s) return line;
 
     // bare `aliases-` / `tags-` (missing `>`) → `>aliases-`
-    if (/^[A-Za-z_][A-Za-z0-9_]*-$/.test(s)) {
+    if (bareArray && /^[A-Za-z_][A-Za-z0-9_]*-$/.test(s)) {
       return `>${s}`;
     }
 
-    if (s.startsWith(">") && s.length > 1) {
+    if (enterLine && s.startsWith(">") && s.length > 1) {
       const rest = s.slice(1);
       const trimmedRest = rest.trim();
       // `>  ` / `>   ` → bare `>`
@@ -180,28 +194,36 @@ class Parser {
   }
 
   /**
-   * Strict handle, or compatibility recover-by-pop on syntax errors.
+   * Strict handle, or compatibility path with optional rewrite / ignore / pop-and-retry.
    * @param {string} line
    */
   handleLineCompat(line) {
-    if (!this.compatibilityMode) {
+    if (!this.compat) {
       this.handleLine(line);
       return;
     }
+
     const effective = this.rewriteCompatLine(line);
     if (!effective) {
       throw new XaiopSyntaxError("empty line is a Content syntax error", {
         line: this.lineNo,
       });
     }
+
     // Root 上多余的裸 `<`（典型：`.` 后再写 `<`）无合法语义 → 忽略
-    if (effective === "<" && this.isAtDocumentRoot()) {
+    if (
+      this.fixEnabled("ignoreBareLeaveAtRoot") &&
+      effective === "<" &&
+      this.isAtDocumentRoot()
+    ) {
       return;
     }
+
     try {
       this.handleLine(effective);
     } catch (err) {
       if (!(err instanceof XaiopSyntaxError)) throw err;
+      if (!this.fixEnabled("popAndRetry")) throw err;
       this.recoverByPopping(effective, err);
     }
   }
@@ -546,21 +568,33 @@ class Parser {
       this.docKind === "fragment" ? this.fragmentEntries : this.root;
 
     let found = fuzzyFind(tree, path.split(">").filter(Boolean));
-    if (!found && this.compatibilityMode) {
-      // Retry 1: trim leading/trailing whitespace (e.g. `= siblings` → `siblings`)
+    if (!found && this.compat) {
       const trimmed = path.trim();
-      if (trimmed && trimmed !== path) {
+      const cleared = path.replace(/\s+/g, "");
+
+      // Retry 1: trim leading/trailing whitespace (e.g. `= siblings` → `siblings`)
+      if (this.fixEnabled("locatePathTrim") && trimmed && trimmed !== path) {
         found = fuzzyFind(tree, trimmed.split(">").filter(Boolean));
       }
+
       // Retry 2: strip all whitespace (e.g. `=child > inner` → `child>inner`)
-      const cleared = path.replace(/\s+/g, "");
-      if (!found && cleared && cleared !== path && cleared !== trimmed) {
+      if (
+        !found &&
+        this.fixEnabled("locatePathStripSpaces") &&
+        cleared &&
+        cleared !== path &&
+        cleared !== trimmed
+      ) {
         found = fuzzyFind(tree, cleared.split(">").filter(Boolean));
       }
+
       // Retry 3: `=siblings-` → locate `siblings` only if that value is an array
       // (LLM reused `>name-` create postfix on `=`). Prefer space-cleared path text.
-      if (!found) {
-        const forSuffix = cleared || trimmed || path;
+      if (!found && this.fixEnabled("locatePathArraySuffix")) {
+        const forSuffix =
+          (this.fixEnabled("locatePathStripSpaces") && cleared) ||
+          (this.fixEnabled("locatePathTrim") && trimmed) ||
+          path;
         if (forSuffix.split(">").some((s) => s.length > 1 && s.endsWith("-"))) {
           found = fuzzyFindCompatArrayCreateSuffix(
             tree,
@@ -647,7 +681,9 @@ function parseValue(rawValue) {
   }
   if (rawValue === "true") return true;
   if (rawValue === "false") return false;
+  if (rawValue === "null") return null;
   if (isIntToken(rawValue)) return Number(rawValue);
+  if (isFloatToken(rawValue)) return Number(rawValue); // IEEE 754 binary64
   return rawValue;
 }
 
@@ -662,6 +698,17 @@ function isIntToken(s) {
     if (c < 48 || c > 57) return false;
   }
   return true;
+}
+
+/**
+ * Float token (PROT-CONTENT §5.2): not int-only; fraction and/or exponent.
+ * Parsed with ECMAScript Number (= IEEE 754 binary64).
+ * @param {string} s
+ */
+function isFloatToken(s) {
+  return /^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$|^[+-]?\d+[eE][+-]?\d+$/.test(
+    s,
+  );
 }
 
 /**

@@ -1,0 +1,11 @@
+# views/ — also covered by repo-root .gitignore; kept for local tooling clarity.
+node_modules/
+dist/
+.vite/
+*.local
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+coverage/

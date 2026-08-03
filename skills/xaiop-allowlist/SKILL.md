@@ -1,7 +1,7 @@
 ---
 name: xaiop-allowlist
 description: >-
-  XAIOP v0.1.0 generator Skill using the ALLOWLIST scheme: emit only permitted
+  XAIOP v0.2.0 generator Skill using the ALLOWLIST scheme: emit only permitted
   line forms and sequences. Use when producing XAIOP, when this skill is
   attached, or when the user asks for allowlist / whitelist XAIOP output.
 ---
@@ -9,7 +9,7 @@ description: >-
 # XAIOP Allowlist Skill (`xaiop-allowlist`)
 
 **Scheme:** ALLOWLIST (closed world).  
-**Protocol:** XAIOP v0.1.0 Frozen.
+**Protocol:** XAIOP v0.2.0 Frozen.
 
 You may emit **only** lines and sequences described in this Skill.  
 Anything not listed here as **Allowed** is **forbidden** — including JSON, YAML, `key=value`, markdown, prose, checklists, indentation-as-structure, bracket lists (`[a,b]`), quoted attribute tags, and any line with spaces inside a Structure token.
@@ -163,7 +163,9 @@ After optional forced-string mark:
 | Value text | Type |
 | --- | --- |
 | Integer token (`0`, `-3`, `42`) | int |
+| Float-parsable token (`1.5`, `.5`, `1e3`) | float (JSON number, IEEE 754 binary64) |
 | Exactly `true` or `false` | bool |
+| Exactly `null` | null |
 | Anything else | string |
 | One or more spaces immediately after `:` before the value | **forced string** (those spaces are not payload) |
 
@@ -171,7 +173,9 @@ Examples (Allowed):
 
 ```text
 n:5
+f:1.5
 s: 5
+s2: 1.5
 ok:true
 label: true
 url:https://a/b:c

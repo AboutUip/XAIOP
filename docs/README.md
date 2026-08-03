@@ -2,36 +2,53 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-Two documentation trees:
+Three **coupled but isolated** trees (see **[SEPARATION.md](SEPARATION.md)**):
 
 | Tree | Path | Purpose |
 | --- | --- | --- |
-| **Protocol** | [protocol/](protocol/) | Wire format (Frozen v0.2.0) — authoritative grammar |
-| **SDK** | [sdk/](sdk/) | Runtime SDKs — per tech stack |
+| **Protocol** | [protocol/](protocol/) | Frozen v0.2.1 wire — grammar & semantics only |
+| **Practice** | [practice/](practice/) | What you can do: **model output**, **streaming transport** |
+| **SDK** | [sdk/](sdk/) | Runtime APIs per language |
 
-Foundation (conventions, glossary, requirements, conformance) supports the protocol package and remains under this `docs/` root.
+Foundation (conventions, glossary, requirements, conformance) supports the protocol package under this `docs/` root.
 
 ---
 
 ## Protocol
 
 Start: **[protocol/syntax.md](protocol/syntax.md)**  
-Index: [protocol/README.md](protocol/README.md)  
+Index: [protocol/README.md](protocol/README.md) · Wire notes: [protocol/notes/](protocol/notes/)  
 Fixtures: [examples/](examples/)
 
-Also: [meta/](meta/) ([revisions](meta/revisions.md)) · [overview/](overview/) ([positioning](overview/positioning.md) — what it solves & when to use) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · **[performance.md](performance.md)** (evaluation metrics) · [metrics/](metrics/) (published snapshot)
+---
+
+## Practice
+
+Index: [practice/README.md](practice/README.md)
+
+| Guide | Topic |
+| --- | --- |
+| [practice/model-output.md](practice/model-output.md) | LLM / Generator emit, Skills |
+| [practice/streaming-transport.md](practice/streaming-transport.md) | Network streaming, framing, product Snapshot/Diff |
+| [practice/skeleton-stream.md](practice/skeleton-stream.md) | Fixed-key WebSocket push (SDK `XaiopWs`) |
 
 ---
 
 ## SDK
 
-Index: [sdk/README.md](sdk/README.md)
+Index: [sdk/README.md](sdk/README.md) · Notes: [sdk/notes/](sdk/notes/)
 
 | Stack | Docs | Code |
 | --- | --- | --- |
-| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) |
+| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) (`xaiop` 0.4.1+) |
 | Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — **pending update** |
 | Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — **pending update** |
+
+---
+
+## Also
+
+[meta/](meta/) · [overview/](overview/) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [performance.md](performance.md) · [metrics/](metrics/)
 
 ---
 

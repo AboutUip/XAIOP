@@ -6,8 +6,8 @@
 | --- | --- |
 | 文档 ID | `PROT-SYNTAX` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.1.0 |
-| 最近更新 | 2026-08-02 |
+| 版本 | 0.2.1 |
+| 最近更新 | 2026-08-03 |
 | 规范性 | **规范性** — 语法入口 |
 | 依赖 | `PROT-BOUND`、`PROT-HIER`、`PROT-CONTENT` |
 | 影响 | 生成器、解析器、SKILL 作者、`CONF` |
@@ -256,9 +256,13 @@ a:b
 | `key:value` | 属性 |
 | `:value` | 标量 / 匿名 |
 | 可解析为 int | int |
+| 可解析为 float | float（JSON number，binary64） |
 | 恰为 `true`/`false` | bool |
+| 恰为 `null` | null |
 | 其他 | string |
 | `:` 后、值前有空格 | 强制 string |
+
+详见 [content.zh-CN.md](content.zh-CN.md) §5–§6。
 
 ---
 

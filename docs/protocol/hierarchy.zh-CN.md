@@ -6,10 +6,10 @@
 | --- | --- |
 | 文档 ID | `PROT-HIER` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.1.0 |
+| 版本 | 0.2.1 |
 | 规范标题 | Boundary & Hierarchy Specification |
 | 规范版本 | v0.1 |
-| 最近更新 | 2026-08-02 |
+| 最近更新 | 2026-08-03 |
 | 规范性 | **规范性** |
 | 依赖 | `PROT-SYNTAX`、`PROT-BOUND`、`TERM-GLOSS` |
 | 影响 | `PROT-STREAM`、`PROT-CONTENT`、`CONF` |

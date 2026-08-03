@@ -1,0 +1,90 @@
+# 规范修订记录
+
+[English](revisions.md) · [简体中文](revisions.zh-CN.md)
+
+| 字段 | 值 |
+| --- | --- |
+| 文档 ID | `META-REV` |
+| 状态 | **Frozen（已冻结）** |
+| 版本 | 0.2.1 |
+| 最近更新 | 2026-08-03 |
+| 规范性 | 信息性（历史） |
+| 依赖 | `META-VER` |
+
+---
+
+## 1. 范围
+
+XAIOP **规范包**的有序修订历史。  
+英文为权威文本；中文镜像与英文条目对齐。
+
+---
+
+## 2. 包历史
+
+### 0.2.1 — 2026-08-03（Frozen）
+
+**类型：** 加法性规范变更（Content 类型化）。
+
+**摘要：** 在最小 Content 类型化中增加 **null**，强制字符串规则与 bool/int/float 相同（`:` 后空格强制为 string）。记号 `null` 物化为 JSON `null`。
+
+| 范围 | 变更 |
+| --- | --- |
+| `PROT-CONTENT` §5 | bool 之后；恰为 `null` → **null**；否则 string |
+| `PROT-CONTENT` §6 | 强制字符串示例：`null` → `"null"` |
+| `PROT-SYNTAX` §7 | 类型摘要包含 null |
+| `META-VER` | 当前包 → `0.2.1` |
+| Node.js SDK | parse/encode 识别 null；`PROTOCOL_VERSION` → `0.2.1` |
+
+**兼容性：** 先前裸 `null` 被标为 **string** `"null"`，现为 JSON **null**。结构 / 流式文法不变。依赖「字符串 null」的应用 **必须** 适配，或在 `:` 后加空格强制为 string。
+
+**理由（信息性）：** JSON 常用 null 表示可选字段；省略/拒绝 null 会阻断忠实 JSON ↔ XAIOP 往返。
+
+---
+
+### SDK 附注 — Node.js `xaiop` 0.4.0 / 0.4.1（2026-08-03，信息性）
+
+| 范围 | 变更 |
+| --- | --- |
+| 0.4.0 | `XaiopWs` listen/push + connect/consume；依赖 `ws` |
+| 0.4.1 | 对齐协议 **0.2.1** null；默认 `nullPolicy: "encode"` |
+
+---
+
+### 0.2.0 — 2026-08-03（Frozen）
+
+**类型：** 加法性规范变更（Content 类型化）。
+
+**摘要：** 在最小 Content 类型化中增加 **float**，强制字符串规则与整数相同（`:` 后空格强制为 string）。浮点记号物化为 IEEE 754 **binary64** JSON number。
+
+| 范围 | 变更 |
+| --- | --- |
+| `PROT-CONTENT` §5 | int 可解析 → int 之后，增加 float 可解析 → float（binary64）；再 bool；否则 string |
+| `PROT-CONTENT` §6 | 强制字符串示例覆盖浮点（`1.5` → `"1.5"`） |
+| `PROT-SYNTAX` §7 | 类型摘要包含 float |
+| `META-VER` | 当前包 → `0.2.0` |
+| Node.js SDK | `parseValue` 识别浮点记号；`PROTOCOL_VERSION` → `0.2.0` |
+
+**兼容性：** 先前被标为 **string** 的 `1.5` / `1e3` 现为 **number**。结构 / 流式文法不变。依赖「浮点字符串」的应用 **必须** 适配，或在 `:` 后加空格强制为 string。
+
+**理由（信息性）：** 生产载荷（指标、小数、科学计数）需要数值浮点，且无需第二套标记。Binary64 与常见 JSON number 面一致，也是典型运行时（如 ECMAScript `Number`、IEEE double）对 JSON number 所能提供的最高精度。
+
+---
+
+### SDK 附注 — Node.js `xaiop` 0.3.0（2026-08-03，信息性）
+
+**非协议包升版。** 在 Frozen 线格式 0.2.0 上的 SDK 加法：
+
+| 范围 | 变更 |
+| --- | --- |
+| Encode | `encode` / `encodeSync`（静态、实例、自由函数）— JSON → 严格 XAIOP |
+| Engine | `uploadJson` / `uploadJsonSync` |
+| 选项 | 通过 `dotPolicy` / `phaseEvery` / `maxPhases` / `shouldPhase` 控制 `.` |
+| 文档 | [sdk/nodejs/encode.zh-CN.md](../sdk/nodejs/encode.zh-CN.md) |
+| 测试 | `encode.test.js` + `encode.stability.test.js` |
+
+---
+
+### 0.1.0 — 2026-08-02（Frozen）
+
+首个封存协议包：结构层（`PROT-BOUND`、`PROT-HIER`、`PROT-SYNTAX`）、内容层（`PROT-CONTENT`，仅 int / bool / string）、流式（`PROT-STREAM`）。

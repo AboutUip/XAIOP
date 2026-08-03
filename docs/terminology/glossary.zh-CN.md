@@ -6,8 +6,8 @@
 | --- | --- |
 | 文档 ID | `TERM-GLOSS` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.1.0 |
-| 最近更新 | 2026-08-02 |
+| 版本 | 0.2.1 |
+| 最近更新 | 2026-08-03 |
 | 规范性 | **规范性**（定义） |
 | 依赖 | `META-CONV`, `OV-PRIN` |
 | 影响 | `REQ-FUNC`, `REQ-STREAM`, `CONF`, `protocol/*` |
@@ -44,6 +44,10 @@
 ### 2.5 Downstream System（下游系统）
 
 **Downstream System（下游系统）** 是从消费者或解析器接收数据以进行存储、转换、展示或进一步处理的任何系统。
+
+### 2.6 Encoder（编码器，SDK）
+
+**Encoder（编码器）**（实现用语）将 JSON 兼容值映射为良构 XAIOP 文本。Node.js SDK 编码器只产出**严格**线格式；它不同于 Generator（通常为 LLM）。见 [sdk/nodejs/encode.zh-CN.md](../sdk/nodejs/encode.zh-CN.md)。
 
 ---
 

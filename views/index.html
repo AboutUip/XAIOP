@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XAIOP — Developer Documentation</title>
+    <script>
+      (function () {
+        try {
+          var themeKey = "xaiop-docs-theme";
+          var p = localStorage.getItem(themeKey);
+          var dark =
+            p === "dark" ||
+            (p !== "light" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var t = dark ? "dark" : "light";
+          document.documentElement.dataset.theme = t;
+          document.documentElement.style.colorScheme = t;
+
+          var localeKey = "xaiop-docs-locale";
+          var loc = localStorage.getItem(localeKey);
+          if (loc !== "en" && loc !== "zh") {
+            loc = (navigator.language || "").toLowerCase().startsWith("zh")
+              ? "zh"
+              : "en";
+          }
+          document.documentElement.lang = loc === "zh" ? "zh-CN" : "en";
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

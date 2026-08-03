@@ -5,9 +5,12 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `xaiop` |
-| 协议 | v0.1.0 Frozen |
+| 协议 | v0.2.1 Frozen |
 | 运行时 | Node.js ≥ 18（ESM） |
 | 代码 | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) |
+
+**隔离：** 协议=仅线格式 · 实践=模型与流式传输 · 本包=API — [../../SEPARATION.zh-CN.md](../../SEPARATION.zh-CN.md)。  
+**文档：** [指南](README.zh-CN.md) · [编码](encode.zh-CN.md) · [注意事项](notes/) · [实践](../../practice/) · [协议](../../protocol/)
 
 ---
 
@@ -63,6 +66,63 @@ const jsonSync = XaiopEngine.parseSync(xaiopText);
 // 第二参数：兼容模式（默认 false）
 const jsonCompat = XaiopEngine.parseSync(xaiopText, true);
 ```
+
+### 4. `encode` / `uploadJson` — JSON → XAIOP
+
+编码只产出**严格**线格式（兼容模式不影响输出）。  
+默认 `dotPolicy` 为 `perTopLevelKey`，每个顶层键对应一个 `.` 相位，便于 `DotCheckpointEngine` / `XaiopStream`。
+
+```js
+import { encodeSync, DOT_POLICY, XaiopEngine } from "xaiop";
+
+const wire = encodeSync(
+  { meta: { name: "demo" }, tags: ["a", "b"] },
+  { dotPolicy: DOT_POLICY.NONE },
+);
+
+const phased = XaiopEngine.encodeSync(
+  { a: 1, b: 2, c: 3 },
+  { dotPolicy: "perNKeys", phaseEvery: 2 },
+);
+
+const engine = new XaiopEngine();
+const id = await engine.uploadJson({ x: 1 });
+```
+
+| 选项 | 默认 | 说明 |
+| --- | --- | --- |
+| `root` | `auto` | `object` / `array` / `auto` |
+| `dotPolicy` | `perTopLevelKey` | `none` · `perTopLevelKey` · `perNKeys` · `custom` |
+| `phaseEvery` | `1` | `perNKeys` 使用 |
+| `maxPhases` | — | 限制相位数量（合并尾部） |
+| `shouldPhase` | — | `custom` 必填 |
+| `finalDot` | `false` | 是否追加末尾 `.` |
+| `nullPolicy` | `encode` | 默认编码；`omit` 仅省略对象 null 键；`error` 遇 null 抛错。数组除非 `error` 否则发 typed `null`。 |
+| `keyOrder` | `insertion` | 或 `sorted` |
+
+**拒绝的键**（会静默改形）：空 / 空白 / `:`、尾部 `-`、字符 `>` `<` `=` `!`。
+
+往返保证：对编码器接受的纯 JSON，`parseSync(encodeSync(json))` 与 `json` 一致。不要求 `encode(parse(wire))` 字节级相同。
+
+**完整编码指南：** [encode.zh-CN.md](encode.zh-CN.md)（稳定性约定、危险键、相位选项、测试）。
+
+### 5. `XaiopWs` — WebSocket listen / connect（SDK 0.4.0）
+
+骨架流一等会话（同一包：推 + 收）。见 [notes/ws-session.zh-CN.md](notes/ws-session.zh-CN.md) 与 [../../practice/skeleton-stream.zh-CN.md](../../practice/skeleton-stream.zh-CN.md)。
+
+```js
+import { XaiopWs } from "xaiop";
+const hub = await XaiopWs.listen({ port: 0 });
+hub.onConnection(async (c) => {
+  c.pushJson("a", 1, { final: true });
+  await c.end();
+});
+const client = await XaiopWs.connect(hub.url());
+await client.done;
+await hub.close();
+```
+
+HTTP/SSE/RAW 仍在 `XaiopStream` 上，供其它路径使用。
 
 ---
 
@@ -264,10 +324,12 @@ name:alice
 | `new XaiopEngine(options?)` | 标准引擎实例；`options.compatibilityMode` 默认 `false` |
 | `compatibilityMode` / `setCompatibilityMode` | 读写兼容模式（详见上文「兼容模式」） |
 | `upload(source)` / `uploadSync` | 完整文本 → data id（跟随实例兼容开关） |
+| `uploadJson` / `uploadJsonSync` | JSON → 严格 XAIOP → data id |
+| `encode` / `encodeSync`（静态 / 实例 / 自由函数） | JSON → XAIOP 文本；选项见上文 |
 | `get(dataId)` / `getSync` | data id → JSON（克隆） |
 | `XaiopEngine.parse` / `parseSync` | 静态：文本 → JSON；可选第二参数开启兼容模式 |
 
-辅助：`PROTOCOL_VERSION`、`has` / `delete` / `clear`、`XaiopSyntaxError`。
+辅助：`PROTOCOL_VERSION`、`DOT_POLICY`、`has` / `delete` / `clear`、`XaiopSyntaxError`、`XaiopEncodeError`。
 
 ---
 
@@ -276,6 +338,7 @@ name:alice
 - 非法线格式 → `XaiopSyntaxError`  
   - **严格（默认）：** 立即失败；**不**静默修复  
   - **兼容：** 按上文上浮重试；恢复失败或错误变化时仍抛出  
+- 非法编码输入 / 选项 → `XaiopEncodeError`  
 - 未知 data id → `Error`  
 - 参数类型错误 → `TypeError`  
 
@@ -287,7 +350,7 @@ name:alice
 
 ---
 
-## 本版本范围外
+## 本包切片范围外
 
-- 流式 Snapshot / Diff（`PROT-STREAM`，后续）  
-- Emitter（JSON → XAIOP）  
+- `!name` 全量广播追加（当前仅 locate-first）  
+- Java / Python encode 对等实现  

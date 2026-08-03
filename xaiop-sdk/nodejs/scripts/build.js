@@ -40,4 +40,4 @@ for (const f of tgz) {
 }
 console.log("");
 console.log("Install locally:");
-console.log(`  npm install ${path.join("dist", tgz[0] ?? "xaiop-0.1.0.tgz")}`);
+console.log(`  npm install ${path.join("dist", tgz[0] ?? "xaiop-0.2.0.tgz")}`);

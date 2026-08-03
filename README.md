@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.1.0_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.2.1_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="AI-native" src="https://img.shields.io/badge/output-AI--native-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js-22c55e?style=flat-square&labelColor=0b1220" />
@@ -21,8 +21,9 @@
   <a href="README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-0ea5e9?style=flat-square&labelColor=0b1220" /></a>
   <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-64748b?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/protocol/syntax.md"><img alt="Protocol docs" src="https://img.shields.io/badge/docs-Protocol-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/practice/"><img alt="Practice docs" src="https://img.shields.io/badge/docs-Practice-f59e0b?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/sdk/nodejs/"><img alt="SDK docs" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
-  <a href="docs/performance.md"><img alt="Metrics" src="https://img.shields.io/badge/docs-Metrics-f59e0b?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/performance.md"><img alt="Metrics" src="https://img.shields.io/badge/docs-Metrics-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>
 
 ---
@@ -92,9 +93,11 @@ Materializes as:
 
 ### Paths
 
-- **Grammar** — [docs/protocol/](docs/protocol/)
-- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [xaiop-sdk/nodejs/](xaiop-sdk/nodejs/)
-- **Teach the model** — [classic Skill](skills/xaiop/SKILL.md) · [allowlist Skill](skills/xaiop-allowlist/SKILL.md)
+- **Protocol (wire only)** — [docs/protocol/](docs/protocol/) · [separation](docs/SEPARATION.md)
+- **Practice** — [docs/practice/](docs/practice/) · [model output](docs/practice/model-output.md) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
+- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [encode](docs/sdk/nodejs/encode.md) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [code](xaiop-sdk/nodejs/)
+- **Preview UI** — [views/](views/) (`cd views && npm run dev`)
+- **Teach the model** — [classic Skill](skills/xaiop/SKILL.md) · [allowlist Skill](skills/xaiop-allowlist/SKILL.md) · [practice guide](docs/practice/model-output.md)
 - **Metrics package** — [JSON](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [guide](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md)
 
 Java and Python SDKs are pending update. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
@@ -158,6 +161,6 @@ Definitions: [docs/performance.md](docs/performance.md)
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.0-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.1-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-index-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

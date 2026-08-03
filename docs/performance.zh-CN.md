@@ -34,7 +34,8 @@
 
 ### 保证准确性的约束
 
-1. **原生双通道** — JSON 与 XAIOP 各自生成；**禁止** JSON→XAIOP 转写。  
+1. **原生双通道** — 在 **LLM 评测指标**中，JSON 与 XAIOP 各自生成；评测**不得**在事后把 JSON 转写成 XAIOP 再计分。  
+   *（Node.js SDK **提供** `encode` / `uploadJson`，供工具、测试与适配使用 — 见 [sdk/nodejs/encode.zh-CN.md](./sdk/nodejs/encode.zh-CN.md)。该 API 不计入上述双通道模型得分。）*  
 2. **同一任务描述**（格式中立正文 + 分模式输出尾注）。  
 3. XAIOP 的 Skill 在 **system**（非 user）；预热不计入任务轮计时。  
 4. 结构校验是否开启 **兼容模式** 在快照中写明。  

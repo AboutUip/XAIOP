@@ -1,58 +1,122 @@
-# --- Local / workspace ---
+# =============================================================================
+# XAIOP — repository .gitignore
+# Covers protocol docs, xaiop-sdk (nodejs / java / python), demos, views (Vue).
+# =============================================================================
+
+# --- Local / workspace (do not publish) --------------------------------------
 dev/
 .cursor/
 .vscode/
 .idea/
+*.code-workspace
 *.swp
 *.swo
 *~
+.history/
+.fleet/
 
-# --- OS ---
+# --- OS ----------------------------------------------------------------------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
-Desktop.ini
 ehthumbs.db
+Desktop.ini
 $RECYCLE.BIN/
+*:Zone.Identifier
 
-# --- Secrets / env ---
+# --- Secrets / env -----------------------------------------------------------
 .env
 .env.*
 !.env.example
+!.env.*.example
 *.pem
 *.key
+*.p12
+*.pfx
 credentials.json
-secrets/
+**/secrets/
+**/secret/
+*.keystore
 
-# --- Logs & temp ---
+# --- Logs & scratch ----------------------------------------------------------
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 tmp/
 temp/
 *.tmp
 *.temp
 *.bak
 *.orig
+*.old
+*.rej
 
-# --- Node.js (xaiop-sdk/nodejs, demos) ---
+# --- Node.js / npm / yarn / pnpm / bun ---------------------------------------
+# (xaiop-sdk/nodejs, demos/nodejs, views, …)
+# Lockfiles (package-lock.json) are tracked — do not add them here.
 node_modules/
+jspm_packages/
+.npm/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+.pnpm-store/
+.bun/
+bower_components/
+
+# Build & pack outputs
 dist/
 build/
+out/
+.output/
+*.tgz
+*.tsbuildinfo
+
+# Test / coverage / caches
 coverage/
 .nyc_output/
-*.tgz
-.npm/
+.vitest/
+.jest/
+test-results/
+playwright-report/
+blob-report/
+cypress/videos/
+cypress/screenshots/
 .eslintcache
+.stylelintcache
+.prettiercache
+.cache/
 .parcel-cache/
-.next/
-.turbo/
 .vite/
+.turbo/
+.nuxt/
+.next/
+.svelte-kit/
+.vercel/
+.netlify/
+.wrangler/
+storybook-static/
 
-# --- Java / Maven (xaiop-sdk/java) ---
+# --- Vue / Vite (views/) -----------------------------------------------------
+views/dist/
+views/node_modules/
+views/.vite/
+*.local
+
+# --- Java / Maven / Gradle (xaiop-sdk/java) ----------------------------------
 target/
+.gradle/
 *.class
 *.jar
 *.war
@@ -65,38 +129,49 @@ replay_pid*
 .project
 .settings/
 *.iml
+*.ipr
+*.iws
 
-# --- Python (xaiop-sdk/python) ---
+# --- Python (xaiop-sdk/python) -----------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
 *.egg
 *.egg-info/
 .eggs/
-dist/
-build/
+pip-wheel-metadata/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.pytype/
 .tox/
 .nox/
 .coverage
 .coverage.*
+coverage.xml
 htmlcov/
+.hypothesis/
 .venv/
 venv/
 ENV/
 env/
+python-version.txt
 *.manifest
-*.spec
-pip-wheel-metadata/
+# Keep intentional specs under docs; ignore accidental pyinstaller drops at root
+/*.spec
 
-# --- Test / tooling caches ---
-.cache/
-.parcel-cache/
-*.tsbuildinfo
+# --- Archives / binary drops (accidental at repo root) -----------------------
+/*.zip
+/*.7z
+/*.rar
+/*.tar
+/*.tar.gz
+/*.tgz
 
-# --- Archives (accidental drops) ---
-*.zip
-*.7z
-*.rar
+# --- Misc tooling ------------------------------------------------------------
+*.pid
+*.seed
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

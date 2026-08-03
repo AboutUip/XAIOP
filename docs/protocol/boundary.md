@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `PROT-BOUND` |
 | Status | **Frozen** |
-| Version | 0.1.0 |
+| Version | 0.2.1 |
 | Spec title | Boundary & Hierarchy Specification |
 | Spec version | v0.1 |
-| Last updated | 2026-08-02 |
+| Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `TERM-GLOSS` |
 | Informs | `PROT-HIER`, `PROT-STREAM`, `CONF` |

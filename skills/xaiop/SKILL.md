@@ -1,12 +1,12 @@
 ---
 name: xaiop
 description: >-
-  Generate and interpret XAIOP (eXtensible AI Output Protocol) v0.1.0 Frozen.
+  Generate and interpret XAIOP (eXtensible AI Output Protocol) v0.2.0 Frozen.
   Use when producing XAIOP, converting JSON↔XAIOP, or when the user attaches
   this skill / mentions XAIOP, .xaiop, or AI-native structured output.
 ---
 
-# XAIOP v0.1.0 Frozen — Generator Skill (Protocol Digest)
+# XAIOP v0.2.0 Frozen — Generator Skill (Protocol Digest)
 
 This document is the **working protocol summary** for emitters.  
 Emit **valid XAIOP only**. Prefer this Skill over inventing JSON-like habits.
@@ -150,7 +150,9 @@ Split on the **first** `:`.
 | Raw value | Type |
 | --- | --- |
 | int-parsable token (`5`, `-3`) | int |
+| float-parsable token (`1.5`, `.5`, `1e3`) | float (JSON number, IEEE 754 binary64) |
 | exactly `true` / `false` (lowercase) | bool |
+| exactly `null` (lowercase) | null |
 | anything else | string |
 | **one or more spaces** immediately after `:` | **forced string** (spaces not part of payload) |
 
@@ -158,6 +160,8 @@ Split on the **first** `:`.
 | --- | --- |
 | `n:5` | `"n": 5` |
 | `n: 5` | `"n": "5"` |
+| `r:1.5` | `"r": 1.5` |
+| `r: 1.5` | `"r": "1.5"` |
 | `flag:true` | `"flag": true` |
 | `flag: true` | `"flag": "true"` |
 | `url:https://a/b` | `"url": "https://a/b"` (later `:` kept in value) |

@@ -6,8 +6,8 @@
 | --- | --- |
 | 文档 ID | `PROT-STREAM` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.1.0 |
-| 最近更新 | 2026-08-02 |
+| 版本 | 0.2.1 |
+| 最近更新 | 2026-08-03 |
 | 规范性 | **规范性** |
 | 依赖 | `PROT-SYNTAX`、`PROT-BOUND`、`PROT-HIER`、`REQ-STREAM` |
 | 影响 | `CONF` |
@@ -49,3 +49,7 @@ Block 在下一 Label 行开始时完成，或末 Block 在 EOF 完成。
 2. **增量（Diff）** — 每完成一个新 Block，仅推送该变更的增量；不重推未变部分。
 
 具体 API 名称属实现细节。
+
+**本文范围外：** 网络传输、Skill、SDK 方法名。  
+产品侧流式见 [../practice/streaming-transport.zh-CN.md](../practice/streaming-transport.zh-CN.md)；线格式清单见 [notes/streaming-attention.zh-CN.md](notes/streaming-attention.zh-CN.md)。
+

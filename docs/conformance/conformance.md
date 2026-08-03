@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `CONF` |
 | Status | **Frozen** |
-| Version | 0.1.0 |
-| Last updated | 2026-08-02 |
+| Version | 0.2.1 |
+| Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `REQ-FUNC`, `REQ-STREAM`, `META-VER`, `TERM-GLOSS`, `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT`, `PROT-STREAM` |
 | Informs | `protocol/*`, implementations |
@@ -16,13 +16,13 @@
 
 ## 1. Scope
 
-This document defines what it means to claim XAIOP conformance, and how Conformance Levels bind to Structure and Content documents in package **0.1.0 (Frozen)**.
+This document defines what it means to claim XAIOP conformance, and how Conformance Levels bind to Structure and Content documents in package **0.2.0 (Frozen)**.
 
 ---
 
 ## 2. General Rules
 
-1. Conformance claims **MUST** name the specification package version (e.g. `0.1.0`).
+1. Conformance claims **MUST** name the specification package version (e.g. `0.2.0`).
 2. Conformance claims **MUST** name one or more Conformance Levels from Section 3.
 3. Implementations **MUST NOT** claim conformance to `Reserved` documents.
 4. Implementations **MAY** claim `Structure`, `Streaming`, and `Core` against the Frozen documents in this package.

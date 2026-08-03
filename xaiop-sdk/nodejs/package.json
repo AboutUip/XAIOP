@@ -1,7 +1,7 @@
 {
   "name": "xaiop",
-  "version": "0.1.0",
-  "description": "XAIOP protocol SDK for Node.js (v0.1.0 Frozen)",
+  "version": "0.4.1",
+  "description": "XAIOP protocol SDK for Node.js (protocol v0.2.1 Frozen)",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -17,7 +17,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test test/engine.test.js",
+    "test": "node --test test/engine.test.js test/encode.test.js test/encode.stability.test.js test/stream.test.js test/stream.consistency.test.js test/ws.phase-encode.test.js test/ws.session.test.js",
     "build": "npm test && node scripts/build.js",
     "pack": "npm run build"
   },
@@ -35,5 +35,11 @@
     "type": "git",
     "url": "https://github.com/AboutUip/XAIOP.git",
     "directory": "xaiop-sdk/nodejs"
+  },
+  "dependencies": {
+    "ws": "^8.21.1"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
   }
 }

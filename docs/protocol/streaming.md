@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `PROT-STREAM` |
 | Status | **Frozen** |
-| Version | 0.1.0 |
-| Last updated | 2026-08-02 |
+| Version | 0.2.1 |
+| Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER`, `REQ-STREAM` |
 | Informs | `CONF` |
@@ -49,3 +49,7 @@ If a JSON surface is exposed, both **MUST** exist:
 2. **Diff** — on each newly completed Block, push only that change’s delta; do not re-push unchanged parts.
 
 Concrete API names are implementation details.
+
+**Out of scope here:** network transports, Skills, and SDK method names.  
+See [../practice/streaming-transport.md](../practice/streaming-transport.md) for product streaming, and [notes/streaming-attention.md](notes/streaming-attention.md) for a wire-only checklist.
+

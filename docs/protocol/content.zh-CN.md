@@ -6,8 +6,8 @@
 | --- | --- |
 | 文档 ID | `PROT-CONTENT` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.1.0 |
-| 最近更新 | 2026-08-02 |
+| 版本 | 0.2.1 |
+| 最近更新 | 2026-08-03 |
 | 规范性 | **规范性** |
 | 依赖 | `PROT-SYNTAX`、`PROT-BOUND`、`PROT-HIER` |
 | 影响 | `CONF` |
@@ -61,17 +61,44 @@ Content 值行 **必须**至少含一个 `:`（独立结构 `-` 不是 Content�
 
 ## 5. 最小类型化
 
-在强制字符串标记（第 6 节）之后：
+在强制字符串标记（第 6 节）之后，按**首个匹配**规则：
 
 1. 可解析为 int → **int**  
-2. 恰为 `true` 或 `false`（小写）→ **bool**  
-3. 其他 → **string**
+2. 可解析为 float → **float**（JSON number；IEEE 754 **binary64**）  
+3. 恰为 `true` 或 `false`（小写）→ **bool**  
+4. 恰为 `null`（小写）→ **null**  
+5. 其他 → **string**
+
+### 5.1 可解析为 int
+
+可选前导 `+` 或 `-`，其后仅为一个或多个十进制数字（`0`–`9`）。不含 `.`，不含指数。
+
+### 5.2 可解析为 float
+
+**不是** int 可解析，且匹配：
+
+```text
+[ "+" / "-" ] (
+  1*DIGIT "." *DIGIT [ exponent ] /
+  "." 1*DIGIT [ exponent ] /
+  1*DIGIT exponent
+)
+exponent = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT
+```
+
+**必须**标为 float 的示例：`1.5`、`-2.25`、`.5`、`5.`、`1e3`、`-2.5E-2`。
+
+### 5.3 浮点精度
+
+浮点记号作为 JSON number 暴露时，符合实现 **必须** 将其解释为 IEEE 754 **binary64**（双精度）值——JSON number 常见面下的最高精度。宿主 API **应当** 使用对应面的原生 binary64 浮点类型（如 ECMAScript `Number`、Java `double`）。
+
+`NaN`、`Infinity`、`-Infinity` **不是** float 可解析；除非另行强制，否则保持为 **string**。
 
 ---
 
 ## 6. 强制字符串
 
-`:` 后、值文本前有一个或多个空格则强制为 **string**。这些空格不属于载荷。
+`:` 后、值文本前有一个或多个空格则强制为 **string**。这些空格不属于载荷。该规则同样适用于看起来像 int / float 的文本。
 
 ```text
 value: 1
@@ -80,10 +107,36 @@ value: 1
 → `{ "value": "1" }`
 
 ```text
+ratio: 1.5
+```
+
+→ `{ "ratio": "1.5" }`
+
+```text
 flag: true
 ```
 
 → `{ "flag": "true" }`
+
+```text
+empty: null
+```
+
+→ `{ "empty": "null" }`
+
+无空格时：
+
+```text
+ratio:1.5
+```
+
+→ `{ "ratio": 1.5 }`
+
+```text
+empty:null
+```
+
+→ `{ "empty": null }`
 
 ---
 

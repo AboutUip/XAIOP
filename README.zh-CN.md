@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/AboutUip/XAIOP"><img alt="协议" src="https://img.shields.io/badge/protocol-v0.1.0_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="https://github.com/AboutUip/XAIOP"><img alt="协议" src="https://img.shields.io/badge/protocol-v0.2.1_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="AI 原生" src="https://img.shields.io/badge/output-AI--native-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js-22c55e?style=flat-square&labelColor=0b1220" />
@@ -21,8 +21,9 @@
   <a href="README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-64748b?style=flat-square&labelColor=0b1220" /></a>
   <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-0ea5e9?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/protocol/syntax.zh-CN.md"><img alt="协议文档" src="https://img.shields.io/badge/docs-%E5%8D%8F%E8%AE%AE-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/practice/"><img alt="实践文档" src="https://img.shields.io/badge/docs-%E5%AE%9E%E8%B7%B5-f59e0b?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/sdk/nodejs/"><img alt="SDK 文档" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
-  <a href="docs/performance.zh-CN.md"><img alt="评测" src="https://img.shields.io/badge/docs-%E8%AF%84%E6%B5%8B-f59e0b?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/performance.zh-CN.md"><img alt="评测" src="https://img.shields.io/badge/docs-%E8%AF%84%E6%B5%8B-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>
 
 ---
@@ -92,9 +93,11 @@ name:alice
 
 ### 路径
 
-- **文法** — [docs/protocol/](docs/protocol/)
-- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [xaiop-sdk/nodejs/](xaiop-sdk/nodejs/)
-- **教模型写** — [经典 Skill](skills/xaiop/SKILL.md) · [白名单 Skill](skills/xaiop-allowlist/SKILL.md)
+- **协议（仅线格式）** — [docs/protocol/](docs/protocol/) · [隔离说明](docs/SEPARATION.zh-CN.md)
+- **实践** — [docs/practice/](docs/practice/) · [模型输出](docs/practice/model-output.zh-CN.md) · [流式传输](docs/practice/streaming-transport.zh-CN.md) · [骨架 WS](docs/practice/skeleton-stream.zh-CN.md)
+- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [encode](docs/sdk/nodejs/encode.zh-CN.md) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [代码](xaiop-sdk/nodejs/)
+- **预览 UI** — [views/](views/)（`cd views && npm run dev`）
+- **教模型写** — [经典 Skill](skills/xaiop/SKILL.md) · [白名单 Skill](skills/xaiop-allowlist/SKILL.md) · [实践指南](docs/practice/model-output.zh-CN.md)
 - **指标包** — [JSON](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [导读](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md)
 
 Java / Python SDK 待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
@@ -158,6 +161,6 @@ Java / Python SDK 待更新。英文文档为权威文本；仓库内配有 `*.z
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.0-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.1-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/"><img alt="文档" src="https://img.shields.io/badge/docs-%E7%B4%A2%E5%BC%95-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

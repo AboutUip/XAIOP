@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `TERM-GLOSS` |
 | Status | **Frozen** |
-| Version | 0.1.0 |
-| Last updated | 2026-08-02 |
+| Version | 0.2.1 |
+| Last updated | 2026-08-03 |
 | Normative | **Normative** (definitions) |
 | Depends on | `META-CONV`, `OV-PRIN` |
 | Informs | `REQ-FUNC`, `REQ-STREAM`, `CONF`, `protocol/*` |
@@ -44,6 +44,10 @@ A **Consumer** is application logic that uses Parser output (Blocks, Streams, or
 ### 2.5 Downstream System
 
 A **Downstream System** is any system that receives data from a Consumer or Parser for storage, transformation, display, or further processing.
+
+### 2.6 Encoder (SDK)
+
+An **Encoder** (implementation term) maps a JSON-compatible value to Well-Formed XAIOP text. The Node.js SDK encoder emits **strict** wire only; it is distinct from a Generator (typically an LLM). See [sdk/nodejs/encode.md](../sdk/nodejs/encode.md).
 
 ---
 

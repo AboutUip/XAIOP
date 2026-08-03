@@ -34,7 +34,8 @@ It does **not** redefine the wire protocol. Grammar remains in [protocol/](../pr
 
 ### Methodology constraints (accuracy)
 
-1. **Native dual channel** — JSON and XAIOP are generated separately; **no** JSON→XAIOP translation.  
+1. **Native dual channel** — For **LLM bench metrics**, JSON and XAIOP are generated separately; the evaluation **must not** score a model by translating JSON→XAIOP after the fact.  
+   *(The Node.js SDK **does** ship `encode` / `uploadJson` for tools, tests, and adapters — see [sdk/nodejs/encode.md](./sdk/nodejs/encode.md). That API is out of scope for these dual-channel model scores.)*  
 2. **Same task prompts** (format-neutral task text + mode-specific output tail).  
 3. **Skill in system** for XAIOP (not user); warmup excluded from timed task metrics.  
 4. **Compatibility mode** may be enabled for structure checks (stated per snapshot).  
