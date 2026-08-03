@@ -45,7 +45,7 @@ Normative: [../syntax.md](../syntax.md) §2.
 4. Bare `<` at Root is a **syntax error**.  
 5. After `.`, bare `>` on an object root **re-enters** that root (modify); it does **not** nest another anonymous object.
 
-Normative: [../hierarchy.md](../hierarchy.md) §8 / §4.2.
+Normative: [../hierarchy.md](../hierarchy.md) §9 / §4.2.
 
 ---
 
@@ -53,10 +53,10 @@ Normative: [../hierarchy.md](../hierarchy.md) §8 / §4.2.
 
 1. Same key written again → later Content wins.  
 2. Re-entering a named **object** (`>name` when it already exists as object) continues that object.  
-3. Re-opening a named **array** (`>name-`) **replaces** the array with a new empty array — it does **not** append.  
-4. Planning multi-phase documents: grow one named array **without** re-emitting `>name-` after a Cursor reset if append was intended.
+3. Re-opening a named **array** (`>name-` when it already exists as array) **re-enters** that array — later elements **append**; it does **not** replace the array.  
+4. Multi-phase documents **MAY** reopen `>name-` after `.` to grow the same named array.
 
-Normative: [../hierarchy.md](../hierarchy.md) §9–10.
+Normative: [../hierarchy.md](../hierarchy.md) §10–11.
 
 ---
 
@@ -83,22 +83,42 @@ Normative: [../syntax.md](../syntax.md), [../content.md](../content.md), [../bou
 
 ---
 
-## 7. Generator checklist (protocol)
+## 7. Locate operators (`=` / `@` / `!`)
+
+| Op | Role |
+| --- | --- |
+| `=path` | Fuzzy search over **tree so far** (向前跨相); first match; no create |
+| `@path` | Exact from Root; **create** missing objects (本相); single Cursor |
+| `!path` | All path-fragment matches over **tree so far** (向前跨相, outer prune); broadcast until `.` |
+
+1. Path segments use `>`. Partial labels do not match.  
+2. While broadcast is active, `!` / `@` / `=` are illegal until `.`.  
+3. Broadcast writes fan out; any Cursor failure fails the line.  
+4. Streaming Diff: phases with `=` / `!` **MUST** use cumulative prefix parse.
+
+Normative: [../hierarchy.md](../hierarchy.md) §6–§8.
+
+---
+
+## 8. Generator checklist (protocol)
 
 - [ ] Chose complete root vs fragment deliberately.  
 - [ ] Prefer LF or CRLF; avoid relying on lone CR.  
-- [ ] After `.`, re-address from Root.  
-- [ ] Never reopen `>name-` across resets if append was intended.  
+- [ ] After `.`, re-address from Root (`=` / `@` / `>`).  
+- [ ] Reopen `>name-` across resets when append is intended (create-or-reenter).  
+- [ ] Use `!` only when multi-Cursor broadcast is intended; emit `.` to exit.  
+- [ ] Prefer `@` for exact Root paths; `=` for fuzzy relocate.  
 - [ ] No CR/LF inside values; no Bare Labels.  
 - [ ] Forced string when a numeric/bool-looking token must stay text.
 
 ---
 
-## 8. Parser checklist (protocol)
+## 9. Parser checklist (protocol)
 
 - [ ] Treat later same-key writes as overwrite.  
-- [ ] Treat `>name-` reopen as replace.  
-- [ ] Reject bare `<` at Root.  
+- [ ] Treat `>name-` reopen as re-enter / append (not replace).  
+- [ ] Implement `@` exact-from-Root **create-or-enter** and `!` broadcast + outer prune (tree so far).  
+- [ ] Reject bare `<` at Root; reject locate ops while broadcast is active.  
 - [ ] Do not invent missing leaves or braces.  
 - [ ] Line-buffer until a full line before interpreting a Label (`PROT-BOUND` / streaming requirements).
 

@@ -12,7 +12,7 @@ import {
 import { chunksOf, waitStatus } from "./helpers/stream.js";
 
 test("stream: . segments emit per-phase parse", async () => {
-  const stream = new XaiopStream("raw://local");
+  const stream = new XaiopStream("raw://local", { mergeChunkWindow: false });
   /** @type {unknown[]} */
   const chunks = [];
   let doneJson;
@@ -35,7 +35,7 @@ test("stream: . segments emit per-phase parse", async () => {
 });
 
 test("stream: consecutive . → empty content (null)", async () => {
-  const stream = new XaiopStream("raw://local");
+  const stream = new XaiopStream("raw://local", { mergeChunkWindow: false });
   /** @type {unknown[]} */
   const chunks = [];
   stream.onChunk((d) => chunks.push(d));
@@ -47,6 +47,52 @@ test("stream: consecutive . → empty content (null)", async () => {
   await waitStatus(stream, STREAM_STATUS.COMPLETED);
   assert.deepEqual(chunks[0], { a: 1 });
   assert.equal(chunks[1], null);
+});
+
+test("stream: mergeChunkWindow batches multiple dots in one push", async () => {
+  const stream = new XaiopStream("raw://local", { mergeChunkWindow: true });
+  /** @type {unknown[]} */
+  const chunks = [];
+  stream.onChunk((d) => chunks.push(d));
+  stream.onDone(() => {});
+  stream.send({
+    transport: TRANSPORT_KIND.RAW,
+    source: chunksOf(">\n>a\nx:1\n.\n>b\ny:2\n.\n"),
+  });
+  await waitStatus(stream, STREAM_STATUS.COMPLETED);
+  // One window with two complete `.` → one merged Diff (= committed after batch).
+  assert.equal(chunks.length, 1);
+  assert.deepEqual(chunks[0], { a: { x: 1 }, b: { y: 2 } });
+});
+
+test("stream: asyncParse coalesces ingest and matches one-shot done", async () => {
+  const source = `>
+>a
+x:1
+.
+>b
+y:2
+.
+`;
+  const stream = new XaiopStream("raw://async", {
+    mergeChunkWindow: true,
+    asyncParse: true,
+  });
+  /** @type {unknown[]} */
+  const chunks = [];
+  /** @type {unknown} */
+  let done;
+  stream.onChunk((d) => chunks.push(d));
+  stream.onDone((j) => {
+    done = j;
+  });
+  stream.send({
+    transport: TRANSPORT_KIND.RAW,
+    source: chunksOf(">\n>a\nx:1\n.\n", ">b\ny:2\n.\n"),
+  });
+  await waitStatus(stream, STREAM_STATUS.COMPLETED);
+  assert.deepEqual(done, { a: { x: 1 }, b: { y: 2 } });
+  assert.ok(chunks.length >= 1);
 });
 
 test("stream: streamProcessing off → one parse, chunk then done", async () => {

@@ -4,8 +4,8 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 包 | `xaiop` **0.3.0+** |
-| 协议线格式 | Frozen **v0.2.1**（未改） |
+| 包 | `xaiop` **0.6.0+** |
+| 协议线格式 | Frozen **v0.4.0** |
 | 代码 | [`encode.js`](../../../xaiop-sdk/nodejs/src/encode.js) |
 | 测试 | `encode.test.js` · `encode.stability.test.js` |
 | 注意事项 | [notes/encode-attention.zh-CN.md](notes/encode-attention.zh-CN.md) |
@@ -65,7 +65,7 @@ const id = await new XaiopEngine().uploadJson({ tags: ["a", "b"] }, { dotPolicy:
 1. **`parseSync(encodeSync(value, opt))` 与 `value` 深度相等**（JSON 值相等；`-0` 归一为 `0`）。
 2. **确定性** — 相同 `(value, options)` → 相同线字符串。
 3. **双重往返** — 相同选项下 `rt(rt(value)) === value`。
-4. 命名数组**不会**跨 `.` 相位拆开（`.` 后再开 `>name-` 是**替换**不是追加）。
+4. 命名数组 **可以**跨 `.` 相位拆开（`.` 后再开 `>name-` 为**追加**）。Encode 默认仍把每个命名数组放在一相（Diff 清晰度）。
 5. 线文本以恰好一个 `\n` 结尾。
 
 ### 不保证
@@ -98,12 +98,39 @@ const id = await new XaiopEngine().uploadJson({ tags: ["a", "b"] }, { dotPolicy:
 
 | `dotPolicy` | 行为 |
 | --- | --- |
-| `perTopLevelKey`（**默认**） | 顶层键之间插入 `.` |
+| `perTopLevelKey`（**默认**） | 每个顶层**对象**键之间插入 `.` |
 | `none` | 整篇一个文档；无相位 `.`（除非 `finalDot`） |
 | `perNKeys` | 每 `phaseEvery` 个键一个相位 |
 | `custom` | `shouldPhase(ctx)` 为 true 时切相 |
+| **`string[]`**（路径重载） | 列出的每个 JSON 路径节点**编码完成后**插入 `.` |
+
+**路径数组重载**（`dotPolicy: string[]`）：
+
+- 路径为 **JSON 风格**：`a.b[2]`（`.` 与 `[i]`），不是 XAIOP 的 `>`。
+- 在该节点（及其文档序中此前内容）编码完后插入 `.`。
+- 路径不存在 → `XaiopEncodeError`（严格）。
+- 与 `phaseEvery` / `maxPhases` / `shouldPhase` **互斥**。
+- 需要 `style: "reset"`（默认）。
+- 数组下标只能是**最后一段**（`data.childs[2]` 可以；`data.childs[2].name` 拒绝——`.` 之后 `>name-` 只能**追加**新元素，无法继续同一元素对象）。
+- 辅助：`parseJsonPath` / `formatJsonPath`。
+
+**数组文档根：** 编码值为数组（或 `root: "array"`）时，线以 `-` 开头，**不适用**对象式命名 `dotPolicy` 分相。路径模式仍会遍历值；需要给 `XaiopStream` / `DotCheckpointEngine` 中途 `.` 时请优先用对象根。
 
 常用选项：`phaseEvery`、`maxPhases`、`finalDot`、`style`、`root`、`keyOrder`、`nullPolicy`、`undefinedPolicy`。常量见 `DOT_POLICY`。
+
+### 生产流式 — 主动安排 `.` 位置
+
+面向 **生产流管道**（`XaiopStream` / `DotCheckpointEngine` / WS 相位推送）时，把 `.` 出现位置当作产品设计的一部分，**不要**默认依赖 `perTopLevelKey`，除非它刚好符合你的交付形态。
+
+| 目标 | 建议 |
+| --- | --- |
+| 大块连续数据（长文本、blob、稠密表）尽量 **一相传完** | 该子树内部 **不要** 插 `.`。用 `none`、更粗的 `perNKeys` / `custom`，或 **路径数组只切在重区域之外** |
+| 可分离的子结果尽早、丝滑送达 | 用 `dotPolicy: string[]`（或 `custom`）在每个可消费子单元**编码完成后**切相——如先 meta，再每个列表元素 / 可渲染区块 |
+| 避免消费端意外的 O(相位 × 体积) | 少而准的 `.` 优于「每个顶层键一相」（文档很宽时尤其） |
+
+**经验法则：** 一个 `.` = 消费端一次 Diff/Commit 边界。边界放在 **接收方有收益** 处（渐进 UI / 部分提交）；**大块连续数据**留在同一传递单元，避免被切成多次重解析。
+
+JSON 形状已知时，路径数组通常最合适：只列出需要的切点（如 `["meta", "items[0]", "items[1]"]`），大字段不列入路径，则它会完整落在包含它的那一相里。
 
 ---
 

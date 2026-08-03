@@ -1,4 +1,8 @@
-/** StructuredClone helper (shared by stream materialize / engine snapshots). */
+/**
+ * Deep-clone JSON-compatible values.
+ * Prefers JSON round-trip (faster than structuredClone on plain trees);
+ * falls back to structuredClone for non-JSON-safe values.
+ */
 
 /**
  * @param {unknown} value
@@ -6,5 +10,12 @@
  */
 export function cloneJson(value) {
   if (value === undefined) return undefined;
-  return structuredClone(value);
+  if (value === null) return null;
+  const t = typeof value;
+  if (t === "string" || t === "number" || t === "boolean") return value;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return structuredClone(value);
+  }
 }

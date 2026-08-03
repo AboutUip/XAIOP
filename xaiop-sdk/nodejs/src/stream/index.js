@@ -3,6 +3,7 @@
  */
 
 export { DotCheckpointEngine } from "./checkpoint.js";
+export { HISTORY_NODE_KIND, ParseHistory } from "./history.js";
 export { materializeSnapshot } from "./materialize.js";
 export {
   ALL_STREAM_MODES,

@@ -47,7 +47,7 @@
 
 ### 2.6 Encoder（编码器，SDK）
 
-**Encoder（编码器）**（实现用语）将 JSON 兼容值映射为良构 XAIOP 文本。Node.js SDK 编码器只产出**严格**线格式；它不同于 Generator（通常为 LLM）。见 [sdk/nodejs/encode.zh-CN.md](../sdk/nodejs/encode.zh-CN.md)。
+**Encoder（编码器）**（实现用语）将 JSON 兼容值映射为良构 XAIOP 文本。Node.js SDK 编码器只产出**严格**线格式；它是工具侧 **Generator** 路径，不同于 LLM Generator。见 [sdk/nodejs/encode.zh-CN.md](../sdk/nodejs/encode.zh-CN.md)。
 
 ---
 

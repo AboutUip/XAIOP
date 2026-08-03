@@ -1,7 +1,7 @@
 # XAIOP Node.js SDK
 
-Official Node.js SDK for XAIOP v0.2.1 (Frozen). Package **0.4.1** — `XaiopWs` + Content **null**.  
-**Docs:** [API](../../docs/sdk/nodejs/) · [Encode](../../docs/sdk/nodejs/encode.md) · [Notes](../../docs/sdk/nodejs/notes/)  
+Official Node.js SDK for XAIOP v0.4.0 (Frozen). Package **0.7.0** — parse history (snapshot + realtime).  
+**Docs:** [API](../../docs/sdk/nodejs/) · [Stream](../../docs/sdk/nodejs/stream.md) · [Encode](../../docs/sdk/nodejs/encode.md) · [Merge](../../docs/sdk/nodejs/merge.md) · [Notes](../../docs/sdk/nodejs/notes/) · [Parity](../../docs/sdk/behavioral-contract.md)  
 **Practice:** [model output](../../docs/practice/model-output.md) · [streaming transport](../../docs/practice/streaming-transport.md) · [skeleton stream](../../docs/practice/skeleton-stream.md)  
 **Protocol (wire only):** [../../docs/protocol/](../../docs/protocol/) · [Separation](../../docs/SEPARATION.md)
 
@@ -13,12 +13,14 @@ Official Node.js SDK for XAIOP v0.2.1 (Frozen). Package **0.4.1** — `XaiopWs` 
 | Engine APIs (`new` / `upload`+`get` / static `parse`) | Implemented (async + sync) |
 | Root fragment (`XaiopFragment`) | Implemented (strict mode) |
 | Compatibility mode (forced root + pop-and-retry + …) | Implemented (default off; all fixes on when enabled) |
-| Streaming Snapshot/Diff | Implemented (`XaiopStream`, `.` checkpoints) |
+| Streaming Snapshot/Diff | Implemented (`XaiopStream`, `.` checkpoints; `mergeChunkWindow` default on; `pushAsync` / `asyncParse`) |
+| Parse history (snapshot + realtime) | Implemented (`historySnapshot` / `historyRealtime`; default off; SDK **0.7.0+**) |
 | WebSocket sessions (listen/push + connect/consume) | Implemented (`XaiopWs`, SDK 0.4.0+) |
 | Fine-grained compat fix APIs (per correction, returns `boolean`) | Implemented |
-| `!name` | Locate first match only (full broadcast-append later) |
+| `!path` / `@path` | Implemented (`!` broadcast + outer prune, cross-phase; `@` exact create-or-enter) |
 | Emit (`encode` / `uploadJson`, controllable `.`) | Implemented (SDK 0.3.0+) |
-| Content `null` | Implemented (protocol **0.2.1** / SDK **0.4.1**) |
+| Merge / inject (`mergeToJson` / `mergeToXaiop` / `inject*`) | Implemented (pre/post; not streaming) |
+| Content `null` | Implemented (since protocol **0.2.1** / SDK **0.4.1**) |
 
 ## Quick start
 
@@ -84,7 +86,7 @@ engine.setCompatPopAndRetry(false); // true — other fixes stay on
 
 Typical case: finished `>tags-` then wrote `>users-` without `<` — strict fails; compatibility pops out of the array and continues.
 
-Does **not** invent bare names without `-`, or rewrite `=meta-` onto an object key. Full algorithm, fragment/`!name` notes: [EN](../../docs/sdk/nodejs/README.md) · [中文](../../docs/sdk/nodejs/README.zh-CN.md).
+Does **not** invent bare names without `-`, or rewrite `=meta-` onto an object key. Full algorithm, fragment / `@` / `!` notes: [EN](../../docs/sdk/nodejs/README.md) · [中文](../../docs/sdk/nodejs/README.zh-CN.md).
 
 ## `XaiopStream`
 
@@ -141,11 +143,11 @@ Pure ESM — no transpile step. `npm run build` runs tests and packs an npm tarb
 ```bash
 cd xaiop-sdk/nodejs
 npm run build
-# → dist/xaiop-0.4.1.tgz
+# → dist/xaiop-0.7.0.tgz
 ```
 
 Install the tarball elsewhere:
 
 ```bash
-npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.4.1.tgz
+npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.7.0.tgz
 ```

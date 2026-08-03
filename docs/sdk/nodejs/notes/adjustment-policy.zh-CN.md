@@ -18,7 +18,7 @@
 | 宜 | 不宜 |
 | --- | --- |
 | 增加方法 / status 字段 | 默默翻转 Diff 边界默认 |
-| 修传输解码 | 改 later-wins / 数组替换（协议） |
+| 修传输解码 | 改 later-wins / 命名数组再进入追加（协议） |
 | 文档写明 Diff=`.` 相位 | 为迁就 SDK 改写 `PROT-STREAM` |
 | 未来能力用 opt-in | 破坏 `getSnapshot()`「仅终态」语义 |
 
@@ -37,7 +37,7 @@
 | 兼容 × 多相位 | **开放（低优）** | 默认保持关 |
 | SSE 事件间自动补 `\n` | **暂缓** | 优先生成端约定 |
 | Block 级 Diff 模式 | **暂缓** | 若做必 opt-in |
-| 协议 later-wins / 数组替换 | **此处不可调** | [协议 notes](../../../protocol/notes/) |
+| 协议 later-wins / 命名数组再进入追加 | **此处不可调** | [协议 notes](../../../protocol/notes/) |
 
 ---
 

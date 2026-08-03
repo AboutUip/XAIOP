@@ -7,15 +7,33 @@ import {
   DOT_POLICY,
   encode as encodeAsync,
   encodeSync as encodeValueSync,
+  formatJsonPath,
+  parseJsonPath,
   XaiopEncodeError,
 } from "./encode.js";
-import { parseAsync, parseSync, XaiopFragment, XaiopSyntaxError } from "./parse.js";
+import {
+  formatInjectResult,
+  MERGE_CONFLICT,
+  mergeJson,
+  mergeToJson as mergeToJsonValue,
+  mergeToXaiop as mergeToXaiopValue,
+  toMergeableJson,
+} from "./merge.js";
+import {
+  LiveXaiopParser,
+  parseAsync,
+  parseSync,
+  XaiopFragment,
+  XaiopSyntaxError,
+} from "./parse.js";
 import {
   DotCheckpointEngine,
   encodePhaseJson,
   encodePhaseObject,
+  HISTORY_NODE_KIND,
   isStreamBusy,
   materializeSnapshot,
+  ParseHistory,
   STREAM_MODES,
   STREAM_STATUS,
   TRANSPORT_KIND,
@@ -25,7 +43,8 @@ import {
   XaiopWsHub,
 } from "./stream/index.js";
 
-export const PROTOCOL_VERSION = "0.2.1";
+export const PROTOCOL_VERSION = "0.4.0";
+export const SDK_VERSION = "0.7.0";
 
 /**
  * Standard XAIOP engine: upload full documents, fetch by runtime data id.
@@ -223,6 +242,118 @@ export class XaiopEngine {
     return encodeValueSync(value, options);
   }
 
+  // --- Merge / inject (pre/post — not streaming) ---
+
+  /**
+   * Merge base JSON + XAIOP → JSON. Uses this engine's compat for parse.
+   * @param {unknown} baseJson
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").MergeOptions} [options]
+   */
+  async mergeToJson(baseJson, xaiopSource, options = {}) {
+    return this.mergeToJsonSync(baseJson, xaiopSource, options);
+  }
+
+  /**
+   * @param {unknown} baseJson
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").MergeOptions} [options]
+   */
+  mergeToJsonSync(baseJson, xaiopSource, options = {}) {
+    return mergeToJsonValue(baseJson, xaiopSource, {
+      ...options,
+      compat: options.compat !== undefined ? options.compat : this._parseCompatArg(),
+    });
+  }
+
+  /**
+   * Merge base JSON + XAIOP → XAIOP wire.
+   * @param {unknown} baseJson
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").MergeToXaiopOptions} [options]
+   */
+  async mergeToXaiop(baseJson, xaiopSource, options = {}) {
+    return this.mergeToXaiopSync(baseJson, xaiopSource, options);
+  }
+
+  /**
+   * @param {unknown} baseJson
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").MergeToXaiopOptions} [options]
+   */
+  mergeToXaiopSync(baseJson, xaiopSource, options = {}) {
+    return mergeToXaiopValue(baseJson, xaiopSource, {
+      ...options,
+      compat: options.compat !== undefined ? options.compat : this._parseCompatArg(),
+    });
+  }
+
+  /**
+   * Inject XAIOP into a stored document (mutates store).
+   * @param {string} dataId
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").InjectOptions} [options]
+   * @returns {Promise<unknown|string>}
+   */
+  async injectXaiop(dataId, xaiopSource, options = {}) {
+    return this.injectXaiopSync(dataId, xaiopSource, options);
+  }
+
+  /**
+   * @param {string} dataId
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").InjectOptions} [options]
+   * @returns {unknown|string}
+   */
+  injectXaiopSync(dataId, xaiopSource, options = {}) {
+    const base = this._requireStored(dataId);
+    const merged = mergeToJsonValue(base, xaiopSource, {
+      conflict: options.conflict,
+      compat:
+        options.compat !== undefined ? options.compat : this._parseCompatArg(),
+    });
+    this._store.set(dataId, merged);
+    return formatInjectResult(merged, options);
+  }
+
+  /**
+   * Inject JSON into a stored document (mutates store).
+   * @param {string} dataId
+   * @param {unknown} jsonValue
+   * @param {import("./merge.js").InjectOptions} [options]
+   * @returns {Promise<unknown|string>}
+   */
+  async injectJson(dataId, jsonValue, options = {}) {
+    return this.injectJsonSync(dataId, jsonValue, options);
+  }
+
+  /**
+   * @param {string} dataId
+   * @param {unknown} jsonValue
+   * @param {import("./merge.js").InjectOptions} [options]
+   * @returns {unknown|string}
+   */
+  injectJsonSync(dataId, jsonValue, options = {}) {
+    const base = this._requireStored(dataId);
+    const merged = mergeJson(base, jsonValue, options.conflict);
+    this._store.set(dataId, merged);
+    return formatInjectResult(merged, options);
+  }
+
+  /**
+   * @param {string} dataId
+   * @returns {unknown}
+   */
+  _requireStored(dataId) {
+    if (typeof dataId !== "string" || dataId.length === 0) {
+      throw new TypeError("dataId must be a non-empty string");
+    }
+    if (!this._store.has(dataId)) {
+      throw new Error(`unknown data id: ${dataId}`);
+    }
+    return toMergeableJson(this._store.get(dataId));
+  }
+
   /**
    * @param {string} dataId
    * @returns {Promise<unknown>}
@@ -288,6 +419,24 @@ export class XaiopEngine {
     return encodeValueSync(value, options);
   }
 
+  /**
+   * @param {unknown} baseJson
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").MergeOptions} [options]
+   */
+  static mergeToJson(baseJson, xaiopSource, options = {}) {
+    return mergeToJsonValue(baseJson, xaiopSource, options);
+  }
+
+  /**
+   * @param {unknown} baseJson
+   * @param {string} xaiopSource
+   * @param {import("./merge.js").MergeToXaiopOptions} [options]
+   */
+  static mergeToXaiop(baseJson, xaiopSource, options = {}) {
+    return mergeToXaiopValue(baseJson, xaiopSource, options);
+  }
+
   /** @returns {boolean} */
   has(dataId) {
     return this._store.has(dataId);
@@ -318,10 +467,19 @@ export {
   encodePhaseJson,
   encodePhaseObject,
   encodeValueSync as encodeSync,
+  formatJsonPath,
+  HISTORY_NODE_KIND,
   isStreamBusy,
   materializeSnapshot,
+  MERGE_CONFLICT,
+  mergeJson,
+  mergeToJsonValue as mergeToJson,
+  mergeToXaiopValue as mergeToXaiop,
   parseAsync,
+  parseJsonPath,
   parseSync,
+  ParseHistory,
+  LiveXaiopParser,
   STREAM_MODES,
   STREAM_STATUS,
   TRANSPORT_KIND,

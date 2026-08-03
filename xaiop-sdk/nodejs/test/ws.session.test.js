@@ -130,7 +130,7 @@ test("ws: later-wins same key across phases", async () => {
   });
 });
 
-test("ws: named array replace across phases (not append)", async () => {
+test("ws: named array append across phases (re-enter, not replace)", async () => {
   await withLoopback(async ({ server, client, phases }) => {
     server.pushJson("items", [{ id: 1 }]);
     server.pushJson("items", [{ id: 2 }, { id: 3 }], { final: true });
@@ -138,7 +138,9 @@ test("ws: named array replace across phases (not append)", async () => {
     const done = await client.done;
     assert.deepEqual(phases[0], { items: [{ id: 1 }] });
     assert.deepEqual(phases[1], { items: [{ id: 2 }, { id: 3 }] });
-    assert.deepEqual(done, { items: [{ id: 2 }, { id: 3 }] });
+    assert.deepEqual(done, {
+      items: [{ id: 1 }, { id: 2 }, { id: 3 }],
+    });
   });
 });
 
@@ -209,13 +211,16 @@ test("ws: encode error on pushJson does not send", async () => {
 });
 
 test("ws: empty phase via consecutive .", async () => {
-  await withLoopback(async ({ server, client, phases }) => {
-    server.pushWire(">\na:1\n.\n.\n");
-    await server.end();
-    await client.done;
-    assert.deepEqual(phases[0], { a: 1 });
-    assert.equal(phases[1], null);
-  });
+  await withLoopback(
+    async ({ server, client, phases }) => {
+      server.pushWire(">\na:1\n.\n.\n");
+      await server.end();
+      await client.done;
+      assert.deepEqual(phases[0], { a: 1 });
+      assert.equal(phases[1], null);
+    },
+    { mergeChunkWindow: false },
+  );
 });
 
 test("ws: streamProcessing false → one phase at close", async () => {

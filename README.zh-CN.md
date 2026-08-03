@@ -6,13 +6,14 @@
 
 <p align="center">
   <strong>eXtensible AI Output Protocol</strong><br/>
-  <sub>模型按行书写，程序确定性解析。</sub>
+  <sub>按行<em>游标构造</em> · 程序确定性<em>物化</em>为 JSON。</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/AboutUip/XAIOP"><img alt="协议" src="https://img.shields.io/badge/protocol-v0.2.1_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="https://github.com/AboutUip/XAIOP"><img alt="协议" src="https://img.shields.io/badge/protocol-v0.4.0_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="AI 原生" src="https://img.shields.io/badge/output-AI--native-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="游标 IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="流式相位" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
   <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js-22c55e?style=flat-square&labelColor=0b1220" />
   <img alt="按行" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
 </p>
@@ -20,6 +21,7 @@
 <p align="center">
   <a href="README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-64748b?style=flat-square&labelColor=0b1220" /></a>
   <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-0ea5e9?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/overview/positioning.zh-CN.md"><img alt="定位" src="https://img.shields.io/badge/docs-%E5%AE%9A%E4%BD%8D-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/protocol/syntax.zh-CN.md"><img alt="协议文档" src="https://img.shields.io/badge/docs-%E5%8D%8F%E8%AE%AE-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/practice/"><img alt="实践文档" src="https://img.shields.io/badge/docs-%E5%AE%9E%E8%B7%B5-f59e0b?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/sdk/nodejs/"><img alt="SDK 文档" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
@@ -29,32 +31,38 @@
 ---
 
 <p align="center">
-  <img alt="LLM" src="https://img.shields.io/badge/LLM-0b1220?style=for-the-badge&logoColor=white" />
+  <img alt="写者" src="https://img.shields.io/badge/Writer-0b1220?style=for-the-badge&logoColor=white" />
   <img alt="到" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
   <img alt="XAIOP" src="https://img.shields.io/badge/XAIOP-14b8a6?style=for-the-badge&labelColor=0b1220" />
   <img alt="到" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
-  <img alt="解析器" src="https://img.shields.io/badge/%E8%A7%A3%E6%9E%90%E5%99%A8-0ea5e9?style=for-the-badge&labelColor=0b1220" />
+  <img alt="SDK" src="https://img.shields.io/badge/SDK%20·%20%E8%A7%A3%E6%9E%90-0ea5e9?style=for-the-badge&labelColor=0b1220" />
   <img alt="到" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
-  <img alt="JSON · 业务" src="https://img.shields.io/badge/JSON%20·%20%E4%B8%9A%E5%8A%A1-22c55e?style=for-the-badge&labelColor=0b1220" />
+  <img alt="JSON" src="https://img.shields.io/badge/JSON%20·%20Snapshot-22c55e?style=for-the-badge&labelColor=0b1220" />
 </p>
 
 <p align="center">
-  不是服务间用来替代 JSON 的格式——而是从<em>生成</em>走到<em>软件</em>的桥。
+  写者发出进入 / 回退 / 定位 / 重置指令。<br/>
+  程序物化为 JSON —— 含中途 <code>.</code> 相位。<br/>
+  <sub>不是服务间 JSON 总线。LLM · 工具 · WS 会话都是写者。</sub>
 </p>
 
 ---
 
-### JSON 生成的问题
+### 一次性完整结构的问题
 
-传统 JSON/XML 要求模型一次性吐出全局正确的完整结构——本质是对括号与深度的**记忆**考验。XAIOP 让模型写游标构造指令，由 SDK 物化为 JSON。**记忆 → 逻辑。**
+传统 JSON/XML 要求写者一次性吐出全局正确的整树——括号配对与深度记账。对长输出或增量输出，这是**记忆**考验。
 
-### XAIOP 改了什么
+XAIOP 要求写一串**游标构造**步骤，由 SDK **物化**为 JSON。结构按行；位置是游标；`.` 界定流式相位。默认**不静默修复**。
 
-结构是 **按行** 的。位置是 **游标**。没有括号配对，没有模型侧哈希；默认也 **不静默修复**。线上保持诚实。
-
-收益**取决于**目标模型自身的 JSON 能力——不是「全面替代 JSON」的故事。
+写者包括 LLM（首发楔子）、`encode` 工具链、骨架 WebSocket 推送——任何符合规范的指令源。
 
 → [定位说明](docs/overview/positioning.zh-CN.md) · [设计原则](docs/overview/design-principles.zh-CN.md) · [概览](docs/overview/introduction.zh-CN.md)
+
+### 生成端楔子（有条件）
+
+对 LLM，收益随模型自身 JSON 能力变化——不是「永远碾压 JSON」。那是**楔子证据**，不是全部产品主张。
+
+→ [评测](docs/performance.zh-CN.md)
 
 ---
 
@@ -93,21 +101,23 @@ name:alice
 
 ### 路径
 
+- **定位** — [docs/overview/positioning.zh-CN.md](docs/overview/positioning.zh-CN.md)（线 IR · 生成端楔子）
 - **协议（仅线格式）** — [docs/protocol/](docs/protocol/) · [隔离说明](docs/SEPARATION.zh-CN.md)
 - **实践** — [docs/practice/](docs/practice/) · [模型输出](docs/practice/model-output.zh-CN.md) · [流式传输](docs/practice/streaming-transport.zh-CN.md) · [骨架 WS](docs/practice/skeleton-stream.zh-CN.md)
-- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [encode](docs/sdk/nodejs/encode.zh-CN.md) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [代码](xaiop-sdk/nodejs/)
+- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [流式](docs/sdk/nodejs/stream.zh-CN.md) · [encode](docs/sdk/nodejs/encode.zh-CN.md) · [合并](docs/sdk/nodejs/merge.zh-CN.md) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [对等](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [SDK 对比耗时：JSON/NDJSON/Patch/Protobuf/XAIOP](dev/sdk-timing/)
+- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [代码](xaiop-sdk/java/)
 - **预览 UI** — [views/](views/)（`cd views && npm run dev`）
-- **教模型写** — [经典 Skill](skills/xaiop/SKILL.md) · [白名单 Skill](skills/xaiop-allowlist/SKILL.md) · [实践指南](docs/practice/model-output.zh-CN.md)
+- **教写者** — [经典 Skill](skills/xaiop/SKILL.md) · [白名单 Skill](skills/xaiop-allowlist/SKILL.md) · [实践指南](docs/practice/model-output.zh-CN.md)
 - **指标包** — [JSON](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [导读](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md)
 
-Java / Python SDK 待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
+Java SDK 核心已启用（`io.xaiop:xaiop` 0.4.0 — parse · encode · merge · checkpoint；Stream/WS 后续）。Python 仍待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
 
 ---
 
-### 证据
+### 证据（LLM 楔子）
 
 原生双通道 · 禁止 JSON→XAIOP 转写 · 结构成功率按非空补全统计  
-口径：[docs/performance.zh-CN.md](docs/performance.zh-CN.md)
+**楔子证据——非唯一价值主张。** 口径：[docs/performance.zh-CN.md](docs/performance.zh-CN.md)
 
 <p align="center">
   <img alt="GPT 经典 JSON" src="https://img.shields.io/badge/GPT%20%E7%BB%8F%E5%85%B8%20·%20JSON-86.1%25-ef4444?style=flat-square&labelColor=0b1220" />
@@ -161,6 +171,6 @@ Java / Python SDK 待更新。英文文档为权威文本；仓库内配有 `*.z
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.1-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.4.0-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/"><img alt="文档" src="https://img.shields.io/badge/docs-%E7%B4%A2%E5%BC%95-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

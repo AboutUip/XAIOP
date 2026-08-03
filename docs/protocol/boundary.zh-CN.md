@@ -1,4 +1,4 @@
-# 边界判定
+﻿# 边界判定
 
 [English](boundary.md) · [简体中文](boundary.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `PROT-BOUND` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.2.1 |
+| 版本 | 0.4.0 |
 | 规范标题 | Boundary & Hierarchy Specification |
 | 规范版本 | v0.1 |
 | 最近更新 | 2026-08-03 |

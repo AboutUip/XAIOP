@@ -37,9 +37,10 @@ Product framing: [../../practice/streaming-transport.md](../../practice/streamin
 ## 3. Shared consumer advice (any SDK)
 
 1. Final full-document parse (or equivalent Snapshot at EOF) is the authoritative later-wins view.  
-2. Mid-stream Diffs must be interpreted with array-**replace** and key overwrite in mind.  
+2. Mid-stream Diffs must be interpreted with named-array **append** (re-enter) and key overwrite in mind.  
 3. Transport framing ≠ Label framing — decode bytes, then line-buffer.  
 4. Do not treat compatibility mode as protocol compliance.
 
 Practice (model · transport): [../../practice/](../../practice/).  
-Stack-specific: [../nodejs/notes/](../nodejs/notes/).
+Stack-specific: [../nodejs/notes/](../nodejs/notes/).  
+Third-party parity checklist: [../behavioral-contract.md](../behavioral-contract.md).

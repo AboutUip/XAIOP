@@ -9,7 +9,7 @@
 | Last updated | 2026-08-03 |
 | Normative | **No** — Node SDK behavior |
 | Code | `xaiop-sdk/nodejs/src/stream/ws/` |
-| Package | `xaiop` **0.4.0+** (protocol wire 0.2.1) |
+| Package | `xaiop` **0.6.0+** (protocol wire **0.4.0**) |
 
 Practice baseline: [../../../practice/skeleton-stream.md](../../../practice/skeleton-stream.md).  
 Phase parse semantics: [streaming-parse.md](streaming-parse.md).
@@ -59,10 +59,12 @@ Attach to an existing HTTP server: `XaiopWs.listen({ server, path: "/xaiop" })`.
 
 | Method | Behavior |
 | --- | --- |
-| `pushJson(key, value, { final? })` | `encodeSync({[key]:value}, {dotPolicy:"none"})` + optional `.\n` |
+| `pushJson(key, value, { final? })` | `encodeSync({[key]:value}, {dotPolicy:"none"})`; if not `final`, ensure trailing `\n` then append `.\n` |
 | `pushObject(obj, { final? })` | Same for a plain object (multi-key one phase) |
 | `pushWire(text)` | Raw XAIOP text |
 | `encodePhaseJson` / `encodePhaseObject` | Encode without sending (discard after send) |
+
+`final: true` omits the phase-separator `.` (last module). Non-final phases always end with `.\n` so the peer can emit mid-stream Diffs.
 
 Hardened encode rules apply (rejected keys still throw `XaiopEncodeError` — nothing is sent).
 
@@ -72,24 +74,55 @@ Hardened encode rules apply (rejected keys still throw `XaiopEncodeError` — no
 
 | Surface | Meaning |
 | --- | --- |
-| `onPhase` / `onChunk` | Diff = that `.` phase (same policy as `XaiopStream`) |
+| `onPhase` / `onChunk` | Diff under the same policy as `XaiopStream` (default **window-merged** complete `.` in the buffer; see [streaming-parse.md](streaming-parse.md)) |
 | `getCommittedSnapshot()` | Cumulative later-wins through last commit — safe mid-stream |
 | `getSnapshot()` | Final only after peer close / `done` |
 | `done` | Promise of final Snapshot |
 | `closed` | Promise when socket teardown finishes |
 
+`connect` / `listen` connection options (aligned with `XaiopStream`):
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `streamProcessing` | `true` | Mid-stream Diffs |
+| `mergeChunkWindow` | `true` | Batch complete `.` in the buffer window → one Diff |
+| `asyncParse` | `false` | Coalesced `pushAsync` ingest (`setImmediate`) |
+| `compatibilityMode` | `false` | Opt-in compat parse |
+
 Pass `onPhase` / `onDone` in **`connect` options** if the peer may push synchronously in `connection` — listeners are attached before `open` completes.
 
 ---
 
-## 5. Tests
+## 5. Session lifecycle (locked defaults)
 
-`test/ws.phase-encode.test.js` · `test/ws.session.test.js` — real loopback (listen → push phases → Snapshot), later-wins, array replace, fragmented/binary frames, attach-to-`http.Server`, sync push race, `XaiopStream` websocket transport fallback to `ws`.
+| Concern | Official behavior |
+| --- | --- |
+| Connect handshake | `handshakeTimeoutMs` default **15000**; wraps `ws` open wait |
+| Attach order | `XaiopWsConnection` binds message handlers **before** waiting for `open` (sync push on accept must not race) |
+| Binary frames | Streaming UTF-8 `TextDecoder` across chunks; flush decoder on peer close before `finish()` |
+| `push*` when closed / not OPEN | Returns **`false`** (no throw). Encode errors throw **before** `send` |
+| `end({ code?, reason? })` | Wait until `bufferedAmount === 0` or **2s** elapsed, then `close(code ?? 1000, reason ?? "")` |
+| `abort()` | Prefer `terminate()`, also `close(1001, "aborted")`; returns `false` if already closed |
+| Parse / finish failure | `done` rejects; `onError` fired; socket `close(1011, message.slice(0, 120))` |
+| Peer close | `finish()` checkpoint → `onDone` / resolve `done` with final Snapshot (`{}` if empty); then resolve `closed` |
+| Mid-stream `getSnapshot()` | Stays `undefined` until peer close / finish (use `getCommittedSnapshot`) |
+
+Listen options of note: `port ?? 0`, optional existing `http.Server` + `path`, `host`, `backlog`, `perMessageDeflate`, `maxPayload`.
+
+Phase Diff algorithm (leading `.` inject, empty → `null`): [streaming-parse.md](streaming-parse.md).
 
 ---
 
-## 6. Related
+## 6. Tests
+
+`test/ws.phase-encode.test.js` · `test/ws.session.test.js` — real loopback (listen → push phases → Snapshot), later-wins, named-array re-enter append, fragmented/binary frames, attach-to-`http.Server`, sync push race, `XaiopStream` websocket transport fallback to `ws`.
+
+---
+
+## 7. Related
 
 - Practice: [../../../practice/skeleton-stream.md](../../../practice/skeleton-stream.md)  
 - Streaming parse: [streaming-parse.md](streaming-parse.md)  
-- Encode: [../encode.md](../encode.md)
+- Stream API: [../stream.md](../stream.md)  
+- Encode: [../encode.md](../encode.md)  
+- Parity: [../../behavioral-contract.md](../../behavioral-contract.md)

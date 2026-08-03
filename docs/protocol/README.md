@@ -1,12 +1,12 @@
-# Protocol Documents ? XAIOP v0.2.1 (Frozen)
+﻿# Protocol Documents — XAIOP v0.4.0 (Frozen)
 
-[English](README.md) � [????](README.zh-CN.md)
+[English](README.md) · [简体中文](README.zh-CN.md)
 
 | Field | Value |
 | --- | --- |
 | Document ID | `PROT-INDEX` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Last updated | 2026-08-03 |
 | Normative | Informative (index) |
 
@@ -14,12 +14,12 @@
 
 ## Freeze notice
 
-This package is the **sealed XAIOP protocol v0.2.0**.  
-Normative grammar and semantics only ? Structure (boundary, cursor, arrays), Content (encoding, typing), Streaming validity.
+This package is the **sealed XAIOP protocol v0.4.0**.  
+Normative grammar and semantics only — Structure (boundary, cursor, arrays), Content (encoding, typing), Streaming validity.
 
-**Fixture:** [../examples/complex.xaiop](../examples/complex.xaiop) ? [../examples/complex.expected.json](../examples/complex.expected.json)
+**Fixture:** [../examples/complex.xaiop](../examples/complex.xaiop) → [../examples/complex.expected.json](../examples/complex.expected.json)
 
-**Isolation:** Protocol stays wire-only. Model output and network streaming ? [../practice/](../practice/). APIs ? [../sdk/](../sdk/). See [../SEPARATION.md](../SEPARATION.md).
+**Isolation:** Protocol stays wire-only. Model output and network streaming → [../practice/](../practice/). APIs → [../sdk/](../sdk/). See [../SEPARATION.md](../SEPARATION.md).
 
 ---
 
@@ -33,9 +33,9 @@ Normative grammar and semantics only ? Structure (boundary, cursor, arrays), Con
 | 4 | [content.md](content.md) | `:` typing and forced string |
 | 5 | [streaming.md](streaming.md) | When streamed wire is valid; JSON Snapshot/Diff *as protocol* |
 
-**Core pair:** `>` create/re-enter anonymous object (array ? new element) � `<` pop one level (illegal at Root) � never Bare Labels.  
-**Root opener:** `>` / `-` ? complete anonymous root document; omit ? **root fragment** `"a":{}` ? **not** `{"a":{}}`.  
-**Array one-line `k:v`:** complete single-property element at array level ([syntax.md](syntax.md) �6.1).
+**Core pair:** `>` create/re-enter anonymous object (array → new element) · `<` pop one level (illegal at Root) · never Bare Labels.  
+**Root opener:** `>` / `-` → complete anonymous root document; omit → **root fragment** `"a":{}` — **not** `{"a":{}}`.  
+**Array one-line `k:v`:** complete single-property element at array level ([syntax.md](syntax.md) §6.1).
 
 ---
 

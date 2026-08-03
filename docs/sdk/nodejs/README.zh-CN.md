@@ -5,12 +5,13 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `xaiop` |
-| 协议 | v0.2.1 Frozen |
+| 协议 | v0.4.0 Frozen |
 | 运行时 | Node.js ≥ 18（ESM） |
 | 代码 | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) |
 
 **隔离：** 协议=仅线格式 · 实践=模型与流式传输 · 本包=API — [../../SEPARATION.zh-CN.md](../../SEPARATION.zh-CN.md)。  
-**文档：** [指南](README.zh-CN.md) · [编码](encode.zh-CN.md) · [注意事项](notes/) · [实践](../../practice/) · [协议](../../protocol/)
+**对等：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（协议符合 ≠ 本 SDK）。  
+**文档：** [指南](README.zh-CN.md) · [流式](stream.zh-CN.md) · [编码](encode.zh-CN.md) · [合并](merge.zh-CN.md) · [注意事项](notes/) · [实践](../../practice/) · [协议](../../protocol/)
 
 ---
 
@@ -28,7 +29,7 @@ import { XaiopEngine, PROTOCOL_VERSION } from "xaiop";
 
 ---
 
-## 三个 API
+## 主要 API
 
 主方法均为 **async**，并提供对应 **sync**。
 
@@ -63,9 +64,24 @@ const json2 = engine.getSync(dataId2);
 ```js
 const json = await XaiopEngine.parse(xaiopText);
 const jsonSync = XaiopEngine.parseSync(xaiopText);
-// 第二参数：兼容模式（默认 false）
+// 第二参数：仅 boolean 兼容开关（默认 false）
 const jsonCompat = XaiopEngine.parseSync(xaiopText, true);
 ```
+
+**不对称：** 自由函数 `parseSync` / `parseAsync` 接受 `boolean | CompatPolicy | 部分 fix 映射`（见下文 CompatPolicy）。静态 `XaiopEngine.parse` / `parseSync` **只接受 boolean**。
+
+### 3b. 根片段 — `XaiopFragment`
+
+严格模式：文档无匿名根（`>` / `-`），而以 `>name` 或 Root Content 开头时，返回 **`XaiopFragment`**（不是包一层 `{ "a": … }`）。
+
+| 属性 / 方法 | 含义 |
+| --- | --- |
+| `entries` | Root 上的命名绑定 |
+| `isFragment` | 恒为 `true` |
+| `notation()` | 调试串，如 `"a":{}` |
+
+空源 → `{}`（不是 fragment）。兼容 `forcedRoot` 对该形状永不返回 fragment，而是完整对象。  
+**流式 / WS 的 JSON 表面** 调用 `materializeSnapshot`：fragment 变为 `entries` 的克隆（普通对象）。Engine `get` 在存在时保留 fragment。
 
 ### 4. `encode` / `uploadJson` — JSON → XAIOP
 
@@ -106,6 +122,24 @@ const id = await engine.uploadJson({ x: 1 });
 
 **完整编码指南：** [encode.zh-CN.md](encode.zh-CN.md)（稳定性约定、危险键、相位选项、测试）。
 
+### 4b. `mergeToJson` / `mergeToXaiop` / `inject*` — 预处理 / 后处理合并
+
+非流式。基底 **JSON** 与 XAIOP 合并（或注入已有 `dataId`）。冲突策略仅作用于**键**（`overwrite` | `keep`）。
+
+```js
+import { mergeToJson, mergeToXaiop, MERGE_CONFLICT, XaiopEngine } from "xaiop";
+
+const json = mergeToJson({ a: 1 }, ">\nb:2\n", { conflict: MERGE_CONFLICT.KEEP });
+const wire = mergeToXaiop({ a: 1 }, ">\na:9\n");
+
+const engine = new XaiopEngine();
+const id = engine.uploadJsonSync({ a: 1 });
+engine.injectXaiopSync(id, ">\nb:2\n");
+engine.injectJsonSync(id, { a: 9 }, { conflict: "keep" });
+```
+
+**指南：** [merge.zh-CN.md](merge.zh-CN.md)。
+
 ### 5. `XaiopWs` — WebSocket listen / connect（SDK 0.4.0）
 
 骨架流一等会话（同一包：推 + 收）。见 [notes/ws-session.zh-CN.md](notes/ws-session.zh-CN.md) 与 [../../practice/skeleton-stream.zh-CN.md](../../practice/skeleton-stream.zh-CN.md)。
@@ -122,7 +156,26 @@ await client.done;
 await hub.close();
 ```
 
-HTTP/SSE/RAW 仍在 `XaiopStream` 上，供其它路径使用。
+HTTP/SSE/RAW 仍在 `XaiopStream` 上，供其它路径使用 — 完整 API：[stream.zh-CN.md](stream.zh-CN.md)。
+
+### 6. `XaiopStream` — HTTP / SSE / WS / RAW 消费端
+
+独立流式客户端。Diff = `.` 相位（非 Block Diff）。默认：`streamProcessing` 开、**`mergeChunkWindow` 开**、`compatibilityMode` 关、`asyncParse` 关、**`historySnapshot` / `historyRealtime` 关**、modes 仅 `callback`。
+
+```js
+import { XaiopStream } from "xaiop";
+const stream = new XaiopStream(url, {
+  mergeChunkWindow: true, // 默认 — 缓冲窗口内完整 `.` 合并一次 Diff
+  asyncParse: true, // 生产：合并异步摄入
+  historySnapshot: true, // 可选只读 `.` 历史
+  historyRealtime: true, // 可选向前 jumpTo
+});
+stream.onChunk((diff) => {});
+await stream.send({ transport: "http" });
+// stream.history.exportTimeRoot() · stream.jumpTo(i)
+```
+
+见 [stream.zh-CN.md](stream.zh-CN.md) · 相位算法 [notes/streaming-parse.zh-CN.md](notes/streaming-parse.zh-CN.md) · 历史 [notes/history.zh-CN.md](notes/history.zh-CN.md)。
 
 ---
 
@@ -137,18 +190,50 @@ HTTP/SSE/RAW 仍在 `XaiopStream` 上，供其它路径使用。
 | --- | --- |
 | 默认 | **关闭** — 任意 `XaiopSyntaxError` 立即失败（忠实协议） |
 | 实例 | `new XaiopEngine({ compatibilityMode: true })` · `engine.setCompatibilityMode(true\|false)` · 读取 `engine.compatibilityMode` |
-| 静态 / 底层 | `XaiopEngine.parse(source, compatibilityMode?)` · `parseSync` / `parseAsync` — **第二参数**；省略或 `false` = 关闭 |
+| 静态 Engine | `XaiopEngine.parse(source, compatibilityMode?)` — **仅 boolean**；省略或 `false` = 关闭 |
+| 自由 parse | `parseSync` / `parseAsync` — 第二参：`boolean \| CompatPolicy \| Partial<Record<CompatFixId, boolean>>` |
 
 ```js
 // 严格（默认）
 XaiopEngine.parseSync(text);
 
-// 兼容
+// 兼容（八项 fix 全开）
 XaiopEngine.parseSync(text, true);
+parseSync(text, true);
 
 const engine = new XaiopEngine({ compatibilityMode: true });
 await engine.upload(text); // 使用 engine.compatibilityMode
 ```
+
+### CompatPolicy — 细粒度修复
+
+兼容模式开启时，八个**独立**、确定性的修复生效。无覆盖地构造 `CompatPolicy` 即**全开**。传给 `parseSync` 的普通对象视为**在默认上覆盖**（未写的键仍为 `true`）。
+
+| Fix ID | 模式开启时默认 | 摘要 |
+| --- | --- | --- |
+| `forcedRoot` | `true` | 开首不是 `>` / `-` 时注入匿名对象根 |
+| `rewriteBareNameArray` | `true` | `name-` → `>name-` |
+| `rewriteEnterLine` | `true` | 空白 / 粘连 `>key:value` 改写 |
+| `ignoreBareLeaveAtRoot` | `true` | Root 上裸 `<` 忽略 |
+| `popAndRetry` | `true` | 上浮 Cursor 并重试失败行 |
+| `locatePathTrim` | `true` | `=` 路径修剪重试 |
+| `locatePathStripSpaces` | `true` | `=` 去掉全部空白重试 |
+| `locatePathArraySuffix` | `true` | `=` 段尾 `-` 在值为数组时当作数组键 |
+
+导出：`CompatPolicy`、`COMPAT_FIX_IDS`、`COMPAT_FIX_DEFAULTS`。
+
+```js
+import { parseSync, CompatPolicy } from "xaiop";
+
+parseSync(text, { popAndRetry: true, forcedRoot: false }); // 其它 fix 仍默认 true
+parseSync(text, new CompatPolicy({ forcedRoot: false }));
+
+engine.setCompatibilityMode(true);
+engine.setCompatForcedRoot(false); // 模式关或非 boolean 时返回 false — 不改状态
+// setCompatibilityMode 不重置各 fix
+```
+
+Engine / `XaiopStream` 为每个 ID 提供 `compatForcedRoot` … `setCompatLocatePathArraySuffix`。模式**关闭**时 setter 返回 `false` 且不改标志。
 
 ### 强制完整根（外层对象或数组）
 
@@ -323,13 +408,19 @@ name:alice
 | --- | --- |
 | `new XaiopEngine(options?)` | 标准引擎实例；`options.compatibilityMode` 默认 `false` |
 | `compatibilityMode` / `setCompatibilityMode` | 读写兼容模式（详见上文「兼容模式」） |
+| `setCompat*` / `compat*` | 八项细粒度 fix（仅模式开启时生效） |
 | `upload(source)` / `uploadSync` | 完整文本 → data id（跟随实例兼容开关） |
 | `uploadJson` / `uploadJsonSync` | JSON → 严格 XAIOP → data id |
 | `encode` / `encodeSync`（静态 / 实例 / 自由函数） | JSON → XAIOP 文本；选项见上文 |
-| `get(dataId)` / `getSync` | data id → JSON（克隆） |
-| `XaiopEngine.parse` / `parseSync` | 静态：文本 → JSON；可选第二参数开启兼容模式 |
+| `mergeToJson` / `mergeToXaiop` / `mergeJson` | 预处理合并 → JSON 或 XAIOP（非流式） |
+| `injectXaiop` / `injectJson` (+ Sync) | 向已有 `dataId` 注入并写回 store |
+| `get(dataId)` / `getSync` | data id → JSON 或 `XaiopFragment`（克隆） |
+| `XaiopEngine.parse` / `parseSync` | 静态：文本 → JSON/Fragment；第二参 **仅 boolean** |
+| 自由 `parseSync` / `parseAsync` | 第二参可为 `boolean \| CompatPolicy \| partial` |
 
-辅助：`PROTOCOL_VERSION`、`DOT_POLICY`、`has` / `delete` / `clear`、`XaiopSyntaxError`、`XaiopEncodeError`。
+辅助：`PROTOCOL_VERSION`、`SDK_VERSION`、`DOT_POLICY`、`MERGE_CONFLICT`、`HISTORY_NODE_KIND`、`ParseHistory`、`CompatPolicy` / `COMPAT_FIX_*`、`XaiopFragment`、`has` / `delete` / `clear`、`XaiopSyntaxError`、`XaiopEncodeError`、`XaiopStream`（[stream.zh-CN.md](stream.zh-CN.md)）、`XaiopWs*`、`materializeSnapshot`。
+
+第三方对等清单：[../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)。
 
 ---
 
@@ -340,7 +431,7 @@ name:alice
   - **兼容：** 按上文上浮重试；恢复失败或错误变化时仍抛出  
 - 非法编码输入 / 选项 → `XaiopEncodeError`  
 - 未知 data id → `Error`  
-- 参数类型错误 → `TypeError`  
+- 参数类型错误 / 非法 `conflict` / `as` → `TypeError`  
 
 ---
 
@@ -352,5 +443,4 @@ name:alice
 
 ## 本包切片范围外
 
-- `!name` 全量广播追加（当前仅 locate-first）  
 - Java / Python encode 对等实现  

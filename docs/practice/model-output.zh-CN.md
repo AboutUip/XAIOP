@@ -32,7 +32,7 @@
 
 清单见协议 notes（此处不重定义）：[../protocol/notes/wire-attention.zh-CN.md](../protocol/notes/wire-attention.zh-CN.md)。
 
-渐进 UI 常用写法：开根 `>` → 写完一段顶层 → 需要中途更新时打 `.` → 从 Root 再进入 → **同一命名数组不要跨 `.` 再开**（再开是替换）。
+渐进 UI 常用写法：开根 `>` → 写完一段顶层 → 需要中途更新时打 `.` → 从 Root 再进入 → 命名数组 **可以**跨 `.` 再开并 **追加**（可选仍放在一相以便 Diff）。
 
 ---
 

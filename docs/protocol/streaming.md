@@ -1,4 +1,4 @@
-# Streaming Semantics
+﻿# Streaming Semantics
 
 [English](streaming.md) · [简体中文](streaming.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-STREAM` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER`, `REQ-STREAM` |

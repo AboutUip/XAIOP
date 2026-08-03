@@ -47,7 +47,7 @@ A **Downstream System** is any system that receives data from a Consumer or Pars
 
 ### 2.6 Encoder (SDK)
 
-An **Encoder** (implementation term) maps a JSON-compatible value to Well-Formed XAIOP text. The Node.js SDK encoder emits **strict** wire only; it is distinct from a Generator (typically an LLM). See [sdk/nodejs/encode.md](../sdk/nodejs/encode.md).
+An **Encoder** (implementation term) maps a JSON-compatible value to Well-Formed XAIOP text. The Node.js SDK encoder emits **strict** wire only; it is a tool **Generator** path, distinct from an LLM Generator. See [sdk/nodejs/encode.md](../sdk/nodejs/encode.md).
 
 ---
 

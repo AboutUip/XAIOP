@@ -51,15 +51,15 @@ API 名是实现细节。更粗的 Diff 边界写在实践/SDK 文档，不写�
 
 ## 5. 与 `.` / later-wins
 
-`.` 只重置 Cursor；同键后写覆盖；`>name-` 再开=数组替换。见 [wire-attention.zh-CN.md](wire-attention.zh-CN.md)。
+`.` 只重置 Cursor；同键 Content 后写覆盖；`>name-` 再开=再进入并**追加**。见 [wire-attention.zh-CN.md](wire-attention.zh-CN.md)。
 
 ---
 
 ## 6. 清单
 
-**生成：** 以完整 Label 行（含换行）为 Block 完成单元；Content 无换行；`.` 后从 Root 重进；不为追加跨重置再开数组。
+**生成：** 以完整 Label 行（含换行）为 Block 完成单元；Content 无换行；`.` 后从 Root 重进；跨相追加可再开 `>name-`。
 
-**消费：** 行缓冲；区分未完成尾 Content 与已完成 Block；Snapshot/Diff 语义写清；合并时应用 later-wins / 数组替换。
+**消费：** 行缓冲；区分未完成尾 Content 与已完成 Block；Snapshot/Diff 语义写清；合并时对象键 later-wins、具名数组再开按追加理解。
 
 ---
 

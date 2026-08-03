@@ -1,0 +1,22 @@
+{
+  "name": "@xaiop/sdk-timing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node.js SDK wall-clock stage timing (not LLM PERF-METRICS)",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "bench": "node bench.mjs",
+    "bench:quick": "node bench.mjs --quick",
+    "compare": "node compare.mjs",
+    "compare:quick": "node compare.mjs --quick",
+    "report": "node compare.mjs"
+  },
+  "dependencies": {
+    "fast-json-patch": "^3.1.1",
+    "protobufjs": "^7.5.3",
+    "xaiop": "file:../../xaiop-sdk/nodejs"
+  }
+}

@@ -1,14 +1,15 @@
 ---
 name: xaiop
 description: >-
-  Generate and interpret XAIOP (eXtensible AI Output Protocol) v0.2.0 Frozen.
-  Use when producing XAIOP, converting JSON↔XAIOP, or when the user attaches
-  this skill / mentions XAIOP, .xaiop, or AI-native structured output.
+  Generate and interpret XAIOP (eXtensible AI Output Protocol) v0.4.0 Frozen —
+  line-oriented cursor construction. Use when producing XAIOP, converting
+  JSON↔XAIOP, or when the user attaches this skill / mentions XAIOP, .xaiop,
+  or structured cursor-IR output.
 ---
 
-# XAIOP v0.2.0 Frozen — Generator Skill (Protocol Digest)
+# XAIOP v0.4.0 Frozen — Generator Skill (Protocol Digest)
 
-This document is the **working protocol summary** for emitters.  
+This document is the **working protocol summary** for emitters (LLM writers are one Generator class).  
 Emit **valid XAIOP only**. Prefer this Skill over inventing JSON-like habits.
 
 **Non-negotiables**
@@ -31,7 +32,7 @@ XAIOP is a **Cursor** walking a tree while you emit lines:
 | Concept | Meaning |
 | --- | --- |
 | **Cursor** | Current write address (always an **object**, or an **array** if opened with `-` / `>name-`) |
-| **Structure Label** | Moves / creates addresses (`>`, `>name`, `>name-`, `-`, `<`, `<name`, `.`, `=path`, `!name`) |
+| **Structure Label** | Moves / creates addresses (`>`, `>name`, `>name-`, `-`, `<`, `<name`, `.`, `=path`, `@path`, `!path`) |
 | **Content** | Writes data at Cursor (`key:value` or `:value`) |
 | **Block** | Content after a Label until the next Label or EOF — **no** end marker |
 
@@ -60,15 +61,16 @@ You do **not** close braces. You **leave** with `<` / `<name` / `.` / `=`.
 | --- | --- | --- |
 | `>` | Structure | Anonymous object: **open root** · **new array element** · or **re-enter** current object |
 | `>name` | Structure | Create/enter **named object** at Cursor |
-| `>name-` | Structure | Create/enter **named array** (**one** token, **one** line) |
+| `>name-` | Structure | Create/**re-enter** **named array** (**one** token, **one** line) |
 | `-` | Structure | Create/enter **anonymous array** (or nested array as next element) |
 | `<` | Structure | Pop one level (**illegal at Root**) |
 | `<name` | Structure | Pop one level, then create/enter `name` |
 | `key:value` | Content | Object field · **or** array one-line object element |
 | `:value` | Content | Scalar / anonymous value (typical array scalar element) |
-| `.` | Structure | Reset Cursor to **Root** |
-| `=path` | Structure | Fuzzy locate first match (`>` joins path segments) |
-| `!name` | Structure | Broadcast-append to every match named `name` |
+| `.` | Structure | Reset Cursor to **Root** (also exits `!` broadcast) |
+| `=path` | Structure | Fuzzy locate (first match); path segments joined by `>` |
+| `@path` | Structure | Exact from Root; **create** missing object segments |
+| `!path` | Structure | Broadcast to all path-fragment matches until `.` |
 
 **Forbidden line forms:** Bare Label · `>>x` / same-symbol stacking · `<` at Root · multiline values · blank lines · `>  name` (spaces after `>`) · gluing Structure onto Content (`>key:value`).
 
@@ -334,15 +336,20 @@ Rules:
 3. Matching is fuzzy; first match wins; fuller paths are safer.
 4. Lands Cursor on an **object**, or on an **array** if that key’s value is an array.
 5. Locate a named array by the **key name only**: `=siblings` — **not** `=siblings-`.  
-   Trailing `-` is the **create** postfix on `>name-`, not part of the locate key.
+   Trailing `-` is the **create/re-enter** postfix on `>name-`, not part of the locate key.
 6. No numeric index syntax (`=arr>0` is not “element 0”; `0` would be a name).
 7. Prefer **create with `>name` / Content** for new data. Use `=` only when you must **return** to a node already written.
 
 After `=siblings` (array), write the next element with `>` / `:v` / one-line `k:v`.
 
-### 8.3 `!` — broadcast append
+### 8.3 `=` / `@` / `!` — locate
 
-`!name` — subsequent Content appends to **every** existing node matching `name`. Prefer rare use; prefer precise `=` / `>` when possible.
+- `@path` — exact path from Root; **create** missing object segments (本相); single Cursor.  
+- `!path` — all complete path-fragment matches on **tree so far** (向前跨相, outer prune); **broadcast** until `.`.  
+- `=path` — fuzzy locate on **tree so far** (向前跨相); first match; no create.  
+
+While broadcasting, do not emit another `!` / `@` / `=` — emit `.` first.  
+Prefer `@` to open/create a Root path; `=` to return to an existing node; `!` for multi-site updates.
 
 ### 8.4 `=` vs `:` vs `>` (memorize)
 

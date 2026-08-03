@@ -4,8 +4,8 @@
 
 | Field | Value |
 | --- | --- |
-| Package | `xaiop` **0.3.0+** |
-| Protocol wire | Frozen **v0.2.1** (unchanged) |
+| Package | `xaiop` **0.6.0+** |
+| Protocol wire | Frozen **v0.4.0** |
 | Code | [`encode.js`](../../../xaiop-sdk/nodejs/src/encode.js) |
 | Tests | `encode.test.js` · `encode.stability.test.js` |
 | Attention note | [notes/encode-attention.md](notes/encode-attention.md) |
@@ -68,7 +68,7 @@ For values the encoder **accepts**:
 1. **`parseSync(encodeSync(value, opt))` deep-equals `value`** (JSON value equality; `-0` collapses to `0`).
 2. **Determinism** — same `(value, options)` → identical wire string.
 3. **Double round-trip** — `rt(rt(value)) === value` under the same options.
-4. Named arrays are **never split across `.` phases** (re-opening `>name-` after `.` would **replace**, not append).
+4. Named arrays **MAY** be split across `.` phases (`>name-` re-enter **appends**). Default encode still keeps each named array in one phase for Diff clarity.
 5. Wire ends with exactly one trailing `\n`.
 
 ### Not guaranteed
@@ -112,10 +112,23 @@ Matches `PROT-CONTENT` (package **0.2.1**):
 
 | `dotPolicy` | Behavior |
 | --- | --- |
-| `perTopLevelKey` (**default**) | `.` between each top-level key |
+| `perTopLevelKey` (**default**) | `.` between each top-level **object** key |
 | `none` | Single document; no phase `.` (unless `finalDot`) |
 | `perNKeys` | Group `phaseEvery` keys per phase |
 | `custom` | Cut when `shouldPhase(ctx)` returns true |
+| **`string[]`** (path overload) | After each listed JSON path node is fully encoded, insert `.` |
+
+**Path-array overload** (`dotPolicy: string[]`):
+
+- Paths use **JSON-style** segments: `a.b[2]` (`.` and `[i]`). Not XAIOP `>`.
+- `.` is inserted **after** that node (and all of its prior content in document order) is encoded.
+- Missing paths → `XaiopEncodeError` (strict).
+- Mutually exclusive with `phaseEvery` / `maxPhases` / `shouldPhase`.
+- Requires `style: "reset"` (default).
+- An array index may only be the **final** segment (`data.childs[2]` OK; `data.childs[2].name` rejected — after `.`, named-array reopen **appends** and cannot continue the same element object).
+- Helpers: `parseJsonPath` / `formatJsonPath`.
+
+**Array document roots:** when the encoded value is an array (or `root: "array"`), the wire starts with `-` and **object-style named `dotPolicy` phasing does not apply**. Path-array mode still walks the value; prefer object roots when you need mid-stream `.` for `XaiopStream` / `DotCheckpointEngine`.
 
 | Option | Default | Notes |
 | --- | --- | --- |
@@ -143,6 +156,20 @@ Matches `PROT-CONTENT` (package **0.2.1**):
 ```
 
 Return `true` to **end the phase after** the current key (ignored on the last key).
+
+### Production streaming — place `.` deliberately
+
+For **production stream pipelines** (`XaiopStream` / `DotCheckpointEngine` / WS phase push), treat `.` placement as part of the product design — do **not** rely on the default `perTopLevelKey` unless that matches your delivery shape.
+
+| Goal | Prefer |
+| --- | --- |
+| Large contiguous payload (big text, blob fields, dense tables) stays **one phase** | Keep that subtree **inside** a single phase — no `.` mid-blob. Use `none`, a coarse `perNKeys` / `custom`, or a **path array that only cuts outside** the heavy region |
+| Separable sub-results should arrive **early and smoothly** | Cut with `dotPolicy: string[]` (or `custom`) **after** each ready subunit — e.g. metadata, then each list element / section the UI can render |
+| Avoid accidental O(phases × size) cost on the consumer | Fewer, purposeful `.` beats “one phase per top-level key” when the document is wide |
+
+**Rule of thumb:** one `.` = one consumer Diff/Commit boundary. Put boundaries where the **receiver benefits** (progressive UI / partial commit), and keep **bulk continuous data** in one transfer unit so it is not chopped into many re-parses.
+
+Path-array mode is the usual tool when JSON shape is known: list only the cut points you want (`["meta", "items[0]", "items[1]"]`), leave the large field unlisted so it ships in whichever phase contains it — intact.
 
 ---
 
@@ -194,6 +221,16 @@ encodeSync({ a: 1, b: 2, c: 3 });
 // .
 // >
 // c:3
+```
+
+### Path-array phases
+
+```js
+encodeSync(
+  { data: { childs: [{ id: 0 }, { id: 1 }, { id: 2 }], meta: true } },
+  { dotPolicy: ["data.childs[1]"] },
+);
+// After childs[1] is fully encoded → `.` → reopen `>data` / `>childs-` and append the rest
 ```
 
 ### Forced strings

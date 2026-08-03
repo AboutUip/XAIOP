@@ -1,4 +1,4 @@
-# Content Encoding
+﻿# Content Encoding
 
 [English](content.md) · [简体中文](content.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-CONTENT` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER` |

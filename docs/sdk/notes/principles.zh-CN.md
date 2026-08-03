@@ -37,9 +37,10 @@
 ## 3. 通用消费建议
 
 1. EOF 全文（或等价终态 Snapshot）是 later-wins 权威视图。  
-2. 中途 Diff 须按数组**替换**与同键覆盖理解。  
+2. 中途 Diff 须按命名数组**追加**（再进入）与同键覆盖理解。  
 3. 传输分帧 ≠ Label 分帧 — 先解码再按行缓冲。  
 4. 不要把兼容模式当作协议符合性。
 
 实践：[../../practice/](../../practice/)。  
-分栈：[../nodejs/notes/](../nodejs/notes/)。
+分栈：[../nodejs/notes/](../nodejs/notes/)。  
+第三方对等清单：[../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)。

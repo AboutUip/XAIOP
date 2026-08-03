@@ -58,8 +58,8 @@ Concrete API names are implementation details.
 | Fact | Implication for streaming readers |
 | --- | --- |
 | `.` resets Cursor only | Prior JSON keys remain until overwritten |
-| Later-wins | Snapshot after a later Block may drop earlier same-key payload |
-| `>name-` reopen | Array key is replaced — Diff/Snapshot must not pretend append |
+| Later-wins | Snapshot after a later Block may drop earlier same-key **object Content** |
+| `>name-` reopen | Array is **re-entered**; elements **append** — Diff/Snapshot accumulate |
 
 Wire details: [wire-attention.md](wire-attention.md).
 
@@ -70,7 +70,7 @@ Wire details: [wire-attention.md](wire-attention.md).
 - [ ] Emit complete Label lines (including terminating newline) as the unit of Block completion.  
 - [ ] Do not put line endings inside Content values.  
 - [ ] If Consumers need mid-stream JSON, ensure Blocks (and any agreed checkpoint) actually complete.
-- [ ] After `.`, re-address from Root; do not reopen arrays for append.
+- [ ] After `.`, re-address from Root; reopen `>name-` when append across phases is intended.
 
 ---
 
@@ -79,7 +79,7 @@ Wire details: [wire-attention.md](wire-attention.md).
 - [ ] Buffer to line boundaries before Label decisions.  
 - [ ] Distinguish incomplete trailing Content (still open Block) from completed Blocks.  
 - [ ] If exposing Snapshot/Diff, define Diff = completed Block (or document a deliberate narrower policy in practice/SDK docs).
-- [ ] Apply later-wins / array-replace when merging successive views.
+- [ ] Apply later-wins for object keys; treat `>name-` reopen as array append when merging successive views.
 
 ---
 

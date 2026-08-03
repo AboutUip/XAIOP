@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `OV-INTRO` |
 | Status | Draft |
-| Version | 0.1.0-draft |
-| Last updated | 2026-08-01 |
+| Version | 0.2.0-draft |
+| Last updated | 2026-08-03 |
 | Normative | Mixed (scope and non-goals are normative; background is informative) |
 | Depends on | `META-CONV`, `META-VER` |
 | Informs | `OV-PRIN`, `REQ-FUNC`, `REQ-STREAM`, `CONF` |
@@ -16,13 +16,17 @@
 
 ## 1. Purpose
 
-XAIOP (eXtensible AI Output Protocol) is an AI-native output protocol for reliable, deterministic, streaming-friendly structured data generation by Large Language Models (LLMs) and consumption by software systems.
+XAIOP (eXtensible AI Output Protocol) is a line-oriented **cursor construction** protocol for reliable, deterministic, streaming-friendly structured data: writers emit enter / leave / locate / reset instructions; software **materializes** JSON (including mid-stream phases).
+
+Large Language Models are a **typical** Generator, not the only one. Tools (`encode`) and session push (e.g. skeleton WebSocket) use the same wire.
+
+Full product stance: **[positioning.md](positioning.md)**.
 
 ---
 
 ## 2. Problem Statement (informative)
 
-Modern AI applications increasingly rely on LLMs to generate structured data. Formats originally designed for deterministic programs (notably JSON and XML) introduce challenges during long-form and streaming generation:
+Formats designed for deterministic programs (notably JSON and XML) ask for a finished, globally correct structure in one pass. That hurts long-form, incremental, and unreliable writers:
 
 | Challenge | Impact |
 | --- | --- |
@@ -32,25 +36,28 @@ Modern AI applications increasingly rely on LLMs to generate structured data. Fo
 | Low tolerance for partial output | Poor incremental UX |
 | Reduced stability in streaming generation | Unreliable pipelines |
 
-**Rationale (informative):** XAIOP approaches the problem by designing the protocol around how AI naturally generates structured information, rather than forcing AI to emulate traditional serialization formats.
+**Rationale (informative):** XAIOP designs around **local cursor steps** and program-side materialization, rather than forcing writers to emulate brace-pairing serialization.
 
-**Full stance (informative):** turn a *memory* problem (global brace/nesting bookkeeping) into a *logic* problem (local next-step cursor moves). Evidence, conditional gains by model profile, out-of-scope bottlenecks, and current positioning: **[positioning.md](positioning.md)**.
+**Wedge (informative):** for LLMs, turn a *memory* problem into a *logic* problem. Evidence and conditional gains: **[positioning.md](positioning.md)** · [performance.md](../performance.md).
 
 ---
 
 ## 3. Architectural Position
 
 ```text
-LLM
+Writer (LLM · tool · session push)
  │
  ▼
-XAIOP Protocol
+XAIOP Protocol (cursor IR)
+ │
+ ▼
+Parser / SDK (materialize · phases)
  │
  ▼
 Application / Downstream Systems
 ```
 
-XAIOP sits between model output and application consumption. It is not defined as a general-purpose program-to-program interchange format.
+XAIOP sits between writers and application consumption. It is not defined as a general-purpose program-to-program interchange format replacing JSON buses.
 
 ---
 
@@ -60,11 +67,11 @@ The protocol design **MUST** pursue the following goals:
 
 | Goal ID | Goal | Description |
 | --- | --- | --- |
-| G1 | AI-native | Suited to LLM generation behavior |
+| G1 | Generator-friendly | Suited to incremental / local cursor writing; avoid long-range brace commitments |
 | G2 | Deterministic parsing | No guessing; no silent repair as parse semantics |
-| G3 | Streaming-first | Incremental generation and consumption |
+| G3 | Streaming-first | Incremental generation and consumption; phase-friendly materialization |
 | G4 | Human-readable | Inspectable and debuggable as text |
-| G5 | Cross-model | Usable across model families without model-specific binary encodings |
+| G5 | Cross-writer | Usable across writer families without writer-specific binary encodings |
 | G6 | Long-context friendly | Stable under extended outputs |
 
 ---
@@ -76,10 +83,12 @@ The following are **explicitly out of scope** for XAIOP as a protocol:
 | Non-Goal ID | Statement |
 | --- | --- |
 | NG1 | XAIOP **MUST NOT** be positioned as a replacement for JSON (or similar) as the primary data exchange format between deterministic programs. |
-| NG2 | The protocol **MUST NOT** require AI generators to perform hashes, checksums, CRCs, length calculations, or cryptographic operations as part of conforming generation. |
-| NG3 | Conforming parsers **MUST NOT** be required to repair, infer, or guess AI intentions when input is not well-formed per the protocol. |
+| NG2 | The protocol **MUST NOT** require Generators to perform hashes, checksums, CRCs, length calculations, or cryptographic operations as part of conforming generation. |
+| NG3 | Conforming parsers **MUST NOT** be required to repair, infer, or guess Generator intentions when input is not well-formed per the protocol. |
 | NG4 | Content encoding is defined in `PROT-CONTENT` / `PROT-SYNTAX`. Structure rules are in `PROT-BOUND` / `PROT-HIER` / `PROT-SYNTAX`. |
 | NG5 | This specification tree **MUST NOT** define SDK APIs as protocol requirements. |
+
+**Informative note on NG1:** Product stacks **MAY** push phases from programs (encode, WS sessions) into materializing consumers. That is progressive construction on the wire — not a claim to replace JSON as the service-to-service bus.
 
 ---
 
@@ -105,7 +114,7 @@ The following are **explicitly out of scope** for XAIOP as a protocol:
 
 | Actor | Role |
 | --- | --- |
-| Generator | Produces XAIOP text (typically an LLM under prompting or constraints) |
+| Generator | Produces XAIOP text (typically an LLM under prompting or constraints; also encode tooling and session push) |
 | Parser | Deterministically interprets XAIOP text according to the protocol |
 | Consumer | Application logic that uses parsed units or streams |
 | Downstream system | Stores, transforms, or displays consumed data |

@@ -9,7 +9,7 @@
 | Last updated | 2026-08-03 |
 | Normative | **No** — Node SDK behavior |
 | Code | `xaiop-sdk/nodejs/src/stream/` |
-| Package | `xaiop` 0.4.0+ (protocol wire 0.2.1) |
+| Package | `xaiop` **0.7.0+** (protocol wire **0.4.0**) |
 
 **Protocol baseline (read first):**  
 [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md) ·  
@@ -25,7 +25,7 @@ This note covers **only** the Node.js JSON-facing stream path. It does not chang
 | --- | --- |
 | Final document (`done` / completed snapshot) | **Robust** — matches one-shot `parseSync` under tested framings |
 | Mid-stream JSON Diff | **Phase-based** (`.` checkpoints), not Block-by-Block as `PROT-STREAM` §5 literally suggests |
-| Main risk | Semantic misuse + Generator array reopen — not random byte loss when lines are LF/CRLF |
+| Main risk | Semantic misuse (phase Diff ≠ cumulative Snapshot) — not random byte loss when lines are LF/CRLF |
 
 ---
 
@@ -34,17 +34,75 @@ This note covers **only** the Node.js JSON-facing stream path. It does not chang
 ```text
 Transport text → DotCheckpointEngine.push
   → scan complete "." lines
-  → parseSync(phase) → materialize → onChunk(diff)
-  → finish(): flush tail + parseSync(full buffer) → onDone / getSnapshot
+  → feed phase wire into LiveXaiopParser (once; keeps cumulative tree)
+  → materialize live tree → committedSnapshot
+  → Diff = phase-local parse (or shared committed for `=`/`!` after a prior `.`)
+  → onChunk(diff)
+  → finish(): flush tail; reuse last commit when buffer fully covered
 ```
 
 | Layer | Path |
 | --- | --- |
-| Client | `src/stream/XaiopStream.js` |
+| Client | `src/stream/XaiopStream.js` · API guide [../stream.md](../stream.md) |
 | Checkpoint | `src/stream/checkpoint.js` |
+| Live parse | `LiveXaiopParser` in `src/parse.js` |
 | Materialize | `src/stream/materialize.js` |
 | Parse | `src/parse.js` |
 | Transport | `src/stream/transport.js` |
+
+---
+
+## 2b. Checkpoint algorithm (portable)
+
+`DotCheckpointEngine` implements later-wins **phase Diff**, not a JSON-tree diff of cumulative snapshots. Ports that omit leading-`.` injection on **Diff** slices, skip the live Commit tree, or confuse commit vs chunk will diverge from the official SDK.
+
+### On each complete `.` line (stream processing on)
+
+**Default `mergeChunkWindow: true`:** collect every complete `.` currently in the buffer window, feed all phase lines into the live tree **once**, one Commit, **one** `onChunk`. Multi-phase Diff = materialized committed tree after the batch (not N phase-local Diffs). Network framing is not preserved as delivery units.
+
+**`mergeChunkWindow: false`:** stepwise — each `.` triggers its own Diff (legacy fine-grained surface):
+
+```text
+raw  = buffer[segmentStart .. endOfDotLine]
+live.feedText(raw)
+… emit onChunk(phaseDiff)
+```
+
+**Async ingest:** `pushAsync` / `finishAsync` append immediately and coalesce the scan on `setImmediate` (yields the event loop; multiple rapid `pushAsync` share one drain). Prefer with `mergeChunkWindow` for fewer, larger computes. Sync `push` / `finish` remain available.
+
+**Parse history (opt-in, SDK 0.7.0+):** `historySnapshot` / `historyRealtime` default **off**. When on, each physical `.` is recorded (before/after/diff) even if Diff delivery is window-merged. See [history.md](history.md).
+
+### `injectLeadingDot(raw)`
+
+If `raw` already begins with a `.` line (`.` / `.\n` / `.\r\n`), return as-is.  
+Else if `raw` starts with `\n`, return `.` + `raw`.  
+Else return `.\n` + `raw`.
+
+Later-phase **Diff** parses are therefore documents that **already reset to Root**, matching wire Cursor rules after a real `.`. The live Commit path does not inject — the prior phase’s `.` was already fed.
+
+### Empty phase → `null` chunk
+
+Strip a leading `.` line and a trailing `.` line from `raw`, then `trim`. If the remaining body length is `0`, the chunk is **`null`** (even if parse would yield `{}`). Consecutive `.` lines produce `null` chunks.
+
+### `finish()` / EOF tail
+
+1. Flush any remaining `buffer[segmentStart ..]` into the live tree and emit a last chunk (same Diff rules; if no prior `.`, Diff aliases committed).  
+2. If `committedAt === buffer.length`, final snapshot **reuses** the last committed value (no third full parse); otherwise parse the full buffer.  
+3. Empty full buffer → final snapshot treated as **`{}`** on consumer surfaces.  
+4. If `streamProcessing` is **false**: skip mid-stream phases and live; at finish emit one chunk = full parse and set snapshot accordingly.
+
+### Commit vs chunk
+
+| Value | Source |
+| --- | --- |
+| Chunk / Diff | Parse of **that phase text only** (after inject), except `=`/`!` after a prior `.` → cumulative committed value |
+| `committedSnapshot` | Live tree after feeding all wire through last `.` / flushed tail (materialized clone) |
+
+Do not implement Diff as `deepDiff(prevCommitted, newCommitted)` unless you document a different product surface — that is **not** the official Node behavior.
+
+### Materialize
+
+`XaiopFragment` → clone of `entries` (plain object). Complete documents clone as-is. Stream JSON surfaces never expose the fragment class.
 
 ---
 
@@ -78,16 +136,17 @@ This is an **SDK policy**, documented here — not a silent protocol edit. See [
 ## 5. SDK footguns (on top of wire rules)
 
 1. **Treat `onChunk` as phase JSON**, not JSON Patch and not cumulative Snapshot.  
-2. **Merging chunks yourself:** object keys accumulate/overwrite; a phase that reopens `>name-` **replaces** that array key. Prefer `getCommittedSnapshot()` for cumulative JSON.  
+2. **Merging chunks yourself:** object keys accumulate/overwrite; a phase that reopens `>name-` **appends** to that named array. Prefer `getCommittedSnapshot()` for cumulative JSON.  
+2b. **Locate across phases:** `=` / `!` see the **whole tree so far** (向前跨相). Official Diff phases that contain `=` / `!` parse a **cumulative prefix**. `@` create-or-enter is 本相 and may stay phase-local.  
 3. **Tolerate `null` chunks** (empty phases, e.g. consecutive `.`).  
 4. **Do not use mid-stream `getSnapshot()`** for UI progress — use `getCommittedSnapshot()`.  
 5. **Compatibility mode** (default **off**): each phase parses with the same policy; `forcedRoot` looks at the **first line of that phase text** (later phases often start with synthetic `.`) — multi-phase + root-array shapes need explicit testing.  
 6. **Transport:** prefer complete lines per SSE/WS **text** message; RAW/WS **binary** now uses a streaming UTF-8 decoder across chunks (do not interleave string+binary mid-code-point).  
 7. **Errors:** mid-stream `XaiopSyntaxError` fails the stream; already emitted chunks are not rolled back.  
-8. **Cost:** each `.` triggers phase parse + prefix re-parse for commit; `finish` parses full buffer again.  
+8. **Cost:** each `.` feeds the phase into a live parser; first phase and `=`/`!` Diff share one materialize with Commit; later ordinary Diff uses an owned phase parse (no extra clone). Full-tree materialize is lazy until committed is read. `emitDiff: false` (also auto when `XaiopStream` has no Diff consumer) skips Diff parses. `cloneJson` uses JSON round-trip. Do **not** re-`parseSync` the growing prefix on every `.`.  
 9. **Lone CR** without LF: checkpoint `.` detection is weaker than full `parseSync` normalization — prefer LF/CRLF.
 
-Wire rules that still apply: [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md) (especially array reopen after `.`).
+Wire rules that still apply: [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md) (especially named-array re-enter / append after `.`).
 
 ---
 
@@ -126,5 +185,6 @@ Encode alignment: [../encode.md](../encode.md) · [encode-attention.md](encode-a
 ## Related
 
 - Protocol streaming note: [../../../protocol/notes/streaming-attention.md](../../../protocol/notes/streaming-attention.md)  
-- Guide: [../README.md](../README.md)  
+- API guide: [../stream.md](../stream.md) · [../README.md](../README.md)  
+- Parity contract: [../../behavioral-contract.md](../../behavioral-contract.md)  
 - Separation: [../../../SEPARATION.md](../../../SEPARATION.md)

@@ -1,4 +1,4 @@
-# Conformance
+﻿# Conformance
 
 [English](conformance.md) · [简体中文](conformance.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `CONF` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `REQ-FUNC`, `REQ-STREAM`, `META-VER`, `TERM-GLOSS`, `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT`, `PROT-STREAM` |

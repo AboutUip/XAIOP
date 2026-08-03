@@ -1,4 +1,4 @@
-# Boundary Determination
+﻿# Boundary Determination
 
 [English](boundary.md) · [简体中文](boundary.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-BOUND` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Spec title | Boundary & Hierarchy Specification |
 | Spec version | v0.1 |
 | Last updated | 2026-08-03 |

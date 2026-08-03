@@ -1,4 +1,4 @@
-# 协议文档 — XAIOP v0.2.1（已冻结）
+﻿# 协议文档 — XAIOP v0.4.0（已冻结）
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `PROT-INDEX` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.2.1 |
+| 版本 | 0.4.0 |
 | 最近更新 | 2026-08-03 |
 | 规范性 | 信息性（索引） |
 
@@ -14,7 +14,7 @@
 
 ## 冻结声明
 
-本包为 **已封存的 XAIOP 协议 v0.2.1**。  
+本包为 **已封存的 XAIOP 协议 v0.4.0**。  
 仅规范性文法与语义 — 结构层、内容层、流式有效性。
 
 **样例：** [../examples/complex.xaiop](../examples/complex.xaiop) → [../examples/complex.expected.json](../examples/complex.expected.json)

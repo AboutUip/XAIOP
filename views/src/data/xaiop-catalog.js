@@ -4,9 +4,9 @@
  */
 
 export const meta = {
-  protocolVersion: "0.2.1",
+  protocolVersion: "0.4.0",
   packageName: "xaiop",
-  packageVersion: "0.4.1",
+  packageVersion: "0.7.0",
   runtime: "Node.js ≥ 18 (ESM)",
   previewApp: "views/",
 };
@@ -39,8 +39,8 @@ export const operators = [
     kind: "Structure",
     title: "Named array",
     titleZh: "具名数组",
-    summary: "Create/enter named array",
-    summaryZh: "创建/进入具名数组",
+    summary: "Create/re-enter named array (append)",
+    summaryZh: "创建/再进入具名数组（追加）",
     example: ">tags-\n:a\n:b",
   },
   {
@@ -94,14 +94,24 @@ export const operators = [
     example: ">\n>a\nx:1\n.\n=a\ny:2",
   },
   {
+    id: "exact-path",
+    symbol: "@path",
+    kind: "Structure",
+    title: "Exact path",
+    titleZh: "精确路径",
+    summary: "Exact from Root; create missing objects (本相)",
+    summaryZh: "自 Root 精确；缺失则创建对象（本相）",
+    example: "@a>b\nz:1",
+  },
+  {
     id: "broadcast",
-    symbol: "!name",
+    symbol: "!path",
     kind: "Structure",
     title: "Broadcast",
     titleZh: "广播",
-    summary: "SDK: locate first match (full broadcast later)",
-    summaryZh: "SDK：定位首个匹配（完整广播待后续）",
-    example: "!meta",
+    summary: "All matches on tree so far (cross-phase); multi-Cursor until .",
+    summaryZh: "已建整树全部匹配（向前跨相）；多光标至 .",
+    example: "!test\nz:1\n.",
   },
   {
     id: "content",
@@ -134,7 +144,7 @@ export const nodeSdkApis = [
       {
         name: "PROTOCOL_VERSION",
         kind: "const",
-        signature: 'PROTOCOL_VERSION: "0.2.1"',
+        signature: 'PROTOCOL_VERSION: "0.4.0"',
         returns: "string",
         summary: "Frozen protocol version string",
         summaryZh: "冻结协议版本字符串",
@@ -362,10 +372,12 @@ export const nodeSdkApis = [
       {
         name: "constructor",
         kind: "constructor",
-        signature: "new XaiopStream(url, { streamProcessing?, compatibilityMode?, modes? })",
+        signature:
+          "new XaiopStream(url, { streamProcessing?, mergeChunkWindow?, asyncParse?, historySnapshot?, historyRealtime?, modes? })",
         returns: "XaiopStream",
-        summary: "Independent stream client; one request at a time",
-        summaryZh: "独立流客户端；同时仅一个请求",
+        summary:
+          "Independent stream client; history flags default off (0.7.0+)",
+        summaryZh: "独立流客户端；历史标志默认关（0.7.0+）",
       },
       {
         name: "setUrl / setStreamProcessing / setModes",
@@ -434,10 +446,30 @@ export const nodeSdkApis = [
       {
         name: "DotCheckpointEngine",
         kind: "class",
-        signature: "push(chunk) · finish()",
-        returns: "void",
-        summary: "Low-level . phase engine (tests / custom transports)",
-        summaryZh: "底层 . 阶段引擎（测试/自定义传输）",
+        signature:
+          "push · finish · jumpTo · history (historySnapshot? / historyRealtime?)",
+        returns: "void | ParseHistory",
+        summary:
+          "Low-level . phase engine; opt-in parse history (snapshot + realtime jump)",
+        summaryZh: "底层 . 相位引擎；可选解析历史（快照 + 实时 jumpTo）",
+      },
+      {
+        name: "ParseHistory / jumpTo",
+        kind: "class",
+        signature:
+          "exportTimeRoot · compare · viewRange · jumpTo(index) · setSource(url)",
+        returns: "HistoryNode[] | object",
+        summary:
+          "Opt-in flight recorder: snapshot read-only vs realtime forward truncate",
+        summaryZh: "可选飞行记录：快照只读 vs 实时向前裁剪",
+      },
+      {
+        name: "mergeToJson / mergeToXaiop / inject*",
+        kind: "function",
+        signature: "mergeToJson(base, xaiop, { conflict?, compat? })",
+        returns: "unknown | string",
+        summary: "Pre/post merge (not streaming); conflict overwrite|keep",
+        summaryZh: "预处理/后处理合并（非流式）；冲突 overwrite|keep",
       },
     ],
   },
@@ -507,6 +539,22 @@ export const nodeSdkApis = [
         summary: "Network transports",
         summaryZh: "网络传输种类",
       },
+      {
+        name: "SDK_VERSION / PROTOCOL_VERSION",
+        kind: "const",
+        signature: 'SDK_VERSION "0.7.0" · PROTOCOL_VERSION "0.4.0"',
+        returns: "string",
+        summary: "Package vs wire version (may diverge)",
+        summaryZh: "包版本 vs 线格式版本（可分离）",
+      },
+      {
+        name: "MERGE_CONFLICT / HISTORY_NODE_KIND",
+        kind: "const",
+        signature: "overwrite | keep · dot | tail",
+        returns: "object",
+        summary: "Merge conflict policy · history node kinds",
+        summaryZh: "合并冲突策略 · 历史节点种类",
+      },
     ],
   },
 ];
@@ -523,8 +571,8 @@ export const sdkStacks = [
   {
     id: "java",
     name: "Java",
-    status: "pending",
-    statusZh: "待更新",
+    status: "active",
+    statusZh: "进行中",
     docs: "docs/sdk/java/",
     code: "xaiop-sdk/java/",
   },

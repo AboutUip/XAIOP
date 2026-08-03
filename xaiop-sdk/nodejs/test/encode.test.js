@@ -34,7 +34,7 @@ function countDotLines(wire) {
 }
 
 test("protocol version unchanged by encode feature", () => {
-  assert.equal(PROTOCOL_VERSION, "0.2.1");
+  assert.equal(PROTOCOL_VERSION, "0.4.0");
 });
 
 test("static + free encodeSync / encode agree", async () => {
@@ -329,6 +329,7 @@ test("perTopLevelKey phases align with DotCheckpointEngine chunks", () => {
   const chunks = [];
   const engine = new DotCheckpointEngine({
     streamProcessing: true,
+    mergeChunkWindow: false,
     onChunk: (diff) => chunks.push(diff),
   });
   engine.push(wire);
@@ -366,11 +367,26 @@ test("encode wire streams through XaiopStream RAW transport", async () => {
   assert.deepEqual(diffs[1], { right: { ok: true } });
 });
 
-test("reopening same array key across dots replaces (encode keeps array in one phase)", () => {
-  // Encoder must not split a named array across `.` — verify one-phase array
+test("reopening same array key across dots appends (hand wire); encode still one phase per named array", () => {
+  const hand = `>
+>items-
+>
+id:1
+<
+.
+>
+>items-
+>
+id:2
+<
+`;
+  assert.deepEqual(parseSync(hand), {
+    items: [{ id: 1 }, { id: 2 }],
+  });
+
+  // Encoder still keeps a named array inside one phase (product Diff clarity)
   const value = { items: [{ id: 1 }, { id: 2 }], other: 9 };
   const wire = encodeSync(value, { dotPolicy: "perTopLevelKey" });
-  // items fully in first phase; other in second
   const phases = wire.split(/\n\.\n/);
   assert.equal(phases.length, 2);
   assert.match(phases[0], /items-/);
@@ -419,4 +435,81 @@ test("large top-level key set with perNKeys + maxPhases", () => {
   });
   assert.ok(countDotLines(wire) <= 3);
   assert.deepEqual(parseSync(wire), value);
+});
+
+// --- path-array dotPolicy ---
+
+test("dotPolicy path array: nested object cut round-trips", () => {
+  const value = { a: { x: 1, y: 2 }, b: 3 };
+  const wire = encodeSync(value, { dotPolicy: ["a.x"] });
+  assert.equal(countDotLines(wire), 1);
+  assert.match(wire, /\nx:1\n\.\n/);
+  assert.deepEqual(parseSync(wire), value);
+});
+
+test("dotPolicy path array: multiple cuts and array element index", () => {
+  const value = {
+    data: { childs: [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }], meta: true },
+  };
+  const wire = encodeSync(value, { dotPolicy: ["data.childs[2]"] });
+  assert.equal(countDotLines(wire), 1);
+  assert.match(wire, />childs-/);
+  // After `.`, named array reopens with `>childs-` (append).
+  const phases = wire.split(/\n\.\n/);
+  assert.equal(phases.length, 2);
+  assert.match(phases[1], />childs-/);
+  assert.deepEqual(parseSync(wire), value);
+
+  const flat = { items: [1, 2, 3, 4], z: true };
+  assert.deepEqual(
+    roundTrip(flat, { dotPolicy: ["items[1]", "items[2]"] }),
+    flat,
+  );
+});
+
+test("dotPolicy path array: missing / mutex / mid-element reject", () => {
+  assert.throws(
+    () => encodeSync({ a: 1 }, { dotPolicy: ["nope"] }),
+    (e) => e instanceof XaiopEncodeError && /not found/.test(e.message),
+  );
+  assert.throws(
+    () => encodeSync({ a: 1 }, { dotPolicy: ["a"], phaseEvery: 2 }),
+    (e) => e instanceof XaiopEncodeError && /mutually exclusive/.test(e.message),
+  );
+  assert.throws(
+    () => encodeSync({ a: 1 }, { dotPolicy: ["a"], maxPhases: 2 }),
+    (e) => e instanceof XaiopEncodeError && /mutually exclusive/.test(e.message),
+  );
+  assert.throws(
+    () =>
+      encodeSync({ a: 1 }, { dotPolicy: ["a"], shouldPhase: () => true }),
+    (e) => e instanceof XaiopEncodeError && /mutually exclusive/.test(e.message),
+  );
+  assert.throws(
+    () => encodeSync({ a: 1 }, { dotPolicy: ["a"], style: "relative" }),
+    (e) => e instanceof XaiopEncodeError && /style:'reset'/.test(e.message),
+  );
+  assert.throws(
+    () => encodeSync({ items: [{ id: 1 }] }, { dotPolicy: ["items[0].id"] }),
+    (e) =>
+      e instanceof XaiopEncodeError &&
+      /index must be final/.test(e.message),
+  );
+  assert.throws(
+    () => encodeSync({ a: 1 }, { dotPolicy: ["a", "a"] }),
+    (e) => e instanceof XaiopEncodeError && /duplicate/.test(e.message),
+  );
+});
+
+test("parseJsonPath / formatJsonPath", async () => {
+  const { parseJsonPath, formatJsonPath } = await import("../src/index.js");
+  assert.deepEqual(parseJsonPath("data.childs[2].name"), [
+    "data",
+    "childs",
+    2,
+    "name",
+  ]);
+  assert.equal(formatJsonPath(["data", "childs", 2, "name"]), "data.childs[2].name");
+  assert.throws(() => parseJsonPath("[0]"));
+  assert.throws(() => parseJsonPath("a..b"));
 });

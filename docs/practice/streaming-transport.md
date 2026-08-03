@@ -12,7 +12,7 @@
 **Protocol** defines when streamed *text* is valid and what JSON Snapshot/Diff mean at the Block level ([../protocol/streaming.md](../protocol/streaming.md)).  
 **This page** is how to carry that text over real transports and what product teams usually get wrong.
 
-Runtime-specific APIs: Node `XaiopStream` ([../sdk/nodejs/notes/streaming-parse.md](../sdk/nodejs/notes/streaming-parse.md)) · skeleton WS sessions `XaiopWs` ([../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md) · practice [skeleton-stream.md](skeleton-stream.md)).
+Runtime-specific APIs: Node `XaiopStream` ([../sdk/nodejs/stream.md](../sdk/nodejs/stream.md) · [../sdk/nodejs/notes/streaming-parse.md](../sdk/nodejs/notes/streaming-parse.md)) · skeleton WS sessions `XaiopWs` ([../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md) · practice [skeleton-stream.md](skeleton-stream.md)) · third-party parity ([../sdk/behavioral-contract.md](../sdk/behavioral-contract.md)).
 
 ---
 
@@ -34,7 +34,7 @@ Never confuse transport chunk boundaries with Label line boundaries. Reassemble 
 3. Do not split a Label across frames **without** eventually supplying the newline.  
 4. Binary frames: do not split UTF-8 code points across chunks unless the consumer uses a **streaming** UTF-8 decoder.  
 5. Emit `.` only when you intend a Cursor reset **and** (if your consumer Diffs on `.`) a mid-stream JSON unit.  
-6. Never reopen `>name-` across `.` if you meant array append — protocol replaces.
+6. Reopen `>name-` across `.` when you intend to **append** to the same named array (protocol re-enters).
 
 Wire checklist: [../protocol/notes/wire-attention.md](../protocol/notes/wire-attention.md) · [../protocol/notes/streaming-attention.md](../protocol/notes/streaming-attention.md).
 

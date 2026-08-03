@@ -1,4 +1,4 @@
-# Positioning — What XAIOP Solves
+# Positioning — What XAIOP Is
 
 [English](positioning.md) · [简体中文](positioning.zh-CN.md)
 
@@ -6,74 +6,95 @@
 | --- | --- |
 | Document ID | `OV-POS` |
 | Status | Informative |
-| Version | 0.1.0 |
-| Last updated | 2026-08-02 |
+| Version | 0.2.0 |
+| Last updated | 2026-08-03 |
 | Normative | **No** — product stance and evidence narrative |
 | Depends on | `OV-INTRO`, `OV-PRIN`, `PERF-METRICS` |
 | Related | [performance.md](../performance.md) · [introduction.md](introduction.md) |
 
 ---
 
-## 1. The problem XAIOP addresses
+## 1. What it is
 
-Traditional formats (JSON / XML) were designed for **deterministic programs**. They ask the generator to emit a finished, globally correct structure in one pass: braces must pair, nesting depth must stay exact, and a single slip can invalidate everything that follows.
+XAIOP is a line-oriented **cursor construction** protocol.
 
-That demand is, at root, a **memory** test. While generating, the model must keep tracking how deep it is and how many closers are still owed.
+Writers emit enter / leave / locate / reset instructions. Programs **materialize** that sequence into JSON deterministically — including mid-stream **`.` phases** (Snapshot / Diff on the SDK surface).
 
-XAIOP replaces that demand. It does **not** ask the model to describe “what the final result looks like.” It asks the model to write a sequence of **construction instructions** — enter / leave / locate / reset — walking a cursor over a data tree. The SDK interprets that sequence into JSON deterministically.
+**In one line:** writers walk a cursor; software owns the tree.
 
-What the model must maintain is no longer “global structural correctness,” but the local judgment of **where to go next**.
-
-**In one line:** turn a *memory* problem into a *logic* problem. Emitting final JSON is, in a sense, generating “assembly of the result.” XAIOP asks the model to write an operation sequence closer to what it is naturally good at: step-by-step, reason-as-you-go generation.
+It is **not** a service-to-service JSON bus. It is the bridge from *incremental construction* to *consumable JSON*.
 
 ---
 
-## 2. What has been verified
+## 2. Two layers
 
-Seven real benches (GPT-5.6-terra / Gemini-3.6-flash / DeepSeek-v4, each with native and compatibility modes) show a clear pattern:
+| Layer | Owns | Who |
+| --- | --- | --- |
+| **Wire IR** | Cursor ops, later-wins, phase reset, honest parse (no silent repair by default) | Any conforming writer |
+| **Product wedge** | Unreliable or incremental writers where one-shot finished trees fail | LLMs (primary evidence); also `encode`, skeleton WS push |
 
-**XAIOP’s structural gain is inversely related to the model’s own JSON strength.**
+Wire meaning is Frozen protocol. Product APIs (stream Diff boundary, compat ingest, WS sessions) live under SDK / practice — [../SEPARATION.md](../SEPARATION.md).
+
+```text
+Writer (LLM · tool · WS push)
+        │
+        ▼
+   XAIOP wire (cursor IR)
+        │
+        ▼
+   SDK / Parser (materialize · phases)
+        │
+        ▼
+   JSON Snapshot / Diff → application
+```
+
+---
+
+## 3. Generative wedge — verified LLM evidence
+
+One-shot JSON/XML ask for a finished, globally correct structure — a **memory** test of braces and depth. On that wedge, XAIOP turns **memory → logic** (local next-step cursor moves).
+
+Seven real benches (GPT-5.6-terra / Gemini-3.6-flash / DeepSeek-v4, native + compatibility) show:
+
+**Structural gain is inversely related to the model’s own JSON strength.**
 
 | Model profile | Observed pattern |
 | --- | --- |
-| Weaker JSON baseline (e.g. GPT) | Larger structure-success lift from XAIOP (native mode **+23.8 pp**; some tasks from **0% → 100%**), with relatively controllable cost |
-| Strong JSON baseline (e.g. DeepSeek) | Structure lift approaches **zero**, while token cost can rise **2–3×** and latency **3×+** |
+| Weaker JSON baseline (e.g. GPT) | Larger structure-success lift (native **+23.8 pp**; some tasks **0% → 100%**), cost relatively controllable |
+| Strong JSON baseline (e.g. DeepSeek) | Lift approaches **zero**; token cost can rise **2–3×**, latency **3×+** |
 
-This is **not** a story that “XAIOP always beats JSON.” It is a more honest, more useful engineering conclusion: **the protocol’s value is conditional** — it depends on the capability profile of the target model.
-
-Formal metric definitions and published snapshots: [performance.md](../performance.md). Screenshots: [`resources/`](../../resources/).
+This is **not** “XAIOP always beats JSON.” It is conditional engineering guidance for the generative wedge. Formal metrics: [performance.md](../performance.md). Screenshots: [`resources/`](../../resources/).
 
 ---
 
-## 3. Remaining bottlenecks — outside protocol design
+## 4. Product surfaces beyond the LLM Skill
 
-The same tests expose failures the protocol cannot fix. Models do not only “forget”; they also **refuse to stay on rails**. Under pressure (very long output, deep nesting), they take shortcuts: fall back to deeply trained JSON/YAML habits, or pick easier but more brittle forms *inside* the protocol.
+The same wire powers non-LLM writers and progressive delivery:
 
-That is an **instruction-following discipline** problem. Format design alone cannot solve it.
-
----
-
-## 4. Current stance
-
-XAIOP is a **forward-looking experiment**, not a JSON replacement. Fit is intentionally narrow:
-
-- cost-sensitive lighter models  
-- models with strong instruction-following discipline  
-- very long structured-output workloads  
-
-All metrics, costs, and failure cases are published in the repository — including scenes where gains are thin or negative. The goal is not cheerleading; it is to have the protocol **used correctly in the right scenarios**.
-
-| In scope for positioning | Out of scope / not claimed |
+| Surface | Role |
 | --- | --- |
-| LLM → application structured extraction where JSON brackets fail | Replacing service-to-service JSON |
-| Conditional gains by model profile | Universal token or latency wins |
-| Honest publication of weak / regressing cases | “Always better than JSON” |
+| SDK `encode` | Tools / adapters emit strict wire for tests and streams |
+| `XaiopStream` / `.` checkpoints | Mid-stream phase Diff + committed / final Snapshot |
+| `XaiopWs` skeleton sessions | Fixed-key phase push over WebSocket |
+| Practice transport | HTTP / SSE / WS / RAW framing recipes |
+
+These are **first-class product paths**, not side effects of “helping models write JSON.” Third-party parity: [../sdk/behavioral-contract.md](../sdk/behavioral-contract.md).
 
 ---
 
-## 5. Related reading
+## 5. Bottlenecks outside protocol design
 
-- [Introduction](introduction.md) — purpose, goals, non-goals  
-- [Design principles](design-principles.md) — normative constraints  
-- [Performance metrics](../performance.md) — how rates are defined  
-- Root [README](../../README.md) — short front-door summary  
+On the LLM wedge, models also **refuse to stay on rails** under pressure (long output, deep nesting): fall back to JSON/YAML habits, or pick brittle forms inside the protocol. That is instruction-following discipline — format design alone cannot fix it.
+
+---
+
+## 6. Current stance
+
+| In scope | Out of scope / not claimed |
+| --- | --- |
+| Progressive structured streams (cursor IR → materialize → Snapshot/Diff) | Replacing service-to-service JSON |
+| Generative / incremental writers (LLM wedge with published conditional gains) | Universal token or latency wins |
+| Honest publication of weak / regressing LLM cases | “Always better than JSON” |
+| Tool and session writers on the same wire | Treating XAIOP as only an AI prompt format |
+
+→ [Introduction](introduction.md) · [Design principles](design-principles.md) · Root [README](../../README.md)

@@ -9,7 +9,7 @@
 | 更新日期 | 2026-08-03 |
 | 规范性 | **否** — Node SDK 行为 |
 | 代码 | `xaiop-sdk/nodejs/src/stream/ws/` |
-| 包版本 | `xaiop` **0.4.1+**（协议线 **0.2.1**） |
+| 包版本 | `xaiop` **0.6.0+**（协议线 **0.4.0**） |
 
 实践基线：[../../../practice/skeleton-stream.zh-CN.md](../../../practice/skeleton-stream.zh-CN.md)。  
 相位解析语义：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)。
@@ -59,10 +59,12 @@ await hub.close();
 
 | 方法 | 行为 |
 | --- | --- |
-| `pushJson(key, value, { final? })` | `encodeSync({[key]:value}, {dotPolicy:"none"})` + 可选 `.\n` |
+| `pushJson(key, value, { final? })` | `encodeSync({[key]:value}, {dotPolicy:"none"})`；非 `final` 时保证尾 `\n` 再追加 `.\n` |
 | `pushObject(obj, { final? })` | 普通对象同理（一相多键） |
 | `pushWire(text)` | 原始 XAIOP 文本 |
 | `encodePhaseJson` / `encodePhaseObject` | 只编码不发送（发送后可丢弃） |
+
+`final: true` 不加相位分隔 `.`（最后一块）。非 final 相位总以 `.\n` 结束，以便对端发出中途 Diff。
 
 严格 encode 规则仍生效（非法键抛 `XaiopEncodeError`，不会发出）。
 
@@ -72,24 +74,55 @@ await hub.close();
 
 | 面 | 含义 |
 | --- | --- |
-| `onPhase` / `onChunk` | Diff = 该 `.` 相（与 `XaiopStream` 同策略） |
+| `onPhase` / `onChunk` | Diff 策略与 `XaiopStream` 相同（默认**窗口合并**缓冲区内完整 `.`；见 [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)） |
 | `getCommittedSnapshot()` | 截至上次提交的累积 later-wins — 流中可用 |
 | `getSnapshot()` | 仅对端关闭 / `done` 后为终态 |
 | `done` | 终态 Snapshot 的 Promise |
 | `closed` | 套接字拆完后的 Promise |
 
+`connect` / `listen` 连接选项（与 `XaiopStream` 对齐）：
+
+| 选项 | 默认 | 说明 |
+| --- | --- | --- |
+| `streamProcessing` | `true` | 流中 Diff |
+| `mergeChunkWindow` | `true` | 缓冲窗口内完整 `.` 批算 → 一次 Diff |
+| `asyncParse` | `false` | 合并式 `pushAsync` 摄入（`setImmediate`） |
+| `compatibilityMode` | `false` | 可选兼容解析 |
+
 若对端可能在 `connection` 里**同步推送**，请把 `onPhase` / `onDone` 放进 **`connect` 选项**——监听器在 `open` 完成前已挂上。
 
 ---
 
-## 5. 测试
+## 5. 会话生命周期（锁定默认）
 
-`test/ws.phase-encode.test.js` · `test/ws.session.test.js` — 真 WS 环回（listen → 推相位 → Snapshot）、later-wins、数组替换、分片/二进制帧、挂 `http.Server`、同步推送竞态、`XaiopStream` websocket 回退到 `ws`。
+| 关注点 | 官方行为 |
+| --- | --- |
+| 连接握手 | `handshakeTimeoutMs` 默认 **15000**；等待 `ws` open |
+| 挂接顺序 | `XaiopWsConnection` 在等待 `open` **之前**绑定 message 处理器（接受端同步推送不可丢） |
+| 二进制帧 | 跨 chunk 流式 UTF-8 `TextDecoder`；对端关闭时先 flush 再 `finish()` |
+| 已关闭 / 非 OPEN 时 `push*` | 返回 **`false`**（不抛）。Encode 错误在 `send` **之前**抛出 |
+| `end({ code?, reason? })` | 等到 `bufferedAmount === 0` 或满 **2s**，再 `close(code ?? 1000, reason ?? "")` |
+| `abort()` | 优先 `terminate()`，并 `close(1001, "aborted")`；已关闭则返回 `false` |
+| Parse / finish 失败 | `done` reject；触发 `onError`；套接字 `close(1011, message.slice(0, 120))` |
+| 对端关闭 | checkpoint `finish()` → `onDone` / resolve `done`（空则 `{}`）；再 resolve `closed` |
+| 流中途 `getSnapshot()` | finish / 对端关闭前保持 `undefined`（用 `getCommittedSnapshot`） |
+
+Listen 要点：`port ?? 0`、可选已有 `http.Server` + `path`、`host`、`backlog`、`perMessageDeflate`、`maxPayload`。
+
+相位 Diff 算法（leading `.` 注入、空 → `null`）：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)。
 
 ---
 
-## 6. 相关
+## 6. 测试
+
+`test/ws.phase-encode.test.js` · `test/ws.session.test.js` — 真 WS 环回（listen → 推相位 → Snapshot）、later-wins、命名数组再进入追加、分片/二进制帧、挂 `http.Server`、同步推送竞态、`XaiopStream` websocket 回退到 `ws`。
+
+---
+
+## 7. 相关
 
 - 实践：[../../../practice/skeleton-stream.zh-CN.md](../../../practice/skeleton-stream.zh-CN.md)  
 - 流式解析：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)  
-- Encode：[../encode.zh-CN.md](../encode.zh-CN.md)
+- Stream API：[../stream.zh-CN.md](../stream.zh-CN.md)  
+- Encode：[../encode.zh-CN.md](../encode.zh-CN.md)  
+- 对等：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)

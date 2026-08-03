@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-HIER` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Spec title | Boundary & Hierarchy Specification |
 | Spec version | v0.1 |
 | Last updated | 2026-08-03 |
@@ -29,7 +29,7 @@ Cursor operators and hierarchy.
 
 ## 2. Cursor address type
 
-Any address located by the Cursor **MUST** have value type **`object`**, unless fixed as **`array`** by postfix `-` (Section 9).
+Any address located by the Cursor **MUST** have value type **`object`**, unless fixed as **`array`** by postfix `-` (Section 10).
 
 A Label that creates/enters a named or anonymous object denotes an **object** node (unless postfix `-` applies).
 
@@ -77,7 +77,7 @@ Semantics: Context-dependent create-or-update for an anonymous object
 
 This is the **only** way to create an anonymous object. There is no “create empty element without entering” variant. `>name` never implies a prior anonymous outer object.
 
-Same-address revisit (object Cursor + bare `>` again, or later Content on the same keys) follows create-or-update / overwrite (Section 10): later wins. Duplicate counting by a Generator is out of scope for the wire protocol.
+Same-address revisit (object Cursor + bare `>` again, or later Content on the same keys) follows create-or-update / overwrite (Section 11): later wins. Duplicate counting by a Generator is out of scope for the wire protocol.
 
 ```text
 >
@@ -158,47 +158,89 @@ Leave the current object (including an array element opened by `>`) so the next 
 
 ---
 
-## 6. Operator `=` (absolute / fuzzy path)
+## 6. Operator `=` (fuzzy locate)
 
 ```text
 Syntax: =<path>
-Semantics: Match-locate <path> in the hierarchy tree built so far
+Semantics: Fuzzy match-locate <path> in the hierarchy tree built so far; move single Cursor
 ```
 
-1. Matching is **fuzzy**; full Root-to-target path is not required.  
-2. More complete paths are more precise.  
-3. On multiple matches, take the **first**.  
-4. `=` **MAY** combine with `>` (e.g. `=data>cor`).
+1. Path segments are separated by `>` (e.g. `=data>cor`).  
+2. Matching is **fuzzy**; full Root-to-target path is not required.  
+3. More complete paths are more precise.  
+4. On multiple matches, take the **first** (deterministic document order).  
+5. Zero matches → **syntax error** (does **not** create).  
+6. Does **not** create nodes. Target **MUST** be an object or array address.  
+7. **Forward across `.` phases:** `=` locates in the **whole tree built so far**, including nodes written in earlier phases (full-document / cumulative parse).
+
+Contrast: `@` is exact from Root and **creates** missing segments (本相); `!` broadcasts to all complete path-fragment matches (also whole tree so far).
 
 ---
 
-## 7. Operator `!` (broadcast append)
+## 7. Operator `@` (exact path from Root; create-or-enter)
 
 ```text
-Syntax: !<label>
-Semantics: Append subsequent Content to every existing node matching <label>
+Syntax: @<path>
+Semantics: Exact path from Root along <path>; create missing object segments; move single Cursor; no fuzzy search
 ```
+
+1. Path segments separated by `>` (e.g. `@a>b`).  
+2. Matching starts at the document Root (or fragment root) and follows **exact** consecutive keys — **not** a deep search of sibling branches.  
+3. Each segment **MUST** be a complete label (no substring / partial-label match).  
+4. If a segment is **missing** or holds a scalar → **create** an empty object at that key and enter (本相 create).  
+5. If a segment already holds an **object** → enter it; if it holds an **array** and this is the **final** segment → enter that array; if an array appears mid-path → replace with `{}` and continue.  
+6. Does **not** enter broadcast mode.  
+7. Unlike `=` / `!`, `@` is **not** a cross-phase locate of prior data only — missing path is filled in the current write (本相). Prior-phase nodes that already exist on the exact Root path are still entered.
 
 ---
 
-## 8. Operator `.` (reset)
+## 8. Operator `!` (broadcast path match)
+
+```text
+Syntax: !<path>
+Semantics: Locate every complete path-fragment match; enter broadcast multi-Cursor mode
+```
+
+### 8.1 Matching
+
+1. Path segments separated by `>` (e.g. `!test`, `!a>b`).  
+2. Search the **whole** tree built so far for complete path-fragment matches (consecutive keys), including nodes from **earlier `.` phases** (向前跨相 / cumulative).  
+3. **Outer prune:** when a match is found starting at a child key, that child's subtree is **not** searched for further matches of the same query. Sibling / other branches continue.  
+4. Partial labels do not match (e.g. `!te` does not match a node `test` unless a node `te` exists).  
+5. Targets **MUST** be object or array.  
+6. Zero matches → **syntax error** (does **not** create).
+
+### 8.2 Broadcast mode
+
+1. On success, Cursor becomes a **set** of clones (one per match).  
+2. Subsequent Structure and Content lines apply to **every** Cursor.  
+3. If **any** Cursor fails the line → the whole line **fails** (document error).  
+4. `!` / `@` / `=` while broadcast is active → **syntax error** (emit `.` first).  
+5. `.` resets Cursor to Root and **exits** broadcast mode.  
+6. After `!`, writes use ordinary XAIOP (type conflict → overwrite; compatible re-enter → update / append). `@` alone may create; `!` / `=` only move.
+
+Streaming: implementations that emit per-`.` Diff **MUST** parse a **cumulative prefix** for phases that contain `=` / `!` so locate sees prior phases. `@` create-or-enter **MAY** stay phase-local.
+
+---
+
+## 9. Operator `.` (reset)
 
 ```text
 Syntax: .
-Semantics: Reset Cursor to Root; clear relative position state
+Semantics: Reset Cursor to Root; clear relative position state; exit broadcast mode
 ```
 
-When level is uncertain or generation accuracy is dropping, Generators **SHOULD** emit `.` then relocate with `=` or `>` from Root. Do not guess depth with extra `<` / `>`.
+When level is uncertain or generation accuracy is dropping, Generators **SHOULD** emit `.` then relocate with `=` / `@` / `>` from Root. Do not guess depth with extra `<` / `>`.
 
 ---
 
-## 9. Array operator `-`
+## 10. Array operator `-`
 
 `-` **opens** arrays. Sibling elements are **not** separated by `-`.
 
 After `>` opens an object element, Cursor stays **inside** that element until `<` / `<name` / `.` returns to the array.
 
-### 9.1 Postfix `-` (named array)
+### 10.1 Postfix `-` (named array)
 
 ```text
 >data
@@ -209,7 +251,25 @@ After `>` opens an object element, Cursor stays **inside** that element until `<
 
 → `{ "data": { "tags": ["a", "b"] } }`
 
-### 9.2 Standalone `-` (anonymous array)
+**Create-or-reenter (aligned with `>name` objects):**
+
+1. If key `name` is missing or not an array → create a new empty array, assign it, enter.  
+2. If key `name` already holds an array → **re-enter that same array**; later elements **append** (do **not** replace).  
+3. Re-opening after `.` with `>name-` therefore grows the array across phases.
+
+```text
+>
+>tags-
+:a
+.
+>
+>tags-
+:b
+```
+
+→ `{ "tags": ["a", "b"] }`
+
+### 10.2 Standalone `-` (anonymous array)
 
 ```text
 -
@@ -222,7 +282,7 @@ After `>` opens an object element, Cursor stays **inside** that element until `<
 
 Inside an array, another `-` opens a **nested** anonymous array as the next element and enters it.
 
-### 9.3 Array level vs inside element
+### 10.3 Array level vs inside element
 
 | At array level | Inside element after `>` |
 | --- | --- |
@@ -232,7 +292,7 @@ Inside an array, another `-` opens a **nested** anonymous array as the next elem
 | `-` → nested array element | — |
 | | `<` → return to array |
 
-### 9.4 Examples
+### 10.4 Examples
 
 ```text
 -
@@ -279,33 +339,40 @@ a:b
 
 ---
 
-## 10. Create-or-update and overwrite / discard
+## 11. Create-or-update and overwrite / discard
 
-### 10.1 Create-or-update
+### 11.1 Create-or-update
 
 No explicit create vs modify declaration. Missing paths are created; compatible continued use appends / updates / **re-enters**.
 
 Examples:
 
 - `>name` then later `>name` at the same parent (still an object) → re-enter.  
+- `>name-` then later `>name-` at the same parent (still an array) → re-enter; elements **append**.  
 - Bare `>` while Cursor is already on an object → re-enter that object (Section 4.2).  
 - Bare `>` while Cursor is inside an array → create a **new** element (not re-enter).
 
-### 10.2 Overwrite / discard
+### 11.2 Overwrite / discard
 
 Later Cursor action that re-types or replaces a populated address (object ↔ array, or equivalent): later wins; prior payload discarded. Clearing / JSON materialization is an SDK concern.
 
+Examples:
+
+- Key holds an object, then `>name-` → discard object, install new array.  
+- Key holds an array, then `>name` → discard array, install new object.  
+- Key already holds an array, then `>name-` → **not** discard; re-enter and append (Section 10.1).
+
 ---
 
-## 11. Order independence
+## 12. Order independence
 
-1. `.` plus absolute / more complete `=` paths **can** yield order-independent tree shape.  
+1. `.` plus absolute / more complete `=` / `@` paths **can** yield order-independent tree shape.  
 2. Relative `>` / `<` introduce order dependency.  
 3. Order independence is **not** a default guarantee.  
-4. Applications that require it **MUST** restrict Generators to `.` + `=` and prohibit relative operators.
+4. Applications that require it **MUST** restrict Generators to `.` + `=` / `@` and prohibit relative operators.
 
 ---
 
-## 12. See also
+## 13. See also
 
 Cheat-sheet: **[syntax.md](syntax.md)**.

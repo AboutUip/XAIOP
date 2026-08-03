@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `OV-PRIN` |
 | Status | Draft |
-| Version | 0.1.0-draft |
-| Last updated | 2026-08-01 |
+| Version | 0.2.0-draft |
+| Last updated | 2026-08-03 |
 | Normative | **Normative** |
 | Depends on | `OV-INTRO`, `META-CONV` |
 | Informs | `REQ-FUNC`, `REQ-STREAM`, `TERM-GLOSS`, `CONF`, future `protocol/*` |
@@ -25,7 +25,7 @@ Future wire-format documents **MUST NOT** contradict these principles. Requireme
 
 | ID | Name |
 | --- | --- |
-| P1 | AI First |
+| P1 | Generator First |
 | P2 | Zero Computation |
 | P3 | Semantic First |
 | P4 | Stateless Generation |
@@ -35,11 +35,13 @@ Future wire-format documents **MUST NOT** contradict these principles. Requireme
 
 ---
 
-## 3. P1 — AI First
+## 3. P1 — Generator First
 
-The protocol **MUST** be designed primarily around LLM generation behavior, not around traditional computer-centric serialization idioms when those idioms conflict with reliable generation.
+When traditional, computer-centric serialization idioms conflict with reliable **incremental / local** generation, the protocol **MUST** prefer designs that keep writer obligations local (enter / leave / locate / reset), not long-range brace pairing or depth bookkeeping.
 
-**Rationale (informative):** Nested bracket languages and long-range syntactic commitments increase failure rates in long generations.
+LLMs are the **primary design reference** for Generator behavior; tool and session writers **MUST** remain valid Generators on the same wire.
+
+**Rationale (informative):** Nested bracket languages and long-range syntactic commitments raise failure rates for long or streaming writers. Historical name of this principle was “AI First”; the ID `P1` is unchanged.
 
 ---
 
@@ -53,9 +55,9 @@ The protocol **MUST NOT** require Generators to perform deterministic non-semant
 - length calculation (as a Generator obligation)  
 - cryptographic operations  
 
-AI **MUST** be treated as responsible for **semantic content**. Deterministic computation **MUST** remain the responsibility of programs (parsers, consumers, downstream systems).
+Generators **MUST** be treated as responsible for **semantic content**. Deterministic computation **MUST** remain the responsibility of programs (parsers, consumers, downstream systems).
 
-**Rationale (informative):** Length and digest fields are frequent sources of model error and add no semantic value.
+**Rationale (informative):** Length and digest fields are frequent sources of Generator error and add no semantic value.
 
 ---
 
@@ -78,7 +80,7 @@ Each Generation Unit (see `TERM-GLOSS`) **SHOULD** be producible with local cont
 
 Data Blocks (see `TERM-GLOSS`) **MUST** be designed so that, once the wire format is defined, a Block can be parsed without requiring successful parse of unrelated Blocks in the same Stream, except where a document explicitly defines a normative dependency.
 
-Failure or malformation in one Block **MUST NOT**, by protocol rule, invalidate the parseability of other independently framed Blocks in the same Stream (subject to future framing rules in `protocol/*`).
+Failure or malformation in one Block **MUST NOT**, by protocol rule, invalidate the parseability of other independently framed Blocks in the same Stream (subject to framing rules in `protocol/*`).
 
 ---
 
@@ -86,6 +88,8 @@ Failure or malformation in one Block **MUST NOT**, by protocol rule, invalidate 
 
 The protocol **MUST** support streaming generation and incremental consumption as a first-class concern.  
 Consumers **MUST** be able, in a conforming Streaming profile, to act on complete Units as they become available without waiting for end-of-stream, once framing rules are specified.
+
+**Rationale (informative):** Phase boundaries (e.g. `.`) and SDK materialization make progressive Snapshot / Diff practical without rewriting the wire.
 
 ---
 

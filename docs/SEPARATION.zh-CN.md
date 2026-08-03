@@ -15,9 +15,25 @@
 
 | 层 | 路径 | 负责 | 不负责 |
 | --- | --- | --- | --- |
-| **协议** | [protocol/](protocol/) | 线文法与语义（Frozen v0.2.1） | Skill、HTTP/SSE/WS 配方、包 API、LLM 评测叙事 |
-| **实践** | [practice/](practice/) | 协议在产品里能做什么：**模型输出**、**流式传输** | 新的线含义；把某语言方法名写成规范 |
-| **SDK** | [sdk/](sdk/) + `xaiop-sdk/` | 各语言 parse / encode / stream **API** | 重定义 Label / later-wins / Block 规则 |
+| **协议** | [protocol/](protocol/) | 线文法与语义（Frozen v0.4.0）— **游标 IR** | Skill、HTTP/SSE/WS 配方、包 API、LLM 评测叙事 |
+| **实践** | [practice/](practice/) | 线所支撑的写者配方：**模型发射**、**流式传输**、会话 | 新的线含义；把某语言方法名写成规范 |
+| **SDK** | [sdk/](sdk/) + `xaiop-sdk/` | 各语言 parse / encode / stream **API**；第三方对等见 [行为契约](sdk/behavioral-contract.zh-CN.md) | 重定义 Label / later-wins / Block 规则 |
+
+```text
+┌──────────────────────────────┐
+│ 协议 — Frozen 游标 IR 线格式 │
+└──────────────┬───────────────┘
+               │ 使能
+┌──────────────▼───────────────┐
+│ 实践 — 写者 · 传输           │
+└──────────────┬───────────────┘
+               │ 由实现落地
+┌──────────────▼───────────────┐
+│ SDK — 物化 / encode / WS     │
+└──────────────────────────────┘
+```
+
+产品立场（信息性）：[overview/positioning.zh-CN.md](overview/positioning.zh-CN.md)。
 
 ---
 
@@ -43,8 +59,10 @@
 
 | 需求 | 去向 |
 | --- | --- |
+| 定位 | [overview/positioning.zh-CN.md](overview/positioning.zh-CN.md) |
 | 文法 | [protocol/syntax.zh-CN.md](protocol/syntax.zh-CN.md) |
 | 线坑点 | [protocol/notes/](protocol/notes/) |
 | 模型输出 | [practice/model-output.zh-CN.md](practice/model-output.zh-CN.md) |
 | 流式传输 | [practice/streaming-transport.zh-CN.md](practice/streaming-transport.zh-CN.md) |
 | Node SDK | [sdk/nodejs/](sdk/nodejs/) |
+| 第三方 SDK 对等 | [sdk/behavioral-contract.zh-CN.md](sdk/behavioral-contract.zh-CN.md) |

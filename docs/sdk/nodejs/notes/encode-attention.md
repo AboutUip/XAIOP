@@ -10,7 +10,7 @@
 | Normative | **No** |
 | Full guide | [../encode.md](../encode.md) |
 
-Protocol wire rules remain Frozen 0.2.1. Encode is an **SDK** feature (`xaiop` 0.4.1+).
+Protocol wire rules remain Frozen **0.3.0**. Encode is an **SDK** feature (`xaiop` **0.6.0+**).
 
 ---
 
@@ -20,8 +20,9 @@ For values the encoder accepts:
 
 1. `parseSync(encodeSync(value, opt))` deep-equals `value` (`-0` → `0`).  
 2. Same `(value, options)` → identical wire (deterministic).  
-3. Named arrays are **not** split across `.` phases (reopen would **replace** — protocol rule).  
-4. Compatibility mode does **not** change encode output (strict wire only).
+3. Named arrays **MAY** span `.` phases (`>name-` re-enter appends). Default encode still keeps each named array in one phase for Diff clarity.  
+4. Compatibility mode does **not** change encode output (strict wire only).  
+5. **Array roots** do not emit object-style top-level `.` phases (`dotPolicy` ignored for phasing).
 
 Not guaranteed: byte-identical `encode(parse(handWire))`; preserving object `undefined` (default omit); sparse array holes; document-root null.
 
@@ -44,7 +45,11 @@ Rejected to prevent silent shape corruption:
 ## 3. Dot policy ↔ streaming
 
 Default `dotPolicy: perTopLevelKey` aligns with Node stream Diff checkpoints (`.` phases).  
-See [streaming-parse.md](streaming-parse.md). Wire later-wins / array replace: [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md).
+`dotPolicy: string[]` cuts after listed JSON paths (`a.b[2]`); mutually exclusive with frequency options; index must be final.
+
+**Production:** deliberately place `.` via encode options — keep large contiguous fields in one phase; cut only at separable subunits so progressive delivery stays smooth. See [encode.md](../encode.md) §5 “Production streaming”.
+
+See [streaming-parse.md](streaming-parse.md). Wire later-wins / named-array re-enter append: [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md).
 
 ---
 

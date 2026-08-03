@@ -22,7 +22,41 @@ const fixtureJson = path.resolve(
 );
 
 test("protocol version", () => {
-  assert.equal(PROTOCOL_VERSION, "0.2.1");
+  assert.equal(PROTOCOL_VERSION, "0.4.0");
+});
+
+test("named array >name- re-enters and appends (with .)", () => {
+  const v = parseSync(`>
+>tags-
+:a
+.
+>
+>tags-
+:b
+`);
+  assert.deepEqual(v, { tags: ["a", "b"] });
+});
+
+test("named array >name- re-enters and appends (leave then reopen)", () => {
+  const v = parseSync(`>
+>tags-
+:a
+<
+>tags-
+:b
+`);
+  assert.deepEqual(v, { tags: ["a", "b"] });
+});
+
+test("named array >name- after object at same key replaces type", () => {
+  const v = parseSync(`>
+>tags
+x:1
+<
+>tags-
+:a
+`);
+  assert.deepEqual(v, { tags: ["a"] });
 });
 
 test("complex fixture", () => {

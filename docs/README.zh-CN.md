@@ -2,13 +2,14 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-三套**耦合但隔离**的文档树（见 **[SEPARATION.zh-CN.md](SEPARATION.zh-CN.md)**）：
+三套**耦合但隔离**的文档树（见 **[SEPARATION.zh-CN.md](SEPARATION.zh-CN.md)**）。  
+**立场：** 按行**游标 IR** → SDK 物化 / 相位；生成端写者（LLM 楔子）为有条件证据 — [overview/positioning.zh-CN.md](overview/positioning.zh-CN.md)。
 
 | 树 | 路径 | 用途 |
 | --- | --- | --- |
-| **协议** | [protocol/](protocol/) | Frozen v0.2.1 线格式 — 仅文法与语义 |
-| **实践** | [practice/](practice/) | 协议实际可做：**模型输出**、**流式传输** |
-| **SDK** | [sdk/](sdk/) | 各语言运行时 API |
+| **协议** | [protocol/](protocol/) | Frozen v0.4.0 线格式 — 仅游标 IR 文法与语义 |
+| **实践** | [practice/](practice/) | 写者配方：**模型发射**、**流式传输**、会话 |
+| **SDK** | [sdk/](sdk/) | 各语言运行时 API（物化 · encode · 流式 · WS） |
 
 基础文档（约定、术语、需求、符合性）支撑协议包，仍在本 `docs/` 根下。
 
@@ -36,11 +37,11 @@
 
 ## SDK
 
-索引：[sdk/README.zh-CN.md](sdk/README.zh-CN.md) · 注意事项：[sdk/notes/](sdk/notes/)
+索引：[sdk/README.zh-CN.md](sdk/README.zh-CN.md) · 对等：[sdk/behavioral-contract.zh-CN.md](sdk/behavioral-contract.zh-CN.md) · 注意事项：[sdk/notes/](sdk/notes/)
 
 | 技术栈 | 文档 | 代码 |
 | --- | --- | --- |
-| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/)（`xaiop` 0.4.1+） |
+| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/)（`xaiop` 0.6.0+） |
 | Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — **待更新** |
 | Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — **待更新** |
 
@@ -48,7 +49,7 @@
 
 ## 另见
 
-[meta/](meta/) · [overview/](overview/) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [performance.zh-CN.md](performance.zh-CN.md) · [metrics/](metrics/)
+[meta/](meta/) · [overview/](overview/)（[定位](overview/positioning.zh-CN.md) · [引言](overview/introduction.zh-CN.md) · [原则](overview/design-principles.zh-CN.md)）· [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [performance.zh-CN.md](performance.zh-CN.md) · [metrics/](metrics/)
 
 ---
 

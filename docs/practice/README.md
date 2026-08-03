@@ -9,7 +9,7 @@
 | Last updated | 2026-08-03 |
 | Normative | **No** |
 
-**Not protocol.** This tree describes **practical use** of the Frozen wire: how models emit it, how applications stream it. Grammar stays in [../protocol/](../protocol/). Runtime APIs stay in [../sdk/](../sdk/).
+**Not protocol.** This tree describes **practical use** of the Frozen **cursor IR** wire: how writers emit it (models, tools), how applications stream and session-push it. Grammar stays in [../protocol/](../protocol/). Runtime APIs stay in [../sdk/](../sdk/). Stance: [../overview/positioning.md](../overview/positioning.md).
 
 Architecture: [../SEPARATION.md](../SEPARATION.md)
 
@@ -28,16 +28,16 @@ Architecture: [../SEPARATION.md](../SEPARATION.md)
 ## Quick map
 
 ```text
-Protocol  →  what the text means
-Practice  →  model output · streaming transport (this tree)
-SDK       →  parse / encode / client APIs in a language
+Protocol  →  what the text means (cursor IR)
+Practice  →  writer recipes · streaming transport (this tree)
+SDK       →  materialize / encode / client APIs in a language
 ```
 
 | Need | Go to |
 | --- | --- |
 | Line grammar | [../protocol/syntax.md](../protocol/syntax.md) |
 | Wire pitfalls (protocol checklist) | [../protocol/notes/](../protocol/notes/) |
-| Teach a model | [model-output.md](model-output.md) · [../../skills/](../../skills/) |
+| Teach a writer (model) | [model-output.md](model-output.md) · [../../skills/](../../skills/) |
 | Stream bytes → JSON | [streaming-transport.md](streaming-transport.md) |
 | Skeleton WS push | [skeleton-stream.md](skeleton-stream.md) |
 | Node.js APIs | [../sdk/nodejs/](../sdk/nodejs/) |

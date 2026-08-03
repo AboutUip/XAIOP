@@ -74,7 +74,7 @@ const messages = {
 
     "protocol.title": "Protocol reference",
     "protocol.lead":
-      "Frozen v0.2.1 wire grammar. Select an operator for semantics and a minimal sample. Authoritative text remains in docs/protocol.",
+      "Frozen v0.4.0 wire grammar. Select an operator for semantics and a minimal sample. Authoritative text remains in docs/protocol.",
     "protocol.example": "Example",
 
     "sdk.title": "{name} API reference",
@@ -227,7 +227,7 @@ const messages = {
 
     "protocol.title": "协议参考",
     "protocol.lead":
-      "Frozen v0.2.1 线文法。选择算子查看语义与最小样例。权威条文仍以 docs/protocol 为准。",
+      "Frozen v0.4.0 线文法。选择算子查看语义与最小样例。权威条文仍以 docs/protocol 为准。",
     "protocol.example": "示例",
 
     "sdk.title": "{name} API 参考",

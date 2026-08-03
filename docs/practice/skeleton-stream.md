@@ -34,7 +34,7 @@ No JSON Patch. Accumulation is **protocol later-wins** on the consumer.
 
 1. Prefer **one top-level key per phase** (`{ [key]: value }`).  
 2. Encode with `dotPolicy: "none"`; append `.` between phases (last phase may omit).  
-3. Put a **whole named array inside one phase** — do not reopen `>name-` across `.` (replace, not append).  
+3. Named arrays **MAY** reopen across `.` (`>name-` appends). Default encode still often keeps one array per phase for Diff clarity.  
 4. After `send`, discard the wire string; do not keep a growing full-document buffer by default.  
 5. Prefer **complete lines** per frame; binary frames need a streaming UTF-8 decoder on the peer.
 

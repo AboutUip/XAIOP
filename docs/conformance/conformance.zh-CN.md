@@ -1,4 +1,4 @@
-# 一致性
+﻿# 一致性
 
 [English](conformance.md) · [简体中文](conformance.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `CONF` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.2.1 |
+| 版本 | 0.4.0 |
 | 最近更新 | 2026-08-03 |
 | 规范性 | **规范性** |
 | 依赖 | `REQ-FUNC`, `REQ-STREAM`, `META-VER`, `TERM-GLOSS`, `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT`, `PROT-STREAM` |
@@ -16,7 +16,7 @@
 
 ## 1. 范围
 
-本文档定义主张 XAIOP 符合性的含义，以及一致性级别如何绑定到包 **0.2.1（Frozen）** 中的结构与内容文档。
+本文档定义主张 XAIOP 符合性的含义，以及一致性级别如何绑定到包 **0.3.0（Frozen）** 中的结构与内容文档。
 
 ---
 

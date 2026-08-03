@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `META-REV` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Last updated | 2026-08-03 |
 | Normative | Informative (history) |
 | Depends on | `META-VER` |
@@ -21,6 +21,42 @@ English text is authoritative; Chinese mirrors track the same entries.
 ---
 
 ## 2. Package history
+
+### 0.4.0 — 2026-08-03 (Frozen)
+
+**Kind:** Breaking / additive normative (Hierarchy — locate & broadcast).
+
+**Summary:** Specify **`@path`** (exact from Root; **create** missing object segments) and upgrade **`!path`** to true broadcast multi-Cursor with outer-prune matching over the **tree so far** (向前跨相, including prior `.` phases). Retain **`=`** as fuzzy first-match locate on the same cumulative tree. `.` exits broadcast.
+
+| Area | Change |
+| --- | --- |
+| `PROT-HIER` §6–§9 | `=` / `@` / `!` / `.` (broadcast exit) |
+| `PROT-SYNTAX` §3 | Table: `@path`, `!path` |
+| Protocol notes | wire-attention locate section |
+| `META-VER` | Current package → `0.4.0` |
+| Node.js SDK | multi-Cursor `!`; `@` exact; `PROTOCOL_VERSION` → `0.4.0`; package `0.6.0` |
+
+**Compatibility:** Prior Node locate-first `!` behavior is **not** protocol-faithful under 0.4.0. Writers that assumed single-Cursor `!` **MUST** switch to `@` or `=`. Broadcast requires `.` before another locate.
+
+---
+
+### 0.3.0 — 2026-08-03 (Frozen)
+
+**Kind:** Breaking normative (Hierarchy — named arrays).
+
+**Summary:** Re-opening a named array with `>name-` **re-enters** and **appends**, aligned with `>name` object re-enter. Prior 0.2.x behavior replaced the array.
+
+| Area | Change |
+| --- | --- |
+| `PROT-HIER` §9.1 / §10 | Create-or-reenter for `>name-`; type conflict still discard |
+| `PROT-SYNTAX` §3 / §8 | Table and overwrite summary |
+| Protocol notes | wire-attention / streaming-attention |
+| `META-VER` | Current package → `0.3.0` |
+| Node.js SDK | `createEnterNamedArray` re-enter; `PROTOCOL_VERSION` → `0.3.0`; package `0.5.0` |
+
+**Compatibility:** Streams that relied on a second `>name-` to **clear** a named array **MUST** adapt (no dedicated clear operator in 0.3.0). Append-across-`.` is now the default.
+
+---
 
 ### 0.2.1 — 2026-08-03 (Frozen)
 

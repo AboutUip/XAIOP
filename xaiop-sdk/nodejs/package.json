@@ -1,7 +1,7 @@
 {
   "name": "xaiop",
-  "version": "0.4.1",
-  "description": "XAIOP protocol SDK for Node.js (protocol v0.2.1 Frozen)",
+  "version": "0.7.0",
+  "description": "XAIOP protocol SDK for Node.js (protocol v0.4.0 Frozen)",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -17,7 +17,9 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test test/engine.test.js test/encode.test.js test/encode.stability.test.js test/stream.test.js test/stream.consistency.test.js test/ws.phase-encode.test.js test/ws.session.test.js",
+    "test": "node --test test/engine.test.js test/bang.at.test.js test/checkpoint.opt.test.js test/checkpoint.window.test.js test/live.parse.test.js test/encode.test.js test/encode.stability.test.js test/merge.test.js test/history.test.js test/stream.test.js test/stream.consistency.test.js test/ws.phase-encode.test.js test/ws.session.test.js",
+    "bench": "node ../../dev/sdk-timing/bench.mjs",
+    "compare": "node ../../dev/sdk-timing/compare.mjs",
     "build": "npm test && node scripts/build.js",
     "pack": "npm run build"
   },

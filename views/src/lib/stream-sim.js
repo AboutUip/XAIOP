@@ -32,6 +32,9 @@ export class StreamSimulator {
     this.cumulative = null;
     this.final = null;
     this.committedAt = 0;
+    /** SDK ParseHistory time-root (when historySnapshot is on). */
+    this.historyNodes = [];
+    this.historyInfo = null;
     this.error = "";
     this.startedAt = 0;
     this.finishedAt = 0;
@@ -90,6 +93,9 @@ export class StreamSimulator {
     this._engine = new DotCheckpointEngine({
       compat: false,
       streamProcessing: true,
+      // Playground uses SDK snapshot history (0.7.0+) for before/after per `.`
+      historySnapshot: true,
+      mergeChunkWindow: false,
       onChunk: (diff) => {
         const entry = {
           index: this.phases.length + 1,
@@ -102,10 +108,26 @@ export class StreamSimulator {
         // Bind UI / cumulative JSON only when a phase is allocatable.
         this.cumulative = this._engine?.committedSnapshot ?? null;
         this.committedAt = this._engine?.committedAt ?? 0;
+        this._syncHistory();
         this._emit();
       },
     });
     this._emit();
+  }
+
+  _syncHistory() {
+    const h = this._engine?.history;
+    if (!h) {
+      this.historyNodes = [];
+      this.historyInfo = null;
+      return;
+    }
+    this.historyInfo = h.info();
+    try {
+      this.historyNodes = h.exportTimeRoot();
+    } catch {
+      this.historyNodes = [];
+    }
   }
 
   setDelayMs(ms) {
@@ -260,6 +282,7 @@ export class StreamSimulator {
     this.final = this._engine.snapshot ?? null;
     this.cumulative = this._engine.committedSnapshot ?? this.final;
     this.committedAt = this._engine.committedAt ?? this.received.length;
+    this._syncHistory();
     this.status = "completed";
     this.finishedAt = Date.now();
     this._emit();

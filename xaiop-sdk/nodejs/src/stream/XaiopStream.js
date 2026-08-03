@@ -32,6 +32,11 @@ export class XaiopStream {
    *   streamProcessing?: boolean,
    *   compatibilityMode?: boolean,
    *   modes?: StreamMode[]|Iterable<StreamMode>,
+   *   mergeChunkWindow?: boolean,
+   *   asyncParse?: boolean,
+   *   historySnapshot?: boolean,
+   *   historyRealtime?: boolean,
+   *   retainWireHistory?: boolean,
    * }} [options]
    */
   constructor(url, options = {}) {
@@ -44,6 +49,19 @@ export class XaiopStream {
     this._streamProcessing = options.streamProcessing !== false;
     /** @type {boolean} */
     this._compatibilityMode = !!options.compatibilityMode;
+    /** Window-merge complete `.` phases (default true). */
+    this._mergeChunkWindow = options.mergeChunkWindow !== false;
+    /**
+     * When true, transport text uses `pushAsync` (coalesced setImmediate drain).
+     * Default false for deterministic framing tests; prefer true in production.
+     */
+    this._asyncParse = options.asyncParse === true;
+    /** @type {boolean} */
+    this._historySnapshot = options.historySnapshot === true;
+    /** @type {boolean} */
+    this._historyRealtime = options.historyRealtime === true;
+    /** @type {boolean} */
+    this._retainWireHistory = options.retainWireHistory !== false;
     this._compat = new CompatPolicy();
     /** @type {Set<StreamMode>} */
     this._modes = normalizeModes(options.modes);
@@ -57,6 +75,8 @@ export class XaiopStream {
     /** Committed prefix snapshot (phase boundaries / EOF). Separate from final `_snapshot`. */
     /** @type {unknown|undefined} */
     this._committedSnapshot = undefined;
+    /** True after a phase commit; tree may still be lazy in the engine. */
+    this._committedAvailable = false;
     /** @type {string} */
     this._buffer = "";
 
@@ -89,6 +109,9 @@ export class XaiopStream {
     this._transportHandle = null;
     /** @type {DotCheckpointEngine|null} */
     this._engine = null;
+    /** Serializes asyncParse ingest before finish. */
+    /** @type {Promise<void>} */
+    this._asyncIngestChain = Promise.resolve();
   }
 
   // --- Inspection (always available) ---
@@ -103,6 +126,34 @@ export class XaiopStream {
 
   get streamProcessing() {
     return this._streamProcessing;
+  }
+
+  /** Default true — batch complete `.` in the buffer window. */
+  get mergeChunkWindow() {
+    return this._mergeChunkWindow;
+  }
+
+  /** When true, ingest uses coalesced `pushAsync`. */
+  get asyncParse() {
+    return this._asyncParse;
+  }
+
+  /** Opt-in snapshot history (read-only). */
+  get historySnapshot() {
+    return this._historySnapshot;
+  }
+
+  /** Opt-in realtime history (forward jump). */
+  get historyRealtime() {
+    return this._historyRealtime;
+  }
+
+  /**
+   * Active parse history for the current `send` engine, or `null`.
+   * @returns {import("./history.js").ParseHistory|null}
+   */
+  get history() {
+    return this._engine?.history ?? null;
   }
 
   get compatibilityMode() {
@@ -130,9 +181,13 @@ export class XaiopStream {
    * @returns {unknown|undefined}
    */
   getCommittedSnapshot() {
-    return this._committedSnapshot === undefined
-      ? undefined
-      : cloneJson(this._committedSnapshot);
+    if (this._committedSnapshot === undefined) {
+      if (!this._committedAvailable || !this._engine) return undefined;
+      const c = this._engine.committedSnapshot;
+      if (c === null || c === undefined) return undefined;
+      this._committedSnapshot = c;
+    }
+    return cloneJson(this._committedSnapshot);
   }
 
   /** @returns {string} */
@@ -164,10 +219,13 @@ export class XaiopStream {
       url: this._url,
       streamProcessing: this._streamProcessing,
       compatibilityMode: this._compatibilityMode,
+      mergeChunkWindow: this._mergeChunkWindow,
+      asyncParse: this._asyncParse,
       modes: this.getModes(),
       busy: this.isBusy(),
       hasSnapshot: this._snapshot !== undefined,
-      hasCommittedSnapshot: this._committedSnapshot !== undefined,
+      hasCommittedSnapshot:
+        this._committedAvailable || this._committedSnapshot !== undefined,
       bufferLength: this._buffer.length,
       lastError: this._lastError ? String(this._lastError.message || this._lastError) : null,
     };
@@ -182,8 +240,31 @@ export class XaiopStream {
   setUrl(url) {
     if (this.isBusy()) return false;
     if (typeof url !== "string" || url.length === 0) return false;
+    const prev = this._url;
     this._url = url;
+    // Snapshot lifecycle: new URL releases retained history on the idle stream
+    // (and on any leftover engine history still attached).
+    if (prev !== url && this._historySnapshot) {
+      const h = this._engine?.history;
+      if (h?.snapshotEnabled) h.setSource(url);
+    }
     return true;
+  }
+
+  /**
+   * Realtime jump on the active engine (requires `historyRealtime`).
+   * @param {number} index
+   */
+  jumpTo(index) {
+    if (!this._engine) {
+      throw new Error("XaiopStream.jumpTo requires an active send/engine");
+    }
+    const result = this._engine.jumpTo(index);
+    this._buffer = this._engine.buffer;
+    this._committedSnapshot = this._engine.committedSnapshot ?? undefined;
+    this._committedAvailable = this._committedSnapshot !== undefined;
+    this._snapshot = undefined;
+    return result;
   }
 
   /**
@@ -481,8 +562,16 @@ export class XaiopStream {
     this._engine = new DotCheckpointEngine({
       streamProcessing: this._streamProcessing,
       compat: this._compatibilityMode ? this._compat.snapshot() : false,
+      emitDiff: this._wantsPhaseDiff(),
+      mergeChunkWindow: this._mergeChunkWindow,
+      historySnapshot: this._historySnapshot,
+      historyRealtime: this._historyRealtime,
+      retainWireHistory: this._retainWireHistory,
       onChunk: (diff) => this._deliverChunk(diff),
     });
+    if (this._historySnapshot && this._engine.history) {
+      this._engine.history.setSource(url);
+    }
 
     void this._runTransport({ ...options, url, signal });
 
@@ -501,11 +590,28 @@ export class XaiopStream {
             this._emitStatus();
           }
           try {
-            this._engine.push(text);
-            this._buffer = this._engine.buffer;
-            this._syncCommittedFromEngine();
-            if (this._engine.snapshot !== undefined) {
-              this._snapshot = this._engine.snapshot;
+            if (this._asyncParse) {
+              this._asyncIngestChain = this._asyncIngestChain
+                .then(() => this._engine.pushAsync(text))
+                .then(() => {
+                  this._buffer = this._engine.buffer;
+                  this._syncCommittedFromEngine();
+                  if (this._engine.snapshot !== undefined) {
+                    this._snapshot = this._engine.snapshot;
+                  }
+                })
+                .catch((err) => {
+                  this._fail(
+                    err instanceof Error ? err : new Error(String(err)),
+                  );
+                });
+            } else {
+              this._engine.push(text);
+              this._buffer = this._engine.buffer;
+              this._syncCommittedFromEngine();
+              if (this._engine.snapshot !== undefined) {
+                this._snapshot = this._engine.snapshot;
+              }
             }
           } catch (err) {
             this._fail(err instanceof Error ? err : new Error(String(err)));
@@ -558,6 +664,7 @@ export class XaiopStream {
     this._lastError = null;
     this._snapshot = undefined;
     this._committedSnapshot = undefined;
+    this._committedAvailable = false;
     this._buffer = "";
     this._iterQueue = [];
     this._iterDone = false;
@@ -578,32 +685,59 @@ export class XaiopStream {
     this._status = STREAM_STATUS.COMPLETING;
     this._emitStatus();
 
-    this._engine.finish();
-    this._buffer = this._engine.buffer;
-    this._syncCommittedFromEngine();
-    this._snapshot = this._engine.snapshot;
+    const runFinish = () => {
+      if (this._asyncParse) {
+        return this._engine.finishAsync();
+      }
+      this._engine.finish();
+      return Promise.resolve();
+    };
 
-    const finalJson =
-      this._snapshot === undefined ? {} : cloneJson(this._snapshot);
+    void this._asyncIngestChain
+      .catch(() => {})
+      .then(() => runFinish())
+      .then(() => {
+        this._buffer = this._engine.buffer;
+        this._syncCommittedFromEngine();
+        this._snapshot = this._engine.snapshot;
 
-    // All chunk callbacks already fired inside finish(); now done.
-    this._deliverDone(finalJson);
+        const finalJson =
+          this._snapshot === undefined ? {} : cloneJson(this._snapshot);
 
-    this._status = STREAM_STATUS.COMPLETED;
-    this._emitStatus();
-    this._clearTransport();
+        this._deliverDone(finalJson);
+
+        this._status = STREAM_STATUS.COMPLETED;
+        this._emitStatus();
+        this._clearTransport();
+      })
+      .catch((err) => {
+        this._fail(err instanceof Error ? err : new Error(String(err)));
+      });
   }
 
   /**
-   * Pull committed prefix JSON from the checkpoint engine without touching
-   * final `getSnapshot()` semantics.
+   * Pull committed-prefix bookkeeping from the checkpoint engine.
+   * Avoids materializing/cloning the full tree on every phase unless a reader
+   * asks via `getCommittedSnapshot()`.
    */
   _syncCommittedFromEngine() {
     if (!this._engine) return;
-    const c = this._engine.committedSnapshot;
-    // Engine uses null for “empty”; expose as undefined until a real commit.
-    if (c === null || c === undefined) return;
-    this._committedSnapshot = c;
+    if (this._engine.committedAt <= 0) return;
+    // Invalidate cache; materialize lazily on getCommittedSnapshot.
+    this._committedSnapshot = undefined;
+    this._committedAvailable = true;
+  }
+
+  /**
+   * Whether any active mode will observe phase Diffs.
+   * When false, checkpoint skips per-phase Diff parses (Commit/final unchanged).
+   * @returns {boolean}
+   */
+  _wantsPhaseDiff() {
+    if (this._modes.has(STREAM_MODES.ASYNC_ITERATOR)) return true;
+    if (this._modes.has(STREAM_MODES.EVENTS)) return true;
+    if (this._modes.has(STREAM_MODES.CALLBACK) && this._onChunk) return true;
+    return false;
   }
 
   /**
@@ -612,6 +746,7 @@ export class XaiopStream {
   _deliverChunk(diff) {
     // Commit lands in the engine before this hook; sync so mid-chunk readers see it.
     this._syncCommittedFromEngine();
+    if (!this._wantsPhaseDiff()) return;
     if (this._modes.has(STREAM_MODES.CALLBACK) && this._onChunk) {
       this._onChunk(diff);
     }

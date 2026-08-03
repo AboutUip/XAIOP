@@ -1,8 +1,9 @@
 /**
- * XAIOP Node.js SDK (protocol v0.2.0 Frozen)
+ * XAIOP Node.js SDK (protocol v0.4.0 Frozen)
  */
 
-export const PROTOCOL_VERSION: "0.2.1";
+export const PROTOCOL_VERSION: "0.4.0";
+export const SDK_VERSION: "0.7.0";
 
 export type CompatFixId =
   | "forcedRoot"
@@ -74,8 +75,15 @@ export interface EncodeOptions {
    * `relative` only applies when `dotPolicy` is `none`.
    */
   style?: "reset" | "relative";
-  /** How often to emit `.` between top-level keys. Default `perTopLevelKey`. */
-  dotPolicy?: DotPolicy;
+  /**
+   * Phase policy:
+   * - `DotPolicy` name — frequency at top-level object keys (default `perTopLevelKey`)
+   * - `string[]` — JSON paths (`a.b[2]`) where `.` is inserted **after** each node;
+   *   mutually exclusive with `phaseEvery` / `maxPhases` / `shouldPhase`;
+   *   requires `style:'reset'` (default). Index segments must be **final**
+   *   (no cut inside an array element object).
+   */
+  dotPolicy?: DotPolicy | string[];
   /** Keys per phase when `dotPolicy` is `perNKeys`. Default `1`. */
   phaseEvery?: number;
   /** Cap the number of `.`-separated phases (merges the tail). */
@@ -83,7 +91,6 @@ export interface EncodeOptions {
   /** Append a trailing `.` line. Default `false`. */
   finalDot?: boolean;
   keyOrder?: "insertion" | "sorted";
-  /** Object `null` values: omit key or throw. Default `omit`. */
   /**
    * Object / array `null` values.
    * - `encode` (default): emit typed `null` Content (`PROT-CONTENT` 0.2.1+)
@@ -114,8 +121,74 @@ export function parseAsync(
   compat?: boolean | CompatPolicy | Partial<Record<CompatFixId, boolean>>,
 ): Promise<unknown | XaiopFragment>;
 
+/** Incremental parser — feed lines/text; equivalent to parseSync on the concatenation. */
+export class LiveXaiopParser {
+  constructor(
+    compat?: boolean | CompatPolicy | Partial<Record<CompatFixId, boolean>>,
+  );
+  feedLine(line: string): this;
+  feedText(text: string): this;
+  /** Live document reference; clone before exposing to callers. */
+  value(): unknown | XaiopFragment;
+}
+
 export function encodeSync(value: unknown, options?: EncodeOptions): string;
 export function encode(value: unknown, options?: EncodeOptions): Promise<string>;
+
+/** Parse a JSON-style path (`a.b[0].c`) into segments. */
+export function parseJsonPath(path: string): Array<string | number>;
+/** Format path segments back to `a.b[0].c`. */
+export function formatJsonPath(segs: Array<string | number>): string;
+
+/** Conflict policy for merge/inject: conflicting keys only. */
+export type MergeConflict = "overwrite" | "keep";
+
+export const MERGE_CONFLICT: {
+  readonly OVERWRITE: "overwrite";
+  readonly KEEP: "keep";
+};
+
+export interface MergeOptions {
+  /** Default `overwrite`. Only conflicting keys; deep objects recurse. */
+  conflict?: MergeConflict;
+  /** Parse compat for the XAIOP operand. Free fn default strict. */
+  compat?: boolean | CompatPolicy | Partial<Record<CompatFixId, boolean>>;
+}
+
+export interface MergeToXaiopOptions extends MergeOptions {
+  /** Encode of merged JSON. Default `{ dotPolicy: "none" }`. */
+  encodeOptions?: EncodeOptions;
+}
+
+export interface InjectOptions extends MergeOptions {
+  /** Return shape after mutating the store. Default `json`. */
+  as?: "json" | "xaiop";
+  encodeOptions?: EncodeOptions;
+}
+
+/**
+ * Deep-merge two JSON trees. Arrays/scalars conflict as a whole at that key.
+ * Pre/post-processing only — not a streaming API.
+ */
+export function mergeJson(
+  base: unknown,
+  overlay: unknown,
+  conflict?: MergeConflict,
+): unknown;
+
+/** Merge base JSON + XAIOP wire → JSON. */
+export function mergeToJson(
+  baseJson: unknown,
+  xaiopSource: string,
+  options?: MergeOptions,
+): unknown;
+
+/** Merge base JSON + XAIOP wire → XAIOP wire. */
+export function mergeToXaiop(
+  baseJson: unknown,
+  xaiopSource: string,
+  options?: MergeToXaiopOptions,
+): string;
 
 export class XaiopEngine {
   constructor(options?: { compatibilityMode?: boolean });
@@ -162,11 +235,72 @@ export class XaiopEngine {
   encode(value: unknown, options?: EncodeOptions): Promise<string>;
   encodeSync(value: unknown, options?: EncodeOptions): string;
 
+  /** Merge base JSON + XAIOP → JSON (instance compat for parse). */
+  mergeToJson(
+    baseJson: unknown,
+    xaiopSource: string,
+    options?: MergeOptions,
+  ): Promise<unknown>;
+  mergeToJsonSync(
+    baseJson: unknown,
+    xaiopSource: string,
+    options?: MergeOptions,
+  ): unknown;
+
+  /** Merge base JSON + XAIOP → XAIOP wire. */
+  mergeToXaiop(
+    baseJson: unknown,
+    xaiopSource: string,
+    options?: MergeToXaiopOptions,
+  ): Promise<string>;
+  mergeToXaiopSync(
+    baseJson: unknown,
+    xaiopSource: string,
+    options?: MergeToXaiopOptions,
+  ): string;
+
+  /**
+   * Inject XAIOP into stored `dataId` (mutates store).
+   * Default return JSON; `as: "xaiop"` returns wire after merge.
+   */
+  injectXaiop(
+    dataId: string,
+    xaiopSource: string,
+    options?: InjectOptions,
+  ): Promise<unknown | string>;
+  injectXaiopSync(
+    dataId: string,
+    xaiopSource: string,
+    options?: InjectOptions,
+  ): unknown | string;
+
+  /** Inject JSON into stored `dataId` (mutates store). */
+  injectJson(
+    dataId: string,
+    jsonValue: unknown,
+    options?: InjectOptions,
+  ): Promise<unknown | string>;
+  injectJsonSync(
+    dataId: string,
+    jsonValue: unknown,
+    options?: InjectOptions,
+  ): unknown | string;
+
   /** @param compatibilityMode omitted / false = strict; true = all fixes on */
   static parse(source: string, compatibilityMode?: boolean): Promise<unknown>;
   static parseSync(source: string, compatibilityMode?: boolean): unknown;
   static encode(value: unknown, options?: EncodeOptions): Promise<string>;
   static encodeSync(value: unknown, options?: EncodeOptions): string;
+  static mergeToJson(
+    baseJson: unknown,
+    xaiopSource: string,
+    options?: MergeOptions,
+  ): unknown;
+  static mergeToXaiop(
+    baseJson: unknown,
+    xaiopSource: string,
+    options?: MergeToXaiopOptions,
+  ): string;
 }
 
 export type StreamMode = "callback" | "promise" | "asyncIterator" | "events";
@@ -206,18 +340,121 @@ export function isStreamBusy(status: StreamStatus): boolean;
 
 export function materializeSnapshot(parsed: unknown): unknown;
 
+export type HistoryNodeKind = "dot" | "tail";
+
+export const HISTORY_NODE_KIND: {
+  readonly DOT: "dot";
+  readonly TAIL: "tail";
+};
+
+export interface HistoryNode {
+  index: number;
+  kind: HistoryNodeKind;
+  bufferStart: number;
+  bufferEnd: number;
+  wire: string | null;
+  before: unknown;
+  after: unknown;
+  diff: unknown;
+}
+
+export interface HistoryInfo {
+  snapshot: boolean;
+  realtime: boolean;
+  length: number;
+  liveCursor: number;
+  sourceKey: string | null;
+  hasRangeView: boolean;
+  rangeView: { from: number; to: number } | null;
+}
+
+/**
+ * Opt-in parse-chain history. Constructed by DotCheckpointEngine when
+ * `historySnapshot` and/or `historyRealtime` is true.
+ */
+export class ParseHistory {
+  readonly enabled: boolean;
+  readonly snapshotEnabled: boolean;
+  readonly realtimeEnabled: boolean;
+  readonly length: number;
+  readonly liveCursor: number;
+  readonly sourceKey: string | null;
+  info(): HistoryInfo;
+  exportTimeRoot(): HistoryNode[];
+  getNode(index: number): HistoryNode;
+  getDiff(index: number): unknown;
+  getBefore(index: number): unknown;
+  getAfter(index: number): unknown;
+  compare(
+    indexA: number,
+    indexB: number,
+  ): { indexA: number; indexB: number; a: unknown; b: unknown };
+  viewRange(
+    from: number,
+    to: number,
+  ): { from: number; to: number; nodes: HistoryNode[]; json: unknown };
+  setSource(key: string | null | undefined): {
+    released: boolean;
+    previous: string | null;
+  };
+  release(): void;
+  jumpTo(index: number): {
+    index: number;
+    kept: number;
+    discarded: number;
+    after: unknown;
+    bufferEnd: number;
+    wirePrefix: string | null;
+  };
+  canJumpTo(index: number): boolean;
+}
+
 export class DotCheckpointEngine {
   constructor(hooks: {
     compat?: boolean | object | false;
     streamProcessing: boolean;
     onChunk: (diff: unknown) => void;
+    /** When false, skip phase-local Diff parses (Commit/final unchanged). Default true. */
+    emitDiff?: boolean;
+    /**
+     * When true (default), batch all complete `.` in the buffer window into one
+     * feed + one Commit + one onChunk (multi-phase Diff = committed tree).
+     * When false, emit stepwise per `.`.
+     */
+    mergeChunkWindow?: boolean;
+    /** Opt-in read-only history (git-like). Default false. */
+    historySnapshot?: boolean;
+    /** Opt-in realtime forward-jump history. Default false. */
+    historyRealtime?: boolean;
+    /** Retain per-node wire slices when history is on. Default true. */
+    retainWireHistory?: boolean;
   });
   readonly buffer: string;
   readonly snapshot: unknown | undefined;
   /** Latest committed phase parse (stream processing). */
   readonly committedSnapshot?: unknown;
+  readonly mergeChunkWindow: boolean;
+  /** `null` when both history modes are off. */
+  readonly history: ParseHistory | null;
+  historyInfo(): HistoryInfo;
+  /**
+   * Realtime: jump live head forward; discard nodes after the positioning index.
+   * Rebuilds buffer / Commit from the retained prefix.
+   */
+  jumpTo(index: number): {
+    index: number;
+    kept: number;
+    discarded: number;
+    after: unknown;
+    bufferEnd: number;
+    wirePrefix: string | null;
+  };
+  /** Sync ingest — scans immediately. */
   push(chunk: string): void;
+  /** Async ingest — coalesce scan on setImmediate; rapid calls share one drain. */
+  pushAsync(chunk: string): Promise<void>;
   finish(): void;
+  finishAsync(): Promise<void>;
 }
 
 export interface TransportRequestOptions {
@@ -259,6 +496,16 @@ export class XaiopStream implements AsyncIterable<unknown> {
       streamProcessing?: boolean;
       compatibilityMode?: boolean;
       modes?: StreamMode[] | Iterable<StreamMode>;
+      /** Default true — batch complete `.` in the buffer window. */
+      mergeChunkWindow?: boolean;
+      /** When true, transport uses coalesced `pushAsync`. Default false. */
+      asyncParse?: boolean;
+      /** Opt-in read-only parse history. Default false. */
+      historySnapshot?: boolean;
+      /** Opt-in realtime forward-jump history. Default false. */
+      historyRealtime?: boolean;
+      /** Retain per-node wire when history is on. Default true. */
+      retainWireHistory?: boolean;
     },
   );
 
@@ -266,6 +513,12 @@ export class XaiopStream implements AsyncIterable<unknown> {
   readonly status: StreamStatus;
   readonly streamProcessing: boolean;
   readonly compatibilityMode: boolean;
+  readonly mergeChunkWindow: boolean;
+  readonly asyncParse: boolean;
+  readonly historySnapshot: boolean;
+  readonly historyRealtime: boolean;
+  /** Active engine history during/after send, else null. */
+  readonly history: ParseHistory | null;
   readonly lastError: Error | null;
 
   getModes(): StreamMode[];
@@ -280,6 +533,15 @@ export class XaiopStream implements AsyncIterable<unknown> {
   getStatus(): StreamStatusInfo;
 
   setUrl(url: string): boolean;
+  /** Realtime jump on the active engine (requires historyRealtime). */
+  jumpTo(index: number): {
+    index: number;
+    kept: number;
+    discarded: number;
+    after: unknown;
+    bufferEnd: number;
+    wirePrefix: string | null;
+  };
   setStreamProcessing(enabled: boolean): boolean;
   setCompatibilityMode(enabled: boolean): this;
 

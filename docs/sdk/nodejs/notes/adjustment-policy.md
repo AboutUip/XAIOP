@@ -18,7 +18,7 @@ Adjust the Node SDK **carefully**: prefer additive APIs and bugfixes that do not
 | Do | Do not |
 | --- | --- |
 | Add methods / status fields | Flip Diff boundary defaults silently |
-| Fix transport decoding bugs | Change later-wins / array-replace (protocol) |
+| Fix transport decoding bugs | Change later-wins / named-array re-enter append (protocol) |
 | Document by-design Diff = `.` phase | Rewrite `PROT-STREAM` to match the SDK |
 | Opt-in future flags | Break `getSnapshot()` final-only semantics |
 
@@ -37,7 +37,7 @@ Adjust the Node SDK **carefully**: prefer additive APIs and bugfixes that do not
 | Compat × multi-phase | **Open (low priority)** | Keep default off |
 | SSE auto-insert `\n` between events | **Deferred** | Prefer producer contract |
 | Block-level Diff mode | **Deferred** | Opt-in only if pursued |
-| Protocol later-wins / array replace | **Not adjustable here** | [protocol notes](../../../protocol/notes/) |
+| Protocol later-wins / named-array re-enter append | **Not adjustable here** | [protocol notes](../../../protocol/notes/) |
 
 ---
 

@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-SYNTAX` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
+| Version | 0.4.0 |
 | Last updated | 2026-08-03 |
 | Normative | **Normative** — grammar entry point |
 | Depends on | `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT` |
@@ -88,15 +88,16 @@ x:1
 | --- | --- | --- |
 | `>` | Structure | Anonymous object: open root / **new array element** / **re-enter** current object |
 | `>name` | Structure | Create/enter **named** child at current Cursor (no outer anonymous wrap) |
-| `>name-` | Structure | Create/enter named array |
+| `>name-` | Structure | Create/**re-enter** named array (append elements if already an array) |
 | `-` | Structure | Create/enter anonymous array (or nested array as next element) |
 | `<` | Structure | Pop one level only |
 | `<name` | Structure | Pop one level, then create/enter `name` |
 | `key:value` | Content | Property of **current** object |
 | `:value` | Content | Scalar / anonymous value |
 | `.` | Structure | Reset Cursor to Root |
-| `=path` | Structure | Absolute / fuzzy locate |
-| `!name` | Structure | Broadcast-append to matches |
+| `=path` | Structure | Fuzzy locate (first match) |
+| `@path` | Structure | Exact from Root; **create** missing object segments |
+| `!path` | Structure | Broadcast to all path-fragment matches |
 
 **Forbidden:** Bare Label · `>>x` stacking · `<` at Root · multiline value.
 
@@ -269,7 +270,8 @@ See [content.md](content.md) §5–§6.
 ## 8. Boundary / overwrite (summary)
 
 - Label ends at `LF` or `CRLF`; Content until next Label; last Block at EOF; one Label per line.  
-- Later re-type at same address: overwrite/discard (SDK clears).
+- Later re-type at same address (object ↔ array): overwrite/discard (SDK clears).  
+- Same-type revisit: `>name` / `>name-` **re-enter** (array elements append). See [hierarchy.md](hierarchy.md) §9–§10.
 
 ---
 

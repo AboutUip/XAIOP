@@ -12,6 +12,8 @@ import { encodePhaseJson, encodePhaseObject } from "./phase-encode.js";
  * @typedef {{
  *   streamProcessing?: boolean,
  *   compatibilityMode?: boolean,
+ *   mergeChunkWindow?: boolean,
+ *   asyncParse?: boolean,
  * }} WsConnectionOptions
  */
 
@@ -33,6 +35,8 @@ export class XaiopWsConnection {
     this._ws = socket;
     this._streamProcessing = options.streamProcessing !== false;
     this._compatibilityMode = !!options.compatibilityMode;
+    this._mergeChunkWindow = options.mergeChunkWindow !== false;
+    this._asyncParse = options.asyncParse === true;
     this._compat = new CompatPolicy();
 
     /** @type {string} */
@@ -41,10 +45,14 @@ export class XaiopWsConnection {
     this._snapshot = undefined;
     /** @type {unknown|undefined} */
     this._committedSnapshot = undefined;
+    /** @type {boolean} */
+    this._committedAvailable = false;
     /** @type {Error|null} */
     this._lastError = null;
     this._closed = false;
     this._finished = false;
+    /** @type {Promise<void>} */
+    this._asyncIngestChain = Promise.resolve();
 
     /** @type {((diff: unknown) => void)|null} */
     this._onPhase =
@@ -65,6 +73,7 @@ export class XaiopWsConnection {
     this._engine = new DotCheckpointEngine({
       streamProcessing: this._streamProcessing,
       compat: this._compatibilityMode ? this._compat.snapshot() : false,
+      mergeChunkWindow: this._mergeChunkWindow,
       onChunk: (diff) => {
         this._buffer = this._engine.buffer;
         this._syncCommitted();
@@ -114,9 +123,13 @@ export class XaiopWsConnection {
 
   /** @returns {unknown|undefined} */
   getCommittedSnapshot() {
-    return this._committedSnapshot === undefined
-      ? undefined
-      : cloneJson(this._committedSnapshot);
+    if (this._committedSnapshot === undefined) {
+      if (!this._committedAvailable) return undefined;
+      const c = this._engine.committedSnapshot;
+      if (c === null || c === undefined) return undefined;
+      this._committedSnapshot = c;
+    }
+    return cloneJson(this._committedSnapshot);
   }
 
   /** @param {(diff: unknown) => void} fn */
@@ -232,9 +245,21 @@ export class XaiopWsConnection {
           text = String(data);
         }
         if (!text) return;
-        this._engine.push(text);
-        this._buffer = this._engine.buffer;
-        this._syncCommitted();
+        if (this._asyncParse) {
+          this._asyncIngestChain = this._asyncIngestChain
+            .then(() => this._engine.pushAsync(text))
+            .then(() => {
+              this._buffer = this._engine.buffer;
+              this._syncCommitted();
+            })
+            .catch((err) => {
+              this._fail(err instanceof Error ? err : new Error(String(err)));
+            });
+        } else {
+          this._engine.push(text);
+          this._buffer = this._engine.buffer;
+          this._syncCommitted();
+        }
       } catch (err) {
         this._fail(err instanceof Error ? err : new Error(String(err)));
       }
@@ -242,17 +267,29 @@ export class XaiopWsConnection {
 
     const onClose = () => {
       this._tearDownListeners();
-      try {
-        const tail = this._binaryDecoder.decode();
-        if (tail && !this._finished) {
-          this._engine.push(tail);
-          this._buffer = this._engine.buffer;
-          this._syncCommitted();
+      const finishClose = () => {
+        try {
+          const tail = this._binaryDecoder.decode();
+          if (tail && !this._finished) {
+            if (this._asyncParse) {
+              return this._engine.pushAsync(tail).then(() => {
+                this._buffer = this._engine.buffer;
+                this._syncCommitted();
+              });
+            }
+            this._engine.push(tail);
+            this._buffer = this._engine.buffer;
+            this._syncCommitted();
+          }
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore */
-      }
-      this._completeFromPeerClose();
+        return Promise.resolve();
+      };
+      void (this._asyncParse
+        ? this._asyncIngestChain.catch(() => {}).then(finishClose)
+        : finishClose()
+      ).then(() => this._completeFromPeerClose());
     };
 
     const onError = (err) => {
@@ -278,9 +315,9 @@ export class XaiopWsConnection {
   }
 
   _syncCommitted() {
-    const c = this._engine.committedSnapshot;
-    if (c === null || c === undefined) return;
-    this._committedSnapshot = c;
+    if (this._engine.committedAt <= 0) return;
+    this._committedSnapshot = undefined;
+    this._committedAvailable = true;
   }
 
   _completeFromPeerClose() {
@@ -291,20 +328,33 @@ export class XaiopWsConnection {
     }
     this._finished = true;
     this._closed = true;
-    try {
-      this._engine.finish();
-      this._buffer = this._engine.buffer;
-      this._syncCommitted();
-      this._snapshot = this._engine.snapshot;
-      const finalJson =
-        this._snapshot === undefined ? {} : cloneJson(this._snapshot);
-      if (this._onDone) this._onDone(finalJson);
-      this._resolveDone?.(finalJson);
-    } catch (err) {
+
+    const done = () => {
+      try {
+        this._buffer = this._engine.buffer;
+        this._syncCommitted();
+        this._snapshot = this._engine.snapshot;
+        const finalJson =
+          this._snapshot === undefined ? {} : cloneJson(this._snapshot);
+        if (this._onDone) this._onDone(finalJson);
+        this._resolveDone?.(finalJson);
+      } catch (err) {
+        this._fail(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        this._resolveClosed?.();
+      }
+    };
+
+    const run = this._asyncParse
+      ? this._engine.finishAsync()
+      : Promise.resolve().then(() => {
+          this._engine.finish();
+        });
+
+    void run.then(done, (err) => {
       this._fail(err instanceof Error ? err : new Error(String(err)));
-    } finally {
       this._resolveClosed?.();
-    }
+    });
   }
 
   /** @param {Error} err */

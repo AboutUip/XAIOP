@@ -2,13 +2,14 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-Three **coupled but isolated** trees (see **[SEPARATION.md](SEPARATION.md)**):
+Three **coupled but isolated** trees (see **[SEPARATION.md](SEPARATION.md)**).  
+**Stance:** line-oriented **cursor IR** → SDK materialize / phases; generative writers (LLM wedge) are conditional evidence — [overview/positioning.md](overview/positioning.md).
 
 | Tree | Path | Purpose |
 | --- | --- | --- |
-| **Protocol** | [protocol/](protocol/) | Frozen v0.2.1 wire — grammar & semantics only |
-| **Practice** | [practice/](practice/) | What you can do: **model output**, **streaming transport** |
-| **SDK** | [sdk/](sdk/) | Runtime APIs per language |
+| **Protocol** | [protocol/](protocol/) | Frozen v0.4.0 wire — cursor IR grammar & semantics only |
+| **Practice** | [practice/](practice/) | Writer recipes: **model emit**, **streaming transport**, sessions |
+| **SDK** | [sdk/](sdk/) | Runtime APIs per language (materialize · encode · stream · WS) |
 
 Foundation (conventions, glossary, requirements, conformance) supports the protocol package under this `docs/` root.
 
@@ -36,11 +37,11 @@ Index: [practice/README.md](practice/README.md)
 
 ## SDK
 
-Index: [sdk/README.md](sdk/README.md) · Notes: [sdk/notes/](sdk/notes/)
+Index: [sdk/README.md](sdk/README.md) · Parity: [sdk/behavioral-contract.md](sdk/behavioral-contract.md) · Notes: [sdk/notes/](sdk/notes/)
 
 | Stack | Docs | Code |
 | --- | --- | --- |
-| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) (`xaiop` 0.4.1+) |
+| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) (`xaiop` 0.6.0+) |
 | Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — **pending update** |
 | Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — **pending update** |
 
@@ -48,7 +49,7 @@ Index: [sdk/README.md](sdk/README.md) · Notes: [sdk/notes/](sdk/notes/)
 
 ## Also
 
-[meta/](meta/) · [overview/](overview/) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [performance.md](performance.md) · [metrics/](metrics/)
+[meta/](meta/) · [overview/](overview/) ([positioning](overview/positioning.md) · [introduction](overview/introduction.md) · [principles](overview/design-principles.md)) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [performance.md](performance.md) · [metrics/](metrics/)
 
 ---
 

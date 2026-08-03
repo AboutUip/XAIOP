@@ -1,4 +1,4 @@
-# 流式语义
+﻿# 流式语义
 
 [English](streaming.md) · [简体中文](streaming.zh-CN.md)
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `PROT-STREAM` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.2.1 |
+| 版本 | 0.4.0 |
 | 最近更新 | 2026-08-03 |
 | 规范性 | **规范性** |
 | 依赖 | `PROT-SYNTAX`、`PROT-BOUND`、`PROT-HIER`、`REQ-STREAM` |

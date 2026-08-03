@@ -6,13 +6,14 @@
 
 <p align="center">
   <strong>eXtensible AI Output Protocol</strong><br/>
-  <sub>Models write lines. Programs parse them deterministically.</sub>
+  <sub>Line-oriented <em>cursor construction</em> · programs <em>materialize</em> JSON deterministically.</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.2.1_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.4.0_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="AI-native" src="https://img.shields.io/badge/output-AI--native-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="Cursor IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
+  <img alt="Streaming" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
   <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js-22c55e?style=flat-square&labelColor=0b1220" />
   <img alt="Line-oriented" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
 </p>
@@ -20,6 +21,7 @@
 <p align="center">
   <a href="README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-0ea5e9?style=flat-square&labelColor=0b1220" /></a>
   <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-64748b?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/overview/positioning.md"><img alt="Positioning" src="https://img.shields.io/badge/docs-Positioning-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/protocol/syntax.md"><img alt="Protocol docs" src="https://img.shields.io/badge/docs-Protocol-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/practice/"><img alt="Practice docs" src="https://img.shields.io/badge/docs-Practice-f59e0b?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/sdk/nodejs/"><img alt="SDK docs" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
@@ -29,32 +31,38 @@
 ---
 
 <p align="center">
-  <img alt="LLM" src="https://img.shields.io/badge/LLM-0b1220?style=for-the-badge&logoColor=white" />
+  <img alt="Writer" src="https://img.shields.io/badge/Writer-0b1220?style=for-the-badge&logoColor=white" />
   <img alt="to" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
   <img alt="XAIOP" src="https://img.shields.io/badge/XAIOP-14b8a6?style=for-the-badge&labelColor=0b1220" />
   <img alt="to" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
-  <img alt="Parser" src="https://img.shields.io/badge/Parser-0ea5e9?style=for-the-badge&labelColor=0b1220" />
+  <img alt="SDK" src="https://img.shields.io/badge/SDK%20·%20Parser-0ea5e9?style=for-the-badge&labelColor=0b1220" />
   <img alt="to" src="https://img.shields.io/badge/→-64748b?style=for-the-badge&labelColor=64748b&color=64748b" />
-  <img alt="JSON · App" src="https://img.shields.io/badge/JSON%20·%20App-22c55e?style=for-the-badge&labelColor=0b1220" />
+  <img alt="JSON" src="https://img.shields.io/badge/JSON%20·%20Snapshot-22c55e?style=for-the-badge&labelColor=0b1220" />
 </p>
 
 <p align="center">
-  Not a service-to-service JSON replacement — the bridge from <em>generation</em> to <em>software</em>.
+  Writers emit enter / leave / locate / reset instructions.<br/>
+  Programs materialize JSON — including mid-stream <code>.</code> phases.<br/>
+  <sub>Not a service-to-service JSON bus. LLM · tools · WS sessions are writers.</sub>
 </p>
 
 ---
 
-### The problem with JSON-shaped generation
+### The problem with one-shot finished structures
 
-Traditional JSON/XML ask the model for a finished, globally correct structure in one pass — a **memory** test of braces and depth. XAIOP asks for a sequence of cursor moves; the SDK materializes JSON. **Memory → logic.**
+Traditional JSON/XML ask a writer for a finished, globally correct tree in one pass — brace pairing and depth bookkeeping. That is a **memory** test for long or incremental output.
 
-### What XAIOP changes
+XAIOP asks for a sequence of **cursor construction** steps. The SDK **materializes** JSON. Structure is line-oriented; position is a cursor; `.` bounds stream phases. By default there is **no silent repair**.
 
-Structure is **line-oriented**. Position is a **cursor**. There is **no brace pairing**, no model-side hashing, and — by default — **no silent repair**. The wire stays honest.
-
-Gains are **conditional** on the model’s JSON strength — not a universal replacement story.
+Writers include LLMs (primary wedge), `encode` tooling, and skeleton WebSocket push — any conforming source of instructions.
 
 → [Positioning](docs/overview/positioning.md) · [Design principles](docs/overview/design-principles.md) · [Introduction](docs/overview/introduction.md)
+
+### Generative wedge (conditional)
+
+For LLMs, gains track the model’s own JSON strength — not “always beat JSON.” That evidence is a **wedge**, not the whole product story.
+
+→ [Performance](docs/performance.md)
 
 ---
 
@@ -93,21 +101,23 @@ Materializes as:
 
 ### Paths
 
+- **Positioning** — [docs/overview/positioning.md](docs/overview/positioning.md) (wire IR · generative wedge)
 - **Protocol (wire only)** — [docs/protocol/](docs/protocol/) · [separation](docs/SEPARATION.md)
 - **Practice** — [docs/practice/](docs/practice/) · [model output](docs/practice/model-output.md) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
-- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [encode](docs/sdk/nodejs/encode.md) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [code](xaiop-sdk/nodejs/)
+- **Node.js SDK** — [docs/sdk/nodejs/](docs/sdk/nodejs/) · [stream](docs/sdk/nodejs/stream.md) · [encode](docs/sdk/nodejs/encode.md) · [merge](docs/sdk/nodejs/merge.md) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [parity](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/nodejs/) · [SDK timing: JSON/NDJSON/Patch/Protobuf/XAIOP](dev/sdk-timing/)
+- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [code](xaiop-sdk/java/)
 - **Preview UI** — [views/](views/) (`cd views && npm run dev`)
-- **Teach the model** — [classic Skill](skills/xaiop/SKILL.md) · [allowlist Skill](skills/xaiop-allowlist/SKILL.md) · [practice guide](docs/practice/model-output.md)
+- **Teach writers** — [classic Skill](skills/xaiop/SKILL.md) · [allowlist Skill](skills/xaiop-allowlist/SKILL.md) · [practice guide](docs/practice/model-output.md)
 - **Metrics package** — [JSON](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.json) · [guide](docs/metrics/bench-metrics-gpt-gemini-compat-2026-08-02.md)
 
-Java and Python SDKs are pending update. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
+Java SDK core is active (`io.xaiop:xaiop` 0.4.0 — parse · encode · merge · checkpoint; Stream/WS later). Python is still pending. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
 
 ---
 
-### Evidence
+### Evidence (LLM wedge)
 
 Native dual channel · no JSON→XAIOP translation · structure rate among non-empty completions  
-Definitions: [docs/performance.md](docs/performance.md)
+**Wedge evidence — not the only value claim.** Definitions: [docs/performance.md](docs/performance.md)
 
 <p align="center">
   <img alt="GPT classic JSON" src="https://img.shields.io/badge/GPT%20classic%20·%20JSON-86.1%25-ef4444?style=flat-square&labelColor=0b1220" />
@@ -161,6 +171,6 @@ Definitions: [docs/performance.md](docs/performance.md)
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.2.1-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.4.0-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-index-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

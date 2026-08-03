@@ -15,23 +15,25 @@
 
 | Layer | Path | Owns | Must not own |
 | --- | --- | --- | --- |
-| **Protocol** | [protocol/](protocol/) | Wire grammar & semantics (Frozen v0.2.1) | Skills, HTTP/SSE/WS recipes, package APIs, LLM eval narrative |
-| **Practice** | [practice/](practice/) | What the protocol enables in products: **model output**, **streaming transport** | New wire meanings; language-specific method names as norms |
-| **SDK** | [sdk/](sdk/) + `xaiop-sdk/` | Parse / encode / stream **APIs** per language | Redefining Labels / later-wins / Block rules |
+| **Protocol** | [protocol/](protocol/) | Wire grammar & semantics (Frozen v0.4.0) — **cursor IR** | Skills, HTTP/SSE/WS recipes, package APIs, LLM eval narrative |
+| **Practice** | [practice/](practice/) | Writer recipes the wire enables: **model emit**, **streaming transport**, sessions | New wire meanings; language-specific method names as norms |
+| **SDK** | [sdk/](sdk/) + `xaiop-sdk/` | Parse / encode / stream **APIs** per language; [behavioral contract](sdk/behavioral-contract.md) for third-party parity | Redefining Labels / later-wins / Block rules |
 
 ```text
-┌──────────────────────────────┐
-│ Protocol — Frozen wire only  │
-└──────────────┬───────────────┘
+┌──────────────────────────────────┐
+│ Protocol — Frozen cursor IR wire │
+└──────────────┬───────────────────┘
                │ enables
-┌──────────────▼───────────────┐
-│ Practice — model · transport │
-└──────────────┬───────────────┘
+┌──────────────▼───────────────────┐
+│ Practice — writers · transport   │
+└──────────────┬───────────────────┘
                │ implemented by
-┌──────────────▼───────────────┐
-│ SDK — Node / Java / Python   │
-└──────────────────────────────┘
+┌──────────────▼───────────────────┐
+│ SDK — materialize / encode / WS  │
+└──────────────────────────────────┘
 ```
+
+Product stance (informative): [overview/positioning.md](overview/positioning.md).
 
 ---
 
@@ -63,8 +65,10 @@
 
 | Need | Go to |
 | --- | --- |
+| Positioning | [overview/positioning.md](overview/positioning.md) |
 | Grammar | [protocol/syntax.md](protocol/syntax.md) |
 | Wire pitfalls | [protocol/notes/](protocol/notes/) |
 | Model output | [practice/model-output.md](practice/model-output.md) |
 | Streaming transport | [practice/streaming-transport.md](practice/streaming-transport.md) |
 | Node SDK | [sdk/nodejs/](sdk/nodejs/) |
+| Third-party SDK parity | [sdk/behavioral-contract.md](sdk/behavioral-contract.md) |

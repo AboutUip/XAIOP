@@ -12,7 +12,7 @@
 **协议**规定流式*文本*何时有效，以及 Block 级 Snapshot/Diff（[../protocol/streaming.zh-CN.md](../protocol/streaming.zh-CN.md)）。  
 **本文**写如何经真实传输通道搬运这些文本，以及产品侧常见踩坑。
 
-具体运行时 API：Node `XaiopStream`（[../sdk/nodejs/notes/streaming-parse.zh-CN.md](../sdk/nodejs/notes/streaming-parse.zh-CN.md)）· 骨架 WS 会话 `XaiopWs`（[../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md) · 实践 [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md)）。
+具体运行时 API：Node `XaiopStream`（[../sdk/nodejs/stream.zh-CN.md](../sdk/nodejs/stream.zh-CN.md) · [../sdk/nodejs/notes/streaming-parse.zh-CN.md](../sdk/nodejs/notes/streaming-parse.zh-CN.md)）· 骨架 WS 会话 `XaiopWs`（[../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md) · 实践 [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md)）· 第三方对等（[../sdk/behavioral-contract.zh-CN.md](../sdk/behavioral-contract.zh-CN.md)）。
 
 ---
 
@@ -34,7 +34,7 @@
 3. Label 跨帧必须最终补上换行。  
 4. 二进制帧跨 chunk 拆 UTF-8 时，消费端须用**流式**解码器。  
 5. 打 `.` 要同时理解 Cursor 重置与（若消费端按 `.` Diff）中途 JSON 单元。  
-6. 不为追加而跨 `.` 再开 `>name-`（协议是替换）。
+6. 跨 `.` 再开 `>name-` 可对同一具名数组 **追加**（协议再进入）。
 
 线清单：[../protocol/notes/](../protocol/notes/)。
 

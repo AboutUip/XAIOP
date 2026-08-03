@@ -16,6 +16,8 @@ npm install
 npm run dev
 ```
 
-Catalog: `src/data/xaiop-catalog.js` (keep aligned with `xaiop-sdk/nodejs/src/index.d.ts` — encode, `XaiopWs`, protocol version)  
+Catalog: `src/data/xaiop-catalog.js` (keep aligned with `xaiop-sdk/nodejs/src/index.d.ts` — encode, merge, history, `XaiopWs`, package **0.7.0**)  
 Stream scenarios: `src/data/stream-scenarios.js`  
-Practice docs: `docs/practice/skeleton-stream.md` for WS skeleton path.
+Playground simulator: `src/lib/stream-sim.js` enables `historySnapshot` (per-`.` before/after)  
+Practice docs: `docs/practice/skeleton-stream.md` for WS skeleton path.  
+History note: `docs/sdk/nodejs/notes/history.md`

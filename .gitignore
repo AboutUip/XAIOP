@@ -4,7 +4,12 @@
 # =============================================================================
 
 # --- Local / workspace (do not publish) --------------------------------------
-dev/
+# Keep personal scratch under dev/, but publish the SDK stage-timing harness.
+dev/*
+!dev/sdk-timing/
+!dev/sdk-timing/**
+dev/sdk-timing/node_modules/
+dev/sdk-timing/last-report.json
 .cursor/
 .vscode/
 .idea/
@@ -116,6 +121,7 @@ views/.vite/
 
 # --- Java / Maven / Gradle (xaiop-sdk/java) ----------------------------------
 target/
+**/target/
 .gradle/
 *.class
 *.jar
@@ -131,6 +137,17 @@ replay_pid*
 *.iml
 *.ipr
 *.iws
+# Maven release / versions plugin backups
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+.mvn/timing.properties
+# Keep wrapper jar if added later (explicit allow)
+!.mvn/wrapper/maven-wrapper.jar
 
 # --- Python (xaiop-sdk/python) -----------------------------------------------
 __pycache__/

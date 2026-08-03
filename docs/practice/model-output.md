@@ -33,7 +33,7 @@ Skills in this repo: [../../skills/xaiop/](../../skills/xaiop/) · [../../skills
 Cite protocol checklists; do not redefine them here:
 
 - Root: complete document (`>` / `-`) vs fragment — [../protocol/notes/wire-attention.md](../protocol/notes/wire-attention.md)  
-- `.` resets Cursor only; later-wins; `>name-` reopen **replaces** arrays  
+- `.` resets Cursor only; later-wins; `>name-` reopen **re-enters** and **appends**  
 - No Bare Labels; no CR/LF inside values; forced string when needed  
 
 Practical emit pattern for progressive UI:
@@ -42,7 +42,7 @@ Practical emit pattern for progressive UI:
 2. Finish a logical top-level section.  
 3. Emit `.` when the **consumer** should see a mid-stream update (if using a Diff boundary tied to `.`).  
 4. Re-enter from Root after `.` (`>` then next keys).  
-5. Keep each named array’s growth **inside one phase** (no reopen after `.` for append).
+5. Named arrays **MAY** span phases (`>name-` appends). Keeping one array in one phase is optional Diff clarity, not a protocol requirement.
 
 ---
 

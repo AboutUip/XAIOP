@@ -1,15 +1,15 @@
 ---
 name: xaiop-allowlist
 description: >-
-  XAIOP v0.2.0 generator Skill using the ALLOWLIST scheme: emit only permitted
-  line forms and sequences. Use when producing XAIOP, when this skill is
-  attached, or when the user asks for allowlist / whitelist XAIOP output.
+  XAIOP v0.4.0 generator Skill (ALLOWLIST scheme): emit only permitted line
+  forms. Cursor-IR writer for models. Use when producing allowlist / whitelist
+  XAIOP, when this skill is attached, or when the user asks for allowlist output.
 ---
 
 # XAIOP Allowlist Skill (`xaiop-allowlist`)
 
 **Scheme:** ALLOWLIST (closed world).  
-**Protocol:** XAIOP v0.2.0 Frozen.
+**Protocol:** XAIOP v0.4.0 Frozen. LLM writers are one Generator class on the cursor IR.
 
 You may emit **only** lines and sequences described in this Skill.  
 Anything not listed here as **Allowed** is **forbidden** — including JSON, YAML, `key=value`, markdown, prose, checklists, indentation-as-structure, bracket lists (`[a,b]`), quoted attribute tags, and any line with spaces inside a Structure token.
@@ -82,19 +82,20 @@ Only these lines exist in legal output.
 | --- | --- | --- | --- |
 | A1 | `>` | Open anonymous **root object** (document start) · **or** open new **array object-element** and enter · **or** **re-enter** current object | See §4.1 |
 | A2 | `>name` | Create/enter **named object** `name` at Cursor | `>meta` |
-| A3 | `>name-` | Create/enter **named array** `name` (**one** token, one line) | `>tags-` |
+| A3 | `>name-` | Create/**re-enter** **named array** `name` (**one** token, one line) | `>tags-` |
 | A4 | `-` | Create/enter **anonymous array** (root or nested element) | `-` |
 | A5 | `<` | Pop Cursor **one** level (not at Root). Line is **exactly** `<` | `<` |
 | A6 | `<name` | Pop one level, then create/enter `name` at parent. **No space** after `<` | `<author` |
 | A7 | `.` | Reset Cursor to **Root** | `.` |
 | A8 | `=seg` or `=seg>seg>…` | Fuzzy **locate** existing node; segments join with `>` only; **no spaces**; **no values** | `=meta` · `=a>b` |
-| A9 | `!name` | Broadcast-append target: later Content applies to every match `name` | `!note` |
+| A9 | `@seg` or `@seg>seg>…` | **Exact** from Root; **create** missing object segments (本相) | `@a>b` |
+| A10 | `!seg` or `!seg>seg>…` | Broadcast all matches on **tree so far** (向前跨相; outer prune) until `.` | `!note` · `!a>b` |
 
 **Name token (`name` / `seg`):** non-empty; **no whitespace**; no `:`; no `=`.  
 Prefer `[A-Za-z_][A-Za-z0-9_]*` for structure names (`>meta`, `>cast-`, `=siblings`).  
 CJK and spaces belong in **Content values** (`name:江辞`, `text:……`), not inside `>…` / `<…` / `=…` tokens.
 
-**A3:** trailing `-` is part of `>name-` (create array). Locate the same array with A8 `=name` (e.g. `=tags`).
+**A3:** trailing `-` is part of `>name-` (create/re-enter array). Locate the same array with A8 `=name` (e.g. `=tags`).
 
 **A5 vs A6 vs C2 (cast / name lists / leave):**
 
@@ -516,7 +517,16 @@ text:快起来
 <
 ```
 
-### 4.18 Broadcast (rare)
+### 4.18 Exact `@` / broadcast `!`
+
+Create or enter from Root (`@`):
+
+```text
+@a>b
+z:3
+```
+
+Broadcast all matches on tree so far; end with `.`:
 
 ```text
 >
@@ -530,6 +540,7 @@ y:2
 .
 !note
 z:3
+.
 ```
 
 ---
@@ -541,14 +552,16 @@ z:3
 | Start object document | A1 `>` |
 | Start array document | A4 `-` |
 | Enter/create named object | A2 `>name` |
-| Enter/create named array | A3 `>name-` |
+| Enter/create/re-enter named array | A3 `>name-` |
 | Write a field | C1 `key:value` (colon only) |
 | Write array scalar / cast name | C2 `:value` / `:江辞` |
 | Write cast / tag string list | A3 `>cast-` then repeated C2 only |
 | New object element in array | A1 `>` … C1 fields … A5 `<` |
 | One-field object element without entering | C1 at array level |
 | Finish whole array / section; next named part | A7 `.` then A2/A3 |
-| Jump to existing node | A8 `=path` then C1/C2/A1… |
+| Jump to existing node (fuzzy) | A8 `=path` then C1/C2/A1… |
+| Jump exact from Root | A9 `@path` then C1/C2/A1… |
+| Broadcast update all matches | A10 `!path` … then A7 `.` |
 | Ascend one level | A5 `<` (entire line) |
 | Ascend and open sibling/new name | A6 `<name` (no space; name has no `:`) |
 | Nest scenes under episode | A3 `>scenes-` at column 0 (no indent) |
@@ -572,7 +585,7 @@ Starting with `>name` and **no** prior A1/A4 yields a **root fragment** (no oute
 
 Before sending, verify privately:
 
-1. Every line matches §3 exactly (A1–A9 or C1–C2).  
+1. Every line matches §3 exactly (A1–A10 or C1–C2).  
 2. No empty lines; **no leading spaces/tabs on any line**.  
 3. No newlines inside values.  
 4. First line is `>` or `-` for complete documents.  
