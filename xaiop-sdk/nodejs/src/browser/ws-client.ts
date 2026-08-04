@@ -11,6 +11,7 @@ import { DotCheckpointEngine } from "../core/checkpoint.js";
 import { encodePhaseJson, encodePhaseObject } from "../core/phase-encode.js";
 import { ControlPlaneHost } from "../core/control-host.js";
 import { ResumeWireLog } from "../core/resume-log.js";
+import { stampWireWithLogSeq } from "../core/control.js";
 import {
   TypeFreezeSession,
 } from "../core/types.js";
@@ -181,6 +182,7 @@ export class XaiopBrowserWsConnection {
         if (this._onPhase) this._onPhase(diff, meta);
       },
     });
+    this._control.bindCheckpoint(this._engine);
 
     if (options.autoSession === true) {
       if (this._ws.readyState === 1) {
@@ -383,9 +385,7 @@ export class XaiopBrowserWsConnection {
    */
   pushJson(key, value, options = {}) {
     const wire = encodePhaseJson(key, value, options);
-    const ok = this.pushWire(wire);
-    if (ok) this._maybeRecordOutbound(wire);
-    return ok;
+    return this._pushOutboundPhase(wire);
   }
 
   /**
@@ -396,9 +396,18 @@ export class XaiopBrowserWsConnection {
    */
   pushObject(object, options = {}) {
     const wire = encodePhaseObject(object, options);
-    const ok = this.pushWire(wire);
-    if (ok) this._maybeRecordOutbound(wire);
-    return ok;
+    return this._pushOutboundPhase(wire);
+  }
+
+  /** @param {string} wire */
+  _pushOutboundPhase(wire) {
+    if (this._autoRecordOutbound) {
+      const next = this._outboundSeq + 1;
+      const ok = this.pushWire(stampWireWithLogSeq(next, wire));
+      if (ok) this.noteOutboundPhase(wire);
+      return ok;
+    }
+    return this.pushWire(wire);
   }
 
   /**
@@ -436,6 +445,11 @@ export class XaiopBrowserWsConnection {
 
   get phaseSeq() {
     return this._engine.phaseSeq;
+  }
+
+  /** Session resume cursor (logSeq when stamped). */
+  get logSeq() {
+    return this._control.phaseSeq;
   }
 
   get outboundSeq() {
@@ -497,7 +511,8 @@ export class XaiopBrowserWsConnection {
     if (!base) return null;
     return {
       ...base,
-      seq: this._engine.phaseSeq,
+      seq: base.seq,
+      logSeq: base.seq,
       inboundSeq: this._engine.phaseSeq,
       outboundSeq: this._outboundSeq,
     };

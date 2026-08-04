@@ -10,6 +10,7 @@ import { DotCheckpointEngine } from "../../core/checkpoint.js";
 import { encodePhaseJson, encodePhaseObject } from "../../core/phase-encode.js";
 import { ControlPlaneHost } from "../../core/control-host.js";
 import { ResumeWireLog } from "../../core/resume-log.js";
+import { stampWireWithLogSeq } from "../../core/control.js";
 import {
   TypeFreezeSession,
   TypeRegistry,
@@ -179,6 +180,7 @@ export class XaiopWsConnection {
         if (this._onPhase) this._onPhase(diff, meta);
       },
     });
+    this._control.bindCheckpoint(this._engine);
 
     /** @type {Promise<void>} */
     this._closedPromise = new Promise((resolve) => {
@@ -386,9 +388,7 @@ export class XaiopWsConnection {
    */
   pushJson(key, value, options = {}) {
     const wire = encodePhaseJson(key, value, options);
-    const ok = this.pushWire(wire);
-    if (ok) this._maybeRecordOutbound(wire);
-    return ok;
+    return this._pushOutboundPhase(wire);
   }
 
   /**
@@ -399,9 +399,23 @@ export class XaiopWsConnection {
    */
   pushObject(object, options = {}) {
     const wire = encodePhaseObject(object, options);
-    const ok = this.pushWire(wire);
-    if (ok) this._maybeRecordOutbound(wire);
-    return ok;
+    return this._pushOutboundPhase(wire);
+  }
+
+  /**
+   * Send one outbound phase; when session/retainOutbound, stamp `#!xaiop/seq/v1`
+   * and record plain wire in the outbound log.
+   * @param {string} wire
+   * @returns {boolean}
+   */
+  _pushOutboundPhase(wire) {
+    if (this._autoRecordOutbound) {
+      const next = this._outboundSeq + 1;
+      const ok = this.pushWire(stampWireWithLogSeq(next, wire));
+      if (ok) this.noteOutboundPhase(wire);
+      return ok;
+    }
+    return this.pushWire(wire);
   }
 
   /**
@@ -487,6 +501,14 @@ export class XaiopWsConnection {
   /** Inbound phase seq (engine; what was received/applied). */
   get phaseSeq() {
     return this._engine.phaseSeq;
+  }
+
+  /**
+   * Session resume cursor (prefers logSeq when stamps were seen; else local).
+   * Same as `getResumeState()?.seq` when session is on.
+   */
+  get logSeq() {
+    return this._control.phaseSeq;
   }
 
   /** Outbound phase seq (producer; what was sent via pushJson/pushObject/noteOutboundPhase). */
@@ -576,7 +598,9 @@ export class XaiopWsConnection {
     if (!base) return null;
     return {
       ...base,
-      seq: this._engine.phaseSeq,
+      /** Resume cursor: session-log when stamps present; else highest local applied. */
+      seq: base.seq,
+      logSeq: base.seq,
       inboundSeq: this._engine.phaseSeq,
       outboundSeq: this._outboundSeq,
     };

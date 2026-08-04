@@ -69,11 +69,13 @@ export {
   encodeAckFrame,
   encodeControlFrame,
   encodeResumeFrame,
+  encodeSeqFrame,
   encodeSessionFrame,
   encodeSnapshotFrame,
   isSdkControlLine,
   parseControlBodyJson,
   parseControlHeader,
+  stampWireWithLogSeq,
 } from "./control.js";
 export { ControlPlaneHost } from "./control-host.js";
 export { ResumeWireLog, XaiopResumeLogError } from "./resume-log.js";

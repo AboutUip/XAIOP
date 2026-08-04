@@ -7,7 +7,7 @@
 | Document ID | `SDK-NODE-NOTE-CONTROL` |
 | Status | Informative (SDK product convention) |
 | Last updated | 2026-08-05 |
-| Package | `xaiop` **0.14.0+** |
+| Package | `xaiop` **0.14.1+** |
 | Normative wire | **No** — Frozen protocol **0.6.0** still classifies `#…` as custom annotation; this note is an **SDK Control Root** convention |
 | Depends on | [ws-session.md](ws-session.md), [annotation-span.md](annotation-span.md), [typecheck.md](typecheck.md), [streaming-parse.md](streaming-parse.md) |
 | Tests | `test/control.plane.test.js` · `test/control.resume.test.js` · `test/control.coverage.test.js` |
@@ -54,9 +54,10 @@ Exports: `encodeControlFrame`, `encodeSessionFrame`, `encodeAckFrame`, `encodeRe
 | --- | --- | --- |
 | `#!xaiop/types/v1` | Type schema snapshot | Same semantics as pre-0.14 `pushTypeConsistency` |
 | `#!xaiop/session/v1` | `{ sessionId, role, capabilities[], epoch }` | Session hello / capability advertise |
-| `#!xaiop/ack/v1` | `{ sessionId, seq }` | Consumer confirms contiguous applied seq |
-| `#!xaiop/resume/v1` | `{ sessionId, fromSeq, epoch? }` | Reconnect: continue from **`fromSeq + 1`** |
-| `#!xaiop/snapshot/v1` | `{ sessionId, seq, tree }` | Optional committed-tree seed after resume (**no** Diff replay) |
+| `#!xaiop/ack/v1` | `{ sessionId, seq }` | Consumer confirms contiguous applied **session-log** seq |
+| `#!xaiop/resume/v1` | `{ sessionId, fromSeq, epoch? }` | Reconnect: continue from **`fromSeq + 1`** (log space) |
+| `#!xaiop/snapshot/v1` | `{ sessionId, seq, tree }` | Optional committed-tree seed after resume (**no** Diff replay); `seq` is log space |
+| `#!xaiop/seq/v1` | `{ seq }` (`seq >= 1`) | Stamp **session-log** seq for the **following** document phase → `meta.logSeq` |
 
 `types/v1` is the first leaf under this root. Encoders append a trailing body `\n` (historical whole messages without that LF remain accepted).
 
@@ -81,47 +82,67 @@ text → ControlDemux (line / frame boundary)
 
 ---
 
-## 5. Phase seq & resume (locked in 0.14)
+## 5. Phase seq & resume (locked in 0.14 / clarified 0.14.1)
 
 | Topic | Decision |
 | --- | --- |
-| **Seq granularity** | One monotonic integer per completed **physical** `.` (and one for a non-empty finish tail). Cover-mode sub-emits also allocate seqs. |
-| **Window merge** | `mergeChunkWindow: true` may deliver one `onChunk` for several `.`; `meta.seqs` lists all; `meta.seq` is the highest. |
-| **Ack** | Highest contiguous applied seq (`sendAck` / `autoAck`). |
+| **Two numbering spaces** | **Do not conflate** connection-local `meta.seq` with session-log `meta.logSeq` / `fromSeq` |
+| **Seq granularity** | One unit per completed **physical** `.` (and non-empty finish tail). Cover-mode sub-emits also allocate. |
+| **Window merge** | `mergeChunkWindow: true` may deliver one `onChunk` for several `.`; `meta.seqs` / `meta.logSeqs` list all; `meta.seq` / `meta.logSeq` are the highest. |
+| **Ack / resume / snapshot.seq** | **Session-log space only** (prefer `meta.logSeq` when stamps are present). |
 | **Reconnect Diff** | **Do not** replay historical Diffs. Optional `snapshot`, then wire from `fromSeq + 1`. |
 | **Byte offsets** | **Not** used. |
+
+### Two seq spaces (highest-frequency resume pitfall)
+
+| Space | Where | Lifetime | Use for `fromSeq` / ack? |
+| --- | --- | --- | --- |
+| **Connection-local** | `meta.seq` / `meta.seqs` / `phaseSeq` / `getResumeState().inboundSeq` | **Resets to 1** on every new socket / `DotCheckpointEngine` | **No** (after reconnect) |
+| **Session-log** | `meta.logSeq` / `meta.logSeqs` / `logSeq` / `getResumeState().seq` / `ResumeWireLog` / `outboundSeq` on one producer connection | Durable across reconnects when stamped / logged | **Yes** |
+
+**Wrong:** after reconnect catch-up, set `resumeCursor = meta.seq` (local 1/2/3) and later `sendResume({ fromSeq: resumeCursor })` — you drop log phases that already had higher numbers.
+
+**Right:** persist `resumeCursor = meta.logSeq` (or `getResumeState().seq` / `conn.logSeq`) whenever stamps are present. On a first live connection without stamps, local seq may coincide with log seq until the first reconnect.
+
+Stamps: `#!xaiop/seq/v1\n{"seq":N}\n` immediately before the phase wire. `pushJson` / `pushObject` with `session` / `retainOutbound` stamp automatically. `ResumeWireLog.wiresAfter(fromSeq)` prefixes each entry; use `wiresAfterRaw` only for dumps/tests. Helpers: `encodeSeqFrame` / `stampWireWithLogSeq`.
+
+### Catch-up + `mergeChunkWindow` (not a bug)
+
+Default `mergeChunkWindow: true`: a single `pushWire` of several resumed phases often yields **one** `onChunk` (batch-end Diff) with `meta.logSeqs` listing every log unit. Fine for state catch-up. If the product needs **per-phase** callbacks (e.g. animation), connect with `mergeChunkWindow: false` — still not a resume defect, just the default window policy.
 
 ### Inbound vs outbound
 
 | Cursor | Meaning |
 | --- | --- |
-| `phaseSeq` / `inboundSeq` | Phases **received** and committed by `DotCheckpointEngine` |
-| `outboundSeq` | Phases **sent** via `pushJson` / `pushObject` / `noteOutboundPhase` when `session` or `retainOutbound` is on |
-| `pushWire` | Does **not** auto-record outbound (call `noteOutboundPhase` if needed) |
+| `phaseSeq` / `inboundSeq` | Connection-local phases received by `DotCheckpointEngine` |
+| `logSeq` / `getResumeState().seq` | Session resume cursor (logSeq when stamps seen; else falls back to local) |
+| `outboundSeq` | Phases **sent** via `pushJson` / `pushObject` / `noteOutboundPhase` when `session` or `retainOutbound` is on (**per connection** — use app `ResumeWireLog` across reconnects) |
+| `pushWire` | Does **not** auto-record / auto-stamp (call `stampWireWithLogSeq` + `noteOutboundPhase` / `log.record` if needed) |
 
 ### WS APIs (Node `XaiopWsConnection` / browser `XaiopBrowserWsConnection`)
 
 | Option / method | Meaning |
 | --- | --- |
-| `session: true \| {…}` | Enable session cursor (+ outbound log) |
+| `session: true \| {…}` | Enable session cursor (+ outbound log + auto stamp on pushJson/Object) |
 | `retainOutbound: true` | Outbound log without full session hello |
 | `autoSession: true` | Send `session` hello when socket opens |
-| `autoAck: true` | Ack after each inbound phase seq |
+| `autoAck: true` | Ack after each inbound phase (**logSeq** when present) |
 | `onControlError` / `onSession` / `onResume` / `onAck` / `onSnapshot` | Control callbacks (pass in **connect options**; locked after `connect`) |
 | `sendSession` / `sendAck` / `sendResume` / `sendSnapshot` | Outbound frames |
-| `getResumeState()` | `{ sessionId, seq, inboundSeq, outboundSeq, epoch, committedSnapshot? }` |
-| `replayOutboundAfter(fromSeq)` | Same-connection producer replay |
+| `getResumeState()` | `{ sessionId, seq, logSeq, inboundSeq, outboundSeq, epoch, committedSnapshot? }` — **`seq`/`logSeq` = resume cursor** |
+| `logSeq` | Getter for session resume cursor |
+| `replayOutboundAfter(fromSeq)` | Stamped wire for same-connection producer replay |
 | `ResumeWireLog` | **App-owned** durable log across reconnects (keyed by `sessionId`) |
 | Listen-accept | Handlers stay **unlocked** — `conn.onResume(fn)` etc. may be attached in `hub.onConnection` |
 
 ### Stream (`XaiopStream`)
 
-Receive-side demux + optional `session` for inbound cursor. `onChunk(diff, meta)` receives `meta.seq` / `meta.seqs`. Control **send** is receive-only (`send` no-op). Prefer WS for bidirectional resume.
+Receive-side demux + optional `session` for inbound cursor. `onChunk(diff, meta)` receives `meta.seq` / `meta.seqs` and optional `meta.logSeq` / `meta.logSeqs`. Control **send** is receive-only (`send` no-op). Prefer WS for bidirectional resume.
 
 ### Cross-reconnect sketch
 
 ```js
-import { ResumeWireLog, XaiopWs, encodePhaseJson } from "xaiop";
+import { ResumeWireLog, XaiopWs, stampWireWithLogSeq } from "xaiop";
 
 const log = new ResumeWireLog();
 const sessionId = "durable-1";
@@ -130,12 +151,29 @@ hub.onConnection((conn) => {
   conn.onResume((body) => {
     const snap = log.committedAt(body.fromSeq);
     if (snap !== undefined) conn.sendSnapshot(snap);
+    // wiresAfter stamps #!xaiop/seq/v1 so the client gets meta.logSeq
     const wire = log.wiresAfter(body.fromSeq);
     if (wire) conn.pushWire(wire);
   });
 });
 
-// On produce: pushWire + log.record({ seq, wire, committed })
+// Live produce: either pushJson with session:true (auto stamp + outboundLog),
+// or stampWireWithLogSeq(seq, wire) + log.record({ seq, wire, committed })
+```
+
+Consumer:
+
+```js
+let resumeCursor = 0;
+const client = await XaiopWs.connect(url, {
+  session: { sessionId },
+  onPhase: (diff, meta) => {
+    if (Number.isInteger(meta?.logSeq)) resumeCursor = meta.logSeq;
+    // do NOT assign resumeCursor = meta.seq across reconnects
+  },
+});
+// later reconnect:
+await client2.sendResume({ sessionId, fromSeq: resumeCursor });
 ```
 
 Per-connection `outboundLog` is cleared when the socket closes — durable resume **requires** an app-level log.

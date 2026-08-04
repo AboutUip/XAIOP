@@ -48,7 +48,7 @@ English text is authoritative; Chinese mirrors track the same entries.
 | Protocol notes | wire-attention — `#` |
 | `TERM-GLOSS` | Custom annotation transmission |
 | `META-VER` | Sealed package version → `0.6.0` |
-| Node.js SDK | **0.11.0** — ignore `#` lines; `PROTOCOL_VERSION` → `0.6.0`. Tip **0.12.0** — buffer line intercept (`onLineIntercept`). Tip **0.13.0** — Annotation Span (`onAnnotationSpan`; typeCheck escape). Tip **0.14.0** — Control Root `#!` demux / session / seq / resume (still protocol **0.6.0**) |
+| Node.js SDK | **0.11.0** — ignore `#` lines; `PROTOCOL_VERSION` → `0.6.0`. Tip **0.12.0** — buffer line intercept (`onLineIntercept`). Tip **0.13.0** — Annotation Span (`onAnnotationSpan`; typeCheck escape). Tip **0.14.0** — Control Root `#!` demux / session / seq / resume. Tip **0.14.1** — `#!xaiop/seq/v1` → `meta.logSeq` (still protocol **0.6.0**) |
 
 **Compatibility:** Writers that never emit `#` lines remain valid. Parsers that do not ignore `#…` lines **do not conform** to protocol package **0.6.0**.
 

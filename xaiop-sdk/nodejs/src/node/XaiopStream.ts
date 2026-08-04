@@ -272,22 +272,28 @@ export class XaiopStream {
     return this._control.sessionId;
   }
 
-  /** Inbound applied phase seq (0 until engine commits). */
+  /** Inbound applied phase seq (0 until engine commits). Connection-local. */
   get phaseSeq() {
     return this._engine ? this._engine.phaseSeq : 0;
+  }
+
+  /** Session resume cursor (logSeq when stamps seen). */
+  get logSeq() {
+    return this._control.phaseSeq;
   }
 
   get ackedSeq() {
     return this._control.ackedSeq;
   }
 
-  /** @returns {{ sessionId: string, seq: number, epoch: number, committedSnapshot?: unknown }|null} */
+  /** @returns {{ sessionId: string, seq: number, logSeq?: number, inboundSeq: number, epoch: number, committedSnapshot?: unknown }|null} */
   getResumeState() {
     const base = this._control.getResumeState(this.getCommittedSnapshot());
     if (!base) return null;
     return {
       ...base,
-      seq: this.phaseSeq,
+      seq: base.seq,
+      logSeq: base.seq,
       inboundSeq: this.phaseSeq,
     };
   }
@@ -717,6 +723,7 @@ export class XaiopStream {
       annotationSpan: this._annotationSpanHandlers.slice(),
       onChunk: (diff, meta) => this._deliverChunk(diff, meta),
     });
+    this._control.bindCheckpoint(this._engine);
     if (this._historySnapshot && this._engine.history) {
       this._engine.history.setSource(url);
     }

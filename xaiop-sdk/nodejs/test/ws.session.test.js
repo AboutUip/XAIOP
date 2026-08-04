@@ -1,5 +1,5 @@
 /**
- * Native WebSocket session tests â€” listen/push + connect/consume loopback.
+ * Native WebSocket session tests â€?listen/push + connect/consume loopback.
  * Coverage focus: skeleton stream, phases, framing, lifecycle, errors.
  */
 import assert from "node:assert/strict";
@@ -70,7 +70,7 @@ function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-test("ws: listen+connect skeleton 3+5 â†’ full Snapshot", async () => {
+test("ws: listen+connect skeleton 3+5 â†?full Snapshot", async () => {
   await withLoopback(async ({ server, client, phases, committed }) => {
     const pieces = {
       skeleton1: { title: "A" },
@@ -223,7 +223,7 @@ test("ws: empty phase via consecutive .", async () => {
   );
 });
 
-test("ws: streamProcessing false â†’ one phase at close", async () => {
+test("ws: streamProcessing false â†?one phase at close", async () => {
   await withLoopback(
     async ({ server, client, phases }) => {
       server.pushWire(">\na:1\n.\n>b\nc:2\n");
@@ -371,7 +371,7 @@ test("ws: pushWire TypeError for non-string", async () => {
 test("ws: pushWireLn appends LF when missing; leaves existing LF", async () => {
   await withLoopback(async ({ server, client }) => {
     assert.throws(() => server.pushWireLn(/** @type {any} */ (1)), /string/);
-    // Missing trailing LF â†’ append; already-terminated frame â†’ unchanged.
+    // Missing trailing LF â†?append; already-terminated frame â†?unchanged.
     assert.equal(server.pushWireLn(">\na:1\n."), true);
     assert.equal(server.pushWireLn(">b\nc:2\n"), true);
     await server.end();
@@ -427,7 +427,7 @@ test("ws: sync server push in connection is not lost", async () => {
   const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
   try {
     hub.onConnection((conn) => {
-      // Intentionally synchronous â€” the historical race.
+      // Intentionally synchronous â€?the historical race.
       conn.pushJson("sync", 1, { final: true });
       void conn.end();
     });

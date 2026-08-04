@@ -155,6 +155,16 @@ export class DotCheckpointEngine {
      * @type {number[]}
      */
     this._pendingSeqs = [];
+    /**
+     * Session-log seqs queued by `#!xaiop/seq/v1` (FIFO → next physical phases).
+     * @type {number[]}
+     */
+    this._logSeqQueue = [];
+    /**
+     * Log seqs paired into the next `_emitChunk`.
+     * @type {number[]}
+     */
+    this._pendingLogSeqs = [];
   }
 
   /**
@@ -241,6 +251,21 @@ export class DotCheckpointEngine {
   }
 
   /**
+   * Queue a session-log seq for the next physical phase unit(s).
+   * Called when demux dispatches `#!xaiop/seq/v1`.
+   * @param {number} seq
+   * @returns {this}
+   */
+  noteLogSeq(seq) {
+    const n = Number(seq);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new TypeError("noteLogSeq requires seq >= 1");
+    }
+    this._logSeqQueue.push(n);
+    return this;
+  }
+
+  /**
    * Allocate one seq for the next emit (call once per physical phase unit).
    * @returns {number|undefined}
    */
@@ -248,6 +273,9 @@ export class DotCheckpointEngine {
     if (!this._phaseSeqEnabled) return undefined;
     this._phaseSeq += 1;
     this._pendingSeqs.push(this._phaseSeq);
+    if (this._logSeqQueue.length > 0) {
+      this._pendingLogSeqs.push(this._logSeqQueue.shift());
+    }
     return this._phaseSeq;
   }
 
@@ -257,7 +285,9 @@ export class DotCheckpointEngine {
     this._pendingTypeCheckEscape = [];
     const seqs = this._pendingSeqs;
     this._pendingSeqs = [];
-    /** @type {{ typeCheckEscapePaths?: string[], seq?: number, seqs?: number[] }} */
+    const logSeqs = this._pendingLogSeqs;
+    this._pendingLogSeqs = [];
+    /** @type {{ typeCheckEscapePaths?: string[], seq?: number, seqs?: number[], logSeq?: number, logSeqs?: number[] }} */
     const meta = {};
     if (escapes && escapes.length > 0) {
       meta.typeCheckEscapePaths = uniqueEscape(escapes);
@@ -265,6 +295,10 @@ export class DotCheckpointEngine {
     if (seqs && seqs.length > 0) {
       meta.seqs = seqs.slice();
       meta.seq = seqs[seqs.length - 1];
+    }
+    if (logSeqs && logSeqs.length > 0) {
+      meta.logSeqs = logSeqs.slice();
+      meta.logSeq = logSeqs[logSeqs.length - 1];
     }
     if (Object.keys(meta).length > 0) {
       this._hooks.onChunk(diff, meta);

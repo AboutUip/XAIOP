@@ -220,7 +220,7 @@ v:1
 
 test("broadcast < at Root on any cursor fails all", () => {
   // After !test, cursors are on test objects (depth>1). Pop once to parent, pop again ok,
-  // third pop from left/right parents hits root frame â†’ illegal.
+  // third pop from left/right parents hits root frame â†?illegal.
   assert.throws(
     () =>
       parseSync(`>
@@ -307,7 +307,7 @@ test("empty @ and ! paths error", () => {
 });
 
 test("!a>b prunes nested a>b under an outer match start", () => {
-  // Under `p`, match starts at child `a` â†’ prune entire `p.a` (nested a>b not updated).
+  // Under `p`, match starts at child `a` â†?prune entire `p.a` (nested a>b not updated).
   // Under `q`, separate match updated.
   const v = parseSync(`>
 >p
@@ -369,7 +369,7 @@ v:1
     right: { test: { y: 2, z: 9 } },
     only: { v: 1 },
   });
-  // Phase with ! uses cumulative prefix â†’ onChunk sees full tree at that boundary
+  // Phase with ! uses cumulative prefix â†?onChunk sees full tree at that boundary
   const bangChunk = chunks.find(
     (c) =>
       c &&

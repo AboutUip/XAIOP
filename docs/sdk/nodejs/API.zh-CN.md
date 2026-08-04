@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.6.0 Frozen（已封存）  
-**SDK 版本**: 0.14.0（TypeScript）  
+**SDK 版本**: 0.14.1（TypeScript）
 **运行时**: 默认入口 **Node.js ≥ 18（ESM）**；浏览器用子路径（见 §0）  
 **代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）  
 **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -106,7 +106,7 @@ await client.done;
 
 ## 2. 核心概念
 
-**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.14.0**）。
+**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.14.1**）。
 
 - 完整文法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)
 - 封存与发行索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -792,13 +792,15 @@ console.log(await client.done);
 
 | 项 | 摘要 |
 | --- | --- |
-| 官方帧 | `#!xaiop/types/v1`、`session/v1`、`ack/v1`、`resume/v1`、`snapshot/v1` |
+| 官方帧 | `#!xaiop/types/v1`、`session/v1`、`ack/v1`、`resume/v1`、`snapshot/v1`、**`seq/v1`** |
 | 未知 `#!` | 丢弃 + `XaiopControlError`（`onControlError`）；永不进线文管道 |
-| Seq | 每个物理 `.` 单调递增（`onPhase` / `onChunk` 的 `meta.seq` / `meta.seqs`） |
-| 续传 | `sendResume({ sessionId, fromSeq })` → 从 `fromSeq+1` 续推；**不**重放历史 Diff；可选 `sendSnapshot` |
+| **两套序号** | `meta.seq` = **连接局部**（每个 socket 从 1 重计）；`meta.logSeq` = **会话日志**，供 `fromSeq` / ack。重连后**禁止** `resumeCursor = meta.seq` — 用 `meta.logSeq` / `getResumeState().seq` / `logSeq` |
+| 打戳 | 每相前 `#!xaiop/seq/v1`；`session`/`retainOutbound` 时 `pushJson`/`pushObject` 自动打戳；`ResumeWireLog.wiresAfter` 自动打戳 |
+| 窗口合并 | 默认 `mergeChunkWindow: true` 可能把续传补发合成一次 chunk（`meta.logSeqs` 仍列出各单位）— **不是 bug**；要逐步回调请关窗口 |
+| 续传 | `sendResume({ sessionId, fromSeq })` → 在 **日志空间** 从 `fromSeq+1` 续推；**不**重放历史 Diff；可选 `sendSnapshot` |
 | connect 选项 | `session`、`autoSession`、`autoAck`、`retainOutbound`、`onSession`、`onResume`、`onAck`、`onSnapshot`、`onControlError` |
-| 生产端日志 | `session` 或 `retainOutbound` 时 `pushJson`/`pushObject` 自动记出站相位；`replayOutboundAfter(fromSeq)`；跨重连请用应用侧按 `sessionId` 持有的 `ResumeWireLog` |
-| Stream | `onChunk(diff, meta)` 收到相位 `meta.seq` / `meta.seqs`；`getResumeState()` / `phaseSeq` 选项 |
+| 生产端日志 | `session`/`retainOutbound` 时自动记录并打戳；跨重连用应用侧按 `sessionId` 持有的 `ResumeWireLog` |
+| Stream | `onChunk(diff, meta)` 可含 `seq`/`seqs` 与 `logSeq`/`logSeqs` |
 
 ---
 
@@ -886,7 +888,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.14.0"` |
+| `SDK_VERSION` | `"0.14.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |
@@ -896,8 +898,9 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | `LINE_KIND` / `classifyLine` / `emptyLineView` / `runLineInterceptChain` | 行拦截分类与链工具（§6.4） |
 | `applyAnnotationSpans` / `encodeAsSiblingLines` / `pathEscapesTypeCheck` | Annotation Span 辅助（§6.5） |
 | `CONTROL_NS` / `CONTROL_NAME` / `CONTROL_CAPABILITY` | SDK 控制根常量（§7.7） |
+| `encodeSeqFrame` / `stampWireWithLogSeq` | 会话日志序号打戳（`#!xaiop/seq/v1`） |
 | `ControlDemux` / `ControlIngest` / `ControlPlaneHost` / `ControlSessionState` | 控制 demux / 会话辅助 |
-| `ResumeWireLog` / `XaiopResumeLogError` | 续传用持久出站相位日志 |
+| `ResumeWireLog` / `XaiopResumeLogError` | 续传用持久出站相位日志（`wiresAfter` 会打 logSeq 戳） |
 | `encodeControlFrame` / `encodeSessionFrame` / `encodeAckFrame` / `encodeResumeFrame` / `encodeSnapshotFrame` | 控制帧编解码 |
 | `isSdkControlLine` / `parseControlHeader` / `dispatchControlFrame` | 控制分类 / 路由 |
 | `XaiopControlError` | 软控制面错误（`code`，可选 `header` / `frame`） |

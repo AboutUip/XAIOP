@@ -7,7 +7,7 @@
 | Document ID | `SDK-NODE-NOTE-CONTROL` |
 | Status | Informative（SDK 产品约定） |
 | Last updated | 2026-08-05 |
-| 包版本 | `xaiop` **0.14.0+** |
+| 包版本 | `xaiop` **0.14.1+** |
 | 是否改 Frozen 线文 | **否** — 封存协议 **0.6.0** 仍把 `#…` 当作自定义注解传递；本文是 **SDK Control Root** 约定 |
 | Depends on | [ws-session.zh-CN.md](ws-session.zh-CN.md)、[annotation-span.zh-CN.md](annotation-span.zh-CN.md)、[typecheck.zh-CN.md](typecheck.zh-CN.md)、[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) |
 | 测试 | `test/control.plane.test.js` · `test/control.resume.test.js` · `test/control.coverage.test.js` |
@@ -52,9 +52,10 @@
 | --- | --- | --- |
 | `#!xaiop/types/v1` | 类型 schema | 同既有 `pushTypeConsistency` |
 | `#!xaiop/session/v1` | `{ sessionId, role, capabilities[], epoch }` | 会话握手 |
-| `#!xaiop/ack/v1` | `{ sessionId, seq }` | 确认已应用 seq |
-| `#!xaiop/resume/v1` | `{ sessionId, fromSeq, epoch? }` | 重连：从 **`fromSeq + 1`** 续推 |
-| `#!xaiop/snapshot/v1` | `{ sessionId, seq, tree }` | 可选提交树种子（**不**重放历史 Diff） |
+| `#!xaiop/ack/v1` | `{ sessionId, seq }` | 确认已应用的 **会话日志** seq |
+| `#!xaiop/resume/v1` | `{ sessionId, fromSeq, epoch? }` | 重连：从 **`fromSeq + 1`** 续推（日志空间） |
+| `#!xaiop/snapshot/v1` | `{ sessionId, seq, tree }` | 可选提交树种子（**不**重放历史 Diff）；`seq` 为日志空间 |
+| `#!xaiop/seq/v1` | `{ seq }`（`seq >= 1`） | 为**随后**的文档相位打 **会话日志** 戳 → `meta.logSeq` |
 
 ---
 
@@ -70,27 +71,45 @@ text → ControlDemux（按行 / 帧边界）
 
 ---
 
-## 5. 相位 seq 与续传（0.14 锁定）
+## 5. 相位 seq 与续传（0.14 锁定 / 0.14.1 澄清）
 
 | 主题 | 决定 |
 | --- | --- |
-| **seq 粒度** | 每个完成的 **物理** `.` 一个单调整数（非空 finish 尾同理） |
-| **窗口合并** | `meta.seqs` / `meta.seq`（最高） |
+| **两套编号** | **勿混淆** 连接局部 `meta.seq` 与会话日志 `meta.logSeq` / `fromSeq` |
+| **seq 粒度** | 每个完成的 **物理** `.` 一个单位（非空 finish 尾同理） |
+| **窗口合并** | `meta.seqs` / `meta.logSeqs`；`meta.seq` / `meta.logSeq` 为批内最高 |
+| **ack / resume / snapshot.seq** | **仅会话日志空间**（有戳时优先 `meta.logSeq`） |
 | **重连 Diff** | **不**重放；可选 `snapshot` + 从 `fromSeq+1` 续线文 |
 | **字节偏移** | **不用** |
 
+### 两套序号（续传最高频误用）
+
+| 空间 | 位置 | 生命周期 | 能否当 `fromSeq`？ |
+| --- | --- | --- | --- |
+| **连接局部** | `meta.seq` / `phaseSeq` / `inboundSeq` | **每个新 socket 从 1 重计** | 重连后 **否** |
+| **会话日志** | `meta.logSeq` / `logSeq` / `getResumeState().seq` / `ResumeWireLog` | 有打戳/日志则跨重连 | **是** |
+
+**错误：** 重连补发后写 `resumeCursor = meta.seq`（局部 1/2/3），下次 `fromSeq` 会丢掉更高的日志相位。  
+**正确：** 有戳时坚持 `resumeCursor = meta.logSeq`（或 `getResumeState().seq` / `conn.logSeq`）。
+
+打戳：`#!xaiop/seq/v1` 紧挨相位线文之前。`session`/`retainOutbound` 下 `pushJson`/`pushObject` 自动打戳。`ResumeWireLog.wiresAfter` 为每条加戳；裸拼接用 `wiresAfterRaw`。工具：`encodeSeqFrame` / `stampWireWithLogSeq`。
+
+### 补发与 `mergeChunkWindow`（不是 bug）
+
+默认 `mergeChunkWindow: true`：一次 `pushWire` 灌入多相续传，常变成 **一次** `onChunk`（批末 Diff），`meta.logSeqs` 仍列出各日志单位。对补状态无所谓。若要按相回调（动画等），connect 时设 `mergeChunkWindow: false`。
+
 | 游标 | 含义 |
 | --- | --- |
-| `phaseSeq` / `inboundSeq` | 已接收并提交的相位 |
-| `outboundSeq` | `pushJson` / `pushObject` / `noteOutboundPhase` 已发送（需 `session` 或 `retainOutbound`） |
-| `pushWire` | **不**自动记出站 |
+| `phaseSeq` / `inboundSeq` | 本连接已接收的局部相位 |
+| `logSeq` / `getResumeState().seq` | 会话续传游标（有戳用 logSeq） |
+| `outboundSeq` | 本连接已发送（跨重连请用应用侧 `ResumeWireLog`） |
+| `pushWire` | **不**自动记出站 / 打戳 |
 
-WS：`session` / `autoSession` / `autoAck` / `sendResume` / `getResumeState` / `replayOutboundAfter` / `ResumeWireLog` 等见英文 §5 表。  
-`connect` 后控制回调 **锁定**（须放进 connect options）；listen-accept **不锁**，可在 `onConnection` 里挂 `onResume`。
+WS 选项与 API 表、完整示例见英文 [control-plane.md](control-plane.md) §5。
 
-跨 socket 续传：**必须**应用侧按 `sessionId` 持有 `ResumeWireLog`（连接级 `outboundLog` 随关闭清空）。示例见英文 §5。
+跨 socket 续传：**必须**应用侧按 `sessionId` 持有 `ResumeWireLog`（连接级 `outboundLog` 随关闭清空）。
 
-Stream：收端 demux + 可选 inbound `session`；`onChunk(diff, meta)` 带 seq；双向续传优先 WS。
+Stream：收端 demux + 可选 inbound `session`；`onChunk` 可带 `logSeq`；双向续传优先 WS。
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * LiveXaiopParser â‰¡ parseSync, and live checkpoint Commit â‰¡ one-shot.
+ * LiveXaiopParser â‰?parseSync, and live checkpoint Commit â‰?one-shot.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

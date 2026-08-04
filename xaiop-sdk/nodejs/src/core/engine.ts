@@ -26,7 +26,7 @@ import {
 } from "./types.js";
 
 export const PROTOCOL_VERSION = "0.6.0";
-export const SDK_VERSION = "0.14.0";
+export const SDK_VERSION = "0.14.1";
 
 export class XaiopEngine {
   /**

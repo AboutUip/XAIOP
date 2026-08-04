@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.6.0 Frozen (sealed)  
-**SDK**: 0.14.0 (TypeScript)  
+**SDK**: 0.14.1 (TypeScript)  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
 **Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`)  
 **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
@@ -793,13 +793,15 @@ Product convention (not a Frozen 0.6.0 grammar change): lines starting with `#!`
 
 | Item | Summary |
 | --- | --- |
-| Official frames | `#!xaiop/types/v1`, `session/v1`, `ack/v1`, `resume/v1`, `snapshot/v1` |
+| Official frames | `#!xaiop/types/v1`, `session/v1`, `ack/v1`, `resume/v1`, `snapshot/v1`, **`seq/v1`** |
 | Unknown `#!` | Discard + `XaiopControlError` (`onControlError`); never enter the wire pipeline |
-| Seq | Monotonic per physical `.` (`meta.seq` / `meta.seqs` on `onPhase` / `onChunk`) |
-| Resume | `sendResume({ sessionId, fromSeq })` → continue from `fromSeq+1`; **no** historical Diff replay; optional `sendSnapshot` |
+| **Two seq spaces** | `meta.seq` = **connection-local** (resets each socket); `meta.logSeq` = **session-log** for `fromSeq` / ack. **Never** assign `resumeCursor = meta.seq` after reconnect — use `meta.logSeq` / `getResumeState().seq` / `logSeq` |
+| Stamp | `#!xaiop/seq/v1` before each phase; `pushJson`/`pushObject` auto-stamp when `session`/`retainOutbound`; `ResumeWireLog.wiresAfter` stamps |
+| Window merge | Default `mergeChunkWindow: true` may merge resume catch-up into one chunk (`meta.logSeqs` still lists units) — not a bug; use `false` for per-phase callbacks |
+| Resume | `sendResume({ sessionId, fromSeq })` → continue from `fromSeq+1` in **log** space; **no** historical Diff replay; optional `sendSnapshot` |
 | Connect options | `session`, `autoSession`, `autoAck`, `retainOutbound`, `onSession`, `onResume`, `onAck`, `onSnapshot`, `onControlError` |
-| Producer log | `pushJson`/`pushObject` auto-record when `session` or `retainOutbound`; `replayOutboundAfter(fromSeq)`; durable cross-reconnect: app-owned `ResumeWireLog` by `sessionId` |
-| Stream | `onChunk(diff, meta)` receives phase `meta.seq` / `meta.seqs`; `getResumeState()` / `phaseSeq` option |
+| Producer log | auto-record + stamp when `session`/`retainOutbound`; durable: app-owned `ResumeWireLog` by `sessionId` |
+| Stream | `onChunk(diff, meta)` may include `seq`/`seqs` and `logSeq`/`logSeqs` |
 
 ---
 
@@ -887,7 +889,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.14.0"` |
+| `SDK_VERSION` | `"0.14.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |
@@ -897,8 +899,9 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | `LINE_KIND` / `classifyLine` / `emptyLineView` / `runLineInterceptChain` | Line-intercept classify + chain helpers (§6.4) |
 | `applyAnnotationSpans` / `encodeAsSiblingLines` / `pathEscapesTypeCheck` | Annotation Span helpers (§6.5) |
 | `CONTROL_NS` / `CONTROL_NAME` / `CONTROL_CAPABILITY` | SDK Control Root constants (§7.7) |
+| `encodeSeqFrame` / `stampWireWithLogSeq` | Session-log seq stamp (`#!xaiop/seq/v1`) |
 | `ControlDemux` / `ControlIngest` / `ControlPlaneHost` / `ControlSessionState` | Control demux / session helpers |
-| `ResumeWireLog` / `XaiopResumeLogError` | Durable outbound phase log for resume |
+| `ResumeWireLog` / `XaiopResumeLogError` | Durable outbound phase log for resume (`wiresAfter` stamps logSeq) |
 | `encodeControlFrame` / `encodeSessionFrame` / `encodeAckFrame` / `encodeResumeFrame` / `encodeSnapshotFrame` | Control frame codecs |
 | `isSdkControlLine` / `parseControlHeader` / `dispatchControlFrame` | Control classify / route |
 | `XaiopControlError` | Soft control-plane errors (`code`, optional `header` / `frame`) |

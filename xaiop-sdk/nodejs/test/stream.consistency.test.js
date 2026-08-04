@@ -1,5 +1,5 @@
 /**
- * Stream consistency: framing-independent final merge â‰¡ one-shot parse,
+ * Stream consistency: framing-independent final merge â‰?one-shot parse,
  * including protocol overwrite / later-wins scenarios.
  */
 import assert from "node:assert/strict";
@@ -336,7 +336,7 @@ test("abort terminates busy stream", async () => {
   assert.ok(err);
 });
 
-test("materializeSnapshot: fragment â†’ entries object", () => {
+test("materializeSnapshot: fragment â†?entries object", () => {
   const f = parseSync(">a\nx:1");
   assert.equal(f.isFragment, true);
   assert.deepEqual(materializeSnapshot(f), { a: { x: 1 } });

@@ -28,6 +28,8 @@ export const CONTROL_NAME = Object.freeze({
   RESUME: "resume",
   ACK: "ack",
   SNAPSHOT: "snapshot",
+  /** Session-log phase cursor stamp (pairs with the following document phase). */
+  SEQ: "seq",
 });
 
 /** Capability ids `ns/name/vN`. */
@@ -37,6 +39,7 @@ export const CONTROL_CAPABILITY = Object.freeze({
   RESUME_V1: "xaiop/resume/v1",
   ACK_V1: "xaiop/ack/v1",
   SNAPSHOT_V1: "xaiop/snapshot/v1",
+  SEQ_V1: "xaiop/seq/v1",
 });
 
 const HEADER_RE = /^#!([A-Za-z][A-Za-z0-9_-]*)\/([A-Za-z][A-Za-z0-9_-]*)\/v(\d+)$/;
@@ -153,6 +156,33 @@ export function encodeAckFrame(body) {
 /** @param {string|object} body */
 export function encodeSnapshotFrame(body) {
   return encodeControlFrame(CONTROL_NS, CONTROL_NAME.SNAPSHOT, 1, body);
+}
+
+/**
+ * Stamp one session-log seq for the following document phase.
+ * Body: `{ seq: number }` (seq >= 1).
+ * @param {{ seq: number }|number} body
+ */
+export function encodeSeqFrame(body) {
+  const seq = typeof body === "number" ? body : body && body.seq;
+  const n = Number(seq);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new TypeError("encodeSeqFrame requires seq >= 1");
+  }
+  return encodeControlFrame(CONTROL_NS, CONTROL_NAME.SEQ, 1, { seq: n });
+}
+
+/**
+ * Prefix document wire with a log-seq stamp frame (resume / pushJson path).
+ * @param {number} seq
+ * @param {string} wire
+ * @returns {string}
+ */
+export function stampWireWithLogSeq(seq, wire) {
+  if (typeof wire !== "string") {
+    throw new TypeError("stampWireWithLogSeq requires wire string");
+  }
+  return encodeSeqFrame(seq) + wire;
 }
 
 /**
@@ -421,6 +451,7 @@ export function parseControlBodyJson(frame) {
  *   onResume?: (body: unknown, frame: ControlFrame) => void,
  *   onAck?: (body: unknown, frame: ControlFrame) => void,
  *   onSnapshot?: (body: unknown, frame: ControlFrame) => void,
+ *   onSeq?: (body: unknown, frame: ControlFrame) => void,
  *   onControlError?: (err: XaiopControlError) => void,
  * }} handlers
  */
@@ -526,6 +557,29 @@ export function dispatchControlFrame(frame, handlers = {}) {
         if (typeof handlers.onSnapshot === "function") handlers.onSnapshot(body, frame);
         return;
       }
+      case CONTROL_NAME.SEQ: {
+        if (frame.version !== 1) {
+          report(
+            new XaiopControlError(`unsupported seq version: v${frame.version}`, {
+              code: "CONTROL_UNKNOWN_CAPABILITY",
+              header: frame.header,
+              frame,
+            }),
+          );
+          return;
+        }
+        const body = parseControlBodyJson(frame) ?? {};
+        const n = Number(body.seq);
+        if (!Number.isInteger(n) || n < 1) {
+          throw new XaiopControlError("invalid seq frame payload (need seq >= 1)", {
+            code: "CONTROL_SEQ_PAYLOAD",
+            header: frame.header,
+            frame,
+          });
+        }
+        if (typeof handlers.onSeq === "function") handlers.onSeq(body, frame);
+        return;
+      }
       default:
         report(
           new XaiopControlError(`unknown control capability: ${frame.id}`, {
@@ -558,10 +612,11 @@ export class ControlIngest {
    *   onTypes?: (snapshot: unknown, frame: ControlFrame) => void,
    *   onSession?: (body: unknown, frame: ControlFrame) => void,
    *   onResume?: (body: unknown, frame: ControlFrame) => void,
-   *   onAck?: (body: unknown, frame: ControlFrame) => void,
-   *   onSnapshot?: (body: unknown, frame: ControlFrame) => void,
-   *   onControlError?: (err: XaiopControlError) => void,
-   * }} [handlers]
+ *   onAck?: (body: unknown, frame: ControlFrame) => void,
+ *   onSnapshot?: (body: unknown, frame: ControlFrame) => void,
+ *   onSeq?: (body: unknown, frame: ControlFrame) => void,
+ *   onControlError?: (err: XaiopControlError) => void,
+ * }} [handlers]
    */
   constructor(handlers = {}) {
     this._demux = new ControlDemux();
@@ -616,11 +671,15 @@ export class ControlIngest {
 /**
  * Session / phase-seq cursor for resume.
  *
- * Seq granularity (best practice): one monotonic seq per completed **physical**
- * `.` phase (and one for a non-empty finish tail). Window-merged `onChunk` may
- * carry `meta.seqs` for all phases in the batch; `meta.seq` is the highest.
+ * Two numbering spaces (do not conflate):
+ * - **Connection-local** `meta.seq` — resets every new DotCheckpointEngine / socket.
+ * - **Session-log** `meta.logSeq` — durable cursor for `fromSeq` / ack / ResumeWireLog
+ *   (stamped via `#!xaiop/seq/v1` before each phase).
+ *
+ * Seq granularity: one monotonic log/local unit per completed **physical** `.`
+ * (and finish tail). Window-merged `onChunk` may carry `meta.seqs` / `meta.logSeqs`;
+ * `meta.seq` / `meta.logSeq` are the highest in the batch.
  * Reconnect continues from `fromSeq + 1`; historical Diffs are **not** replayed.
- * Optional `snapshot` control frame may seed the committed tree.
  */
 export class ControlSessionState {
   /**
@@ -734,6 +793,7 @@ function defaultCapabilities() {
     CONTROL_CAPABILITY.RESUME_V1,
     CONTROL_CAPABILITY.ACK_V1,
     CONTROL_CAPABILITY.SNAPSHOT_V1,
+    CONTROL_CAPABILITY.SEQ_V1,
   ];
 }
 

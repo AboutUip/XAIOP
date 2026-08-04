@@ -2,10 +2,15 @@
 /**
  * Outbound phase wire log for producer-side resume.
  *
- * Seq here is the producer's outbound phase sequence (one entry per completed
- * logical phase sent). On `resume{ fromSeq }`, replay `wiresAfter(fromSeq)`.
+ * Seq here is the **session-log** sequence (one entry per completed logical
+ * phase). On `resume{ fromSeq }`, replay `wiresAfter(fromSeq)` — each entry is
+ * prefixed with `#!xaiop/seq/v1` so the consumer gets `meta.logSeq` (not only
+ * connection-local `meta.seq`).
+ *
  * Historical Diffs are not stored — only wire text (and optional committed JSON).
  */
+
+import { stampWireWithLogSeq } from "./control.js";
 
 export class ResumeWireLog {
   constructor() {
@@ -50,11 +55,30 @@ export class ResumeWireLog {
   }
 
   /**
-   * Concatenated wire for all phases with seq > fromSeq (i.e. resume continue).
+   * Concatenated wire for all phases with seq > fromSeq (resume continue).
+   * Each phase is prefixed with `#!xaiop/seq/v1` so peers bind `meta.logSeq`.
    * @param {number} fromSeq
    * @returns {string}
    */
   wiresAfter(fromSeq) {
+    return this._joinAfter(fromSeq, true);
+  }
+
+  /**
+   * Like {@link wiresAfter} but **without** seq stamp frames (tests / raw dump).
+   * @param {number} fromSeq
+   * @returns {string}
+   */
+  wiresAfterRaw(fromSeq) {
+    return this._joinAfter(fromSeq, false);
+  }
+
+  /**
+   * @param {number} fromSeq
+   * @param {boolean} stamp
+   * @returns {string}
+   */
+  _joinAfter(fromSeq, stamp) {
     const n = Number(fromSeq);
     if (!Number.isInteger(n) || n < 0) {
       throw new TypeError("wiresAfter requires non-negative integer fromSeq");
@@ -62,7 +86,9 @@ export class ResumeWireLog {
     let out = "";
     for (let i = 0; i < this._entries.length; i++) {
       const e = this._entries[i];
-      if (e.seq > n) out += e.wire;
+      if (e.seq > n) {
+        out += stamp ? stampWireWithLogSeq(e.seq, e.wire) : e.wire;
+      }
     }
     return out;
   }

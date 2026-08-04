@@ -1,6 +1,6 @@
 # XAIOP SDK
 
-> Official multi-runtime **SDK** — Node `xaiop` **0.14.0** (protocol **0.6.0**) · Java `io.xaiop:xaiop` **0.5.0** (protocol **0.4.0** subset)
+> Official multi-runtime **SDK** — Node `xaiop` **0.14.1** (protocol **0.6.0**) · Java `io.xaiop:xaiop` **0.5.0** (protocol **0.4.0** subset)
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
@@ -16,6 +16,6 @@
 
 | Directory | Status |
 | --- | --- |
-| [nodejs/](nodejs/) | **Active** — `xaiop` **0.14.0** ↔ protocol **0.6.0** (parse · stream · encode · merge · history · WS · Control Root) |
+| [nodejs/](nodejs/) | **Active** — `xaiop` **0.14.1** ↔ protocol **0.6.0** (parse · stream · encode · merge · history · WS · Control Root / logSeq) |
 | [java/](java/) | **Active** — `io.xaiop:xaiop` **0.5.0** (parse · encode · merge · checkpoint · stream consumer; protocol 0.4.0) |
 | [python/](python/) | **Pending update** |

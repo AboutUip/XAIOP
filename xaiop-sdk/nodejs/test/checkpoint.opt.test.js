@@ -53,7 +53,7 @@ z:9
   assert.ok(diffs.some((d) => d?.left?.test?.mutated === true));
 });
 
-test("checkpoint: normal phase Diff â‰  Commit (later-wins phase-local Diff)", () => {
+test("checkpoint: normal phase Diff â‰?Commit (later-wins phase-local Diff)", () => {
   /** @type {unknown[]} */
   const diffs = [];
   const engine = new DotCheckpointEngine({

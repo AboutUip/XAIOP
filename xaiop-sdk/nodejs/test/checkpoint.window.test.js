@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DotCheckpointEngine, parseSync } from "../dist/index.js";
 
-test("mergeChunkWindow ON: one push with two dots â†’ one Diff (= committed)", () => {
+test("mergeChunkWindow ON: one push with two dots â†?one Diff (= committed)", () => {
   /** @type {unknown[]} */
   const diffs = [];
   const engine = new DotCheckpointEngine({
@@ -73,7 +73,7 @@ y:2
 `);
   await Promise.all([p1, p2]);
   await engine.finishAsync();
-  // Coalesced window saw both complete phases â†’ one merged emit (no tail).
+  // Coalesced window saw both complete phases â†?one merged emit (no tail).
   assert.equal(diffs.length, 1);
   assert.deepEqual(diffs[0], { a: { x: 1 }, b: { y: 2 } });
   assert.deepEqual(engine.snapshot, parseSync(`>

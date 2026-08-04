@@ -250,7 +250,7 @@ test("sibling after named array stays on parent object", () => {
   assert.deepEqual(roundTrip(value, { dotPolicy: "none" }), value);
 });
 
-test("complex fixture round-trip (encode JSON â†’ parse)", () => {
+test("complex fixture round-trip (encode JSON â†?parse)", () => {
   const expected = JSON.parse(fs.readFileSync(fixtureJson, "utf8"));
   for (const policy of ["none", "perTopLevelKey", "perNKeys"]) {
     const opt =
@@ -280,7 +280,7 @@ test("perNKeys groups keys", () => {
     { a: 1, b: 2, c: 3, d: 4, e: 5 },
     { dotPolicy: "perNKeys", phaseEvery: 2 },
   );
-  // phases: [a,b] [c,d] [e] â†’ 2 dots
+  // phases: [a,b] [c,d] [e] â†?2 dots
   assert.equal(countDotLines(wire), 2);
   assert.deepEqual(parseSync(wire), { a: 1, b: 2, c: 3, d: 4, e: 5 });
 });
@@ -290,7 +290,7 @@ test("maxPhases merges tail", () => {
     { a: 1, b: 2, c: 3, d: 4 },
     { dotPolicy: "perTopLevelKey", maxPhases: 2 },
   );
-  // would be 3 dots without max; with maxPhases=2 â†’ 1 dot
+  // would be 3 dots without max; with maxPhases=2 â†?1 dot
   assert.equal(countDotLines(wire), 1);
   assert.deepEqual(parseSync(wire), { a: 1, b: 2, c: 3, d: 4 });
 });
@@ -303,7 +303,7 @@ test("custom shouldPhase", () => {
       shouldPhase: (ctx) => ctx.key === "b" || ctx.key === "c",
     },
   );
-  // cut after b and c â†’ phases [a,b] [c] [d] â†’ 2 dots
+  // cut after b and c â†?phases [a,b] [c] [d] â†?2 dots
   assert.equal(countDotLines(wire), 2);
   assert.deepEqual(parseSync(wire), { a: 1, b: 2, c: 3, d: 4 });
 });

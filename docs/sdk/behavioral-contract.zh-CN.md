@@ -8,7 +8,7 @@
 | 状态 | 信息性 |
 | 最近更新 | 2026-08-04 |
 | 规范性 | **否** — SDK 产品目录（非协议符合性） |
-| 参考实现（重心） | Node.js `xaiop` **0.14.0**（`xaiop-sdk/nodejs/`） |
+| 参考实现（重心） | Node.js `xaiop` **0.14.1**（`xaiop-sdk/nodejs/`） |
 | 协议线格式 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  

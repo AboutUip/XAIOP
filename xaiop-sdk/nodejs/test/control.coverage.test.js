@@ -31,7 +31,7 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-describe("coverage â€” demux stress", () => {
+describe("coverage â€?demux stress", () => {
   test("char-by-char control + wire demux", () => {
     const frames = [];
     const ingest = new ControlIngest({
@@ -86,7 +86,7 @@ describe("coverage â€” demux stress", () => {
   });
 });
 
-describe("coverage â€” dispatch all official capabilities", () => {
+describe("coverage â€?dispatch all official capabilities", () => {
   test("types / session / resume / ack / snapshot happy path", () => {
     const hit = [];
     const handlers = {
@@ -177,7 +177,7 @@ describe("coverage â€” dispatch all official capabilities", () => {
   });
 });
 
-describe("coverage â€” engine #! defense + cover seq", () => {
+describe("coverage â€?engine #! defense + cover seq", () => {
   test("engine push with leaked #! does not Span remount", () => {
     let calls = 0;
     const diffs = [];
@@ -209,7 +209,7 @@ describe("coverage â€” engine #! defense + cover seq", () => {
   });
 });
 
-describe("coverage â€” outbound / host edge", () => {
+describe("coverage â€?outbound / host edge", () => {
   test("createSessionId is non-empty unique-ish", () => {
     const a = createSessionId();
     const b = createSessionId();
@@ -286,7 +286,7 @@ describe("coverage â€” outbound / host edge", () => {
   });
 });
 
-describe("coverage â€” WS handler lock + listen onResume", () => {
+describe("coverage â€?WS handler lock + listen onResume", () => {
   test("connect locks onResume; listen-accept stays mutable", async () => {
     const hub = await XaiopWs.listen({ port: 0, session: true });
     let server = null;
@@ -343,7 +343,7 @@ describe("coverage â€” WS handler lock + listen onResume", () => {
   });
 });
 
-describe("coverage â€” Stream events meta + capability constants", () => {
+describe("coverage â€?Stream events meta + capability constants", () => {
   test("events mode chunk carries meta.seq", async () => {
     const metas = [];
     const stream = new XaiopStream("raw://ev-meta", {
@@ -375,7 +375,7 @@ describe("coverage â€” Stream events meta + capability constants", () => {
   });
 });
 
-describe("coverage â€” types frame via WS demux mid-stream", () => {
+describe("coverage â€?types frame via WS demux mid-stream", () => {
   test("schema applied when interleaved with wire in one message", async () => {
     const hub = await XaiopWs.listen({ port: 0 });
     let server = null;

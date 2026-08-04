@@ -39,6 +39,7 @@
 
 | SDK | 实现的协议 | Git 标签（建议） | 说明 |
 | --- | --- | --- | --- |
+| `0.14.1` | `0.6.0` | `sdk-nodejs-v0.14.1` | `#!xaiop/seq/v1` → `meta.logSeq`；pushJson / `ResumeWireLog.wiresAfter` 打戳；两套序号文档；仍协议 **0.6.0** |
 | `0.14.0` | `0.6.0` | `sdk-nodejs-v0.14.0` | SDK 控制根 `#!` demux；session / seq / resume / ack / snapshot；Span 硬跳过 `#!`；仍实现协议 **0.6.0** |
 | `0.13.0` | `0.6.0` | `sdk-nodejs-v0.13.0` | Annotation Span（`onAnnotationSpan`）；处理区逃逸 typeCheck；仍实现协议 **0.6.0** |
 | `0.12.0` | `0.6.0` | `sdk-nodejs-v0.12.0` | 缓冲行拦截（`onLineIntercept`）；仍实现协议 **0.6.0** |
@@ -64,6 +65,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-05 | [release-notes-2026-08-05-0.14.1.zh-CN.md](release-notes-2026-08-05-0.14.1.zh-CN.md) — Node `0.14.1` `meta.logSeq` / seq 打戳 |
 | 2026-08-05 | [release-notes-2026-08-05.zh-CN.md](release-notes-2026-08-05.zh-CN.md) — Node `0.14.0` 控制根 `#!` / session / resume / ack / snapshot |
 | 2026-08-04 | [release-notes-2026-08-04.zh-CN.md](release-notes-2026-08-04.zh-CN.md) — Node `0.13.0` · Java `0.5.0` · **Skill 不再继续提供**（源码仍在 [`skills/`](../../skills/)） |
 

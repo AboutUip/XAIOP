@@ -39,6 +39,7 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Implements protocol | Git tag (recommended) | Notes |
 | --- | --- | --- | --- |
+| `0.14.1` | `0.6.0` | `sdk-nodejs-v0.14.1` | `#!xaiop/seq/v1` → `meta.logSeq`; stamp on pushJson / `ResumeWireLog.wiresAfter`; two-seq docs; still protocol **0.6.0** |
 | `0.14.0` | `0.6.0` | `sdk-nodejs-v0.14.0` | SDK Control Root `#!` demux; session / seq / resume / ack / snapshot; Span hard-skip `#!`; still protocol **0.6.0** |
 | `0.13.0` | `0.6.0` | `sdk-nodejs-v0.13.0` | Annotation Span (`onAnnotationSpan`); typeCheck escape for span region; still protocol **0.6.0** |
 | `0.12.0` | `0.6.0` | `sdk-nodejs-v0.12.0` | Buffer line intercept (`onLineIntercept`); still protocol **0.6.0** |
@@ -64,6 +65,7 @@ Other languages: declare their own sealed mapping in language READMEs. A languag
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-05 | [release-notes-2026-08-05-0.14.1.md](release-notes-2026-08-05-0.14.1.md) — Node `0.14.1` `meta.logSeq` / seq stamp |
 | 2026-08-05 | [release-notes-2026-08-05.md](release-notes-2026-08-05.md) — Node `0.14.0` Control Root `#!` / session / resume / ack / snapshot |
 | 2026-08-04 | [release-notes-2026-08-04.md](release-notes-2026-08-04.md) — Node `0.13.0` · Java `0.5.0` · **Skills no longer provided** (source remains under [`skills/`](../../skills/)) |
 

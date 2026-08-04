@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Package | `xaiop` |
-| SDK | **0.14.0** (TypeScript) |
+| SDK | **0.14.1** (TypeScript) |
 | Protocol package | **0.6.0** Frozen (sealed) |
 | Runtime | Node.js ≥ 18 (default entry); browsers → `xaiop/browser` |
 | Code | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` → `dist/`) |

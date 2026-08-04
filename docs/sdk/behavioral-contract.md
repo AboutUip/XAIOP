@@ -8,7 +8,7 @@
 | Status | Informative |
 | Last updated | 2026-08-04 |
 | Normative | **No** — SDK product catalog (not protocol conformance) |
-| Reference implementation (primary) | Node.js `xaiop` **0.14.0** (`xaiop-sdk/nodejs/`) |
+| Reference implementation (primary) | Node.js `xaiop` **0.14.1** (`xaiop-sdk/nodejs/`) |
 | Protocol wire | Frozen **v0.6.0** |
 
 **Isolation:** Protocol = **cursor IR** wire only · Practice = writers & transport · This page = **what an SDK must match for official parity** — [../SEPARATION.md](../SEPARATION.md).  

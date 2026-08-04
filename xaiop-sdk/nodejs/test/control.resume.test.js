@@ -22,6 +22,7 @@ import {
   encodeTypeSchemaFrame,
   parseControlBodyJson,
   parseControlHeader,
+  stampWireWithLogSeq,
 } from "../dist/index.js";
 import { WebSocketServer } from "ws";
 import { chunksOf, waitStatus } from "./helpers/stream.js";
@@ -38,9 +39,11 @@ describe("ResumeWireLog", () => {
     log.record({ seq: 3, wire: ">\nc:3\n.\n", committed: { a: 1, b: 2, c: 3 } });
     assert.equal(log.size, 3);
     assert.equal(log.highestSeq, 3);
-    assert.equal(log.wiresAfter(0), ">\na:1\n.\n>\nb:2\n.\n>\nc:3\n.\n");
-    assert.equal(log.wiresAfter(1), ">\nb:2\n.\n>\nc:3\n.\n");
-    assert.equal(log.wiresAfter(3), "");
+    assert.equal(log.wiresAfterRaw(0), ">\na:1\n.\n>\nb:2\n.\n>\nc:3\n.\n");
+    assert.equal(log.wiresAfterRaw(1), ">\nb:2\n.\n>\nc:3\n.\n");
+    assert.equal(log.wiresAfterRaw(3), "");
+    assert.match(log.wiresAfter(1), /^#!xaiop\/seq\/v1\n\{"seq":2\}\n/);
+    assert.ok(log.wiresAfter(1).includes('#!xaiop/seq/v1\n{"seq":3}\n'));
     assert.deepEqual(log.committedAt(1), { a: 1 });
     assert.equal(log.entryAt(9), null);
     assert.throws(
@@ -52,7 +55,7 @@ describe("ResumeWireLog", () => {
   });
 });
 
-describe("control demux â€” edge cases", () => {
+describe("control demux â€?edge cases", () => {
   test("flush completes header-only frame with empty body", () => {
     const demux = new ControlDemux();
     assert.equal(demux.push("#!xaiop/session/v1").frames.length, 0);
@@ -119,7 +122,7 @@ describe("control demux â€” edge cases", () => {
     assert.ok(errors.some((e) => e.code === "CONTROL_TYPES_PAYLOAD"));
   });
 
-  test("dispatchControlFrame parseControlBodyJson empty â†’ null", () => {
+  test("dispatchControlFrame parseControlBodyJson empty â†?null", () => {
     const h = parseControlHeader("#!xaiop/ack/v1");
     const frame = {
       ...h,
@@ -140,7 +143,7 @@ describe("control demux â€” edge cases", () => {
   });
 });
 
-describe("phase seq â€” more coverage", () => {
+describe("phase seq â€?more coverage", () => {
   test("finish tail allocates a seq", () => {
     const metas = [];
     const eng = new DotCheckpointEngine({
@@ -386,20 +389,26 @@ describe("WS producer outbound + resume replay", () => {
       const w1 = XaiopWs.encodePhaseJson("a", 1);
       const w2 = XaiopWs.encodePhaseJson("b", 2);
       const w3 = XaiopWs.encodePhaseJson("c", 3);
-      prod.pushWire(w1);
+      prod.pushWire(stampWireWithLogSeq(1, w1));
       log.record({ seq: 1, wire: w1, committed: { a: 1 } });
-      prod.pushWire(w2);
+      prod.pushWire(stampWireWithLogSeq(2, w2));
       log.record({ seq: 2, wire: w2, committed: { a: 1, b: 2 } });
-      prod.pushWire(w3);
+      prod.pushWire(stampWireWithLogSeq(3, w3));
       log.record({ seq: 3, wire: w3, committed: { a: 1, b: 2, c: 3 } });
       await sleep(60);
       assert.equal(phases.length, 3);
+      assert.equal(phases[0].meta.logSeq, 1);
+      assert.equal(phases[1].meta.logSeq, 2);
+      assert.equal(phases[2].meta.logSeq, 3);
       assert.equal(client.phaseSeq, 3);
+      assert.equal(client.logSeq, 3);
+      assert.equal(client.getResumeState().seq, 3);
       await client.end();
       await sleep(20);
     }
 
-    // Reconnect: resume from seq 1 â†’ only b + c (and optional snapshot).
+    // Reconnect: resume from seq 1 â†?only b + c (and optional snapshot).
+    // Local meta.seq resets; meta.logSeq continues session log (2, 3).
     {
       const phases = [];
       const snapshots = [];
@@ -407,7 +416,7 @@ describe("WS producer outbound + resume replay", () => {
         session: { sessionId },
         mergeChunkWindow: false,
         onSnapshot: (b) => snapshots.push(b),
-        onPhase: (d) => phases.push(d),
+        onPhase: (d, meta) => phases.push({ d, meta }),
       });
       await sleep(20);
       assert.equal(client.sendResume({ sessionId, fromSeq: 1 }), true);
@@ -415,13 +424,58 @@ describe("WS producer outbound + resume replay", () => {
       assert.ok(snapshots.length >= 1);
       assert.deepEqual(snapshots[0].tree, { a: 1 });
       assert.equal(phases.length, 2);
-      assert.deepEqual(phases[0], { b: 2 });
-      assert.deepEqual(phases[1], { c: 3 });
+      assert.deepEqual(phases[0].d, { b: 2 });
+      assert.deepEqual(phases[1].d, { c: 3 });
+      assert.equal(phases[0].meta.seq, 1);
+      assert.equal(phases[1].meta.seq, 2);
+      assert.equal(phases[0].meta.logSeq, 2);
+      assert.equal(phases[1].meta.logSeq, 3);
       assert.equal(client.phaseSeq, 2);
+      assert.equal(client.logSeq, 3);
+      assert.equal(client.getResumeState().seq, 3);
       assert.deepEqual(client.getCommittedSnapshot(), { b: 2, c: 3 });
       await client.end();
     }
 
+    await hub.close();
+  });
+
+  test("pushJson stamps logSeq; window merge keeps logSeqs", async () => {
+    const hub = await XaiopWs.listen({ port: 0, session: true });
+    /** @type {import("../dist/index.js").XaiopWsConnection|null} */
+    let server = null;
+    hub.onConnection((c) => {
+      server = c;
+    });
+
+    /** @type {{ diff: unknown, meta: any }[]} */
+    const phases = [];
+    const client = await XaiopWs.connect(hub.url(), {
+      session: true,
+      mergeChunkWindow: true,
+      onPhase: (diff, meta) => phases.push({ diff, meta }),
+    });
+    await sleep(20);
+    assert.ok(server);
+
+    // One socket message with three stamped phases â†?one merged chunk.
+    const batch =
+      stampWireWithLogSeq(10, XaiopWs.encodePhaseJson("a", 1)) +
+      stampWireWithLogSeq(11, XaiopWs.encodePhaseJson("b", 2)) +
+      stampWireWithLogSeq(12, XaiopWs.encodePhaseJson("c", 3));
+    assert.equal(server.pushWire(batch), true);
+    await sleep(60);
+
+    assert.equal(phases.length, 1);
+    assert.deepEqual(phases[0].meta.seqs, [1, 2, 3]);
+    assert.equal(phases[0].meta.seq, 3);
+    assert.deepEqual(phases[0].meta.logSeqs, [10, 11, 12]);
+    assert.equal(phases[0].meta.logSeq, 12);
+    assert.equal(client.phaseSeq, 3);
+    assert.equal(client.logSeq, 12);
+    assert.equal(client.getResumeState().seq, 12);
+
+    await client.end();
     await hub.close();
   });
 

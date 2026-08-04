@@ -24,6 +24,7 @@ import {
  *   onAck?: (body: unknown) => void,
  *   onSnapshot?: (body: unknown) => void,
  *   onTypes?: (snapshot: unknown) => void,
+ *   onSeq?: (body: unknown) => void,
  *   session?: boolean|{ sessionId?: string, role?: string, capabilities?: string[], epoch?: number },
  *   autoAck?: boolean,
  * }} ControlHostOptions
@@ -60,8 +61,18 @@ export class ControlPlaneHost {
     /** @type {((snapshot: unknown) => void)|null} */
     this._onTypes =
       typeof options.onTypes === "function" ? options.onTypes : null;
+    /** @type {((body: unknown) => void)|null} */
+    this._onSeq = typeof options.onSeq === "function" ? options.onSeq : null;
 
     this._autoAck = options.autoAck === true;
+
+    /**
+     * Bound checkpoint for `#!xaiop/seq/v1` → `noteLogSeq`.
+     * @type {{ noteLogSeq: (seq: number) => void }|null}
+     */
+    this._checkpoint = null;
+    /** @type {number[]} */
+    this._pendingLogSeqs = [];
 
     /** @type {ControlSessionState|null} */
     this._session = null;
@@ -96,11 +107,40 @@ export class ControlPlaneHost {
       onSnapshot: (body, frame) => {
         if (this._onSnapshot) this._onSnapshot(body, frame);
       },
+      onSeq: (body, frame) => {
+        const n = Number(body && body.seq);
+        if (Number.isInteger(n) && n >= 1) this._queueLogSeq(n);
+        if (this._onSeq) this._onSeq(body, frame);
+      },
       onControlError: (err) => this._reportControlError(err),
     });
 
     /** Last snapshot delivered via control (optional seed). */
     this.lastSnapshot = undefined;
+  }
+
+  /**
+   * Bind DotCheckpointEngine so seq stamps land before phases in the same push.
+   * @param {{ noteLogSeq: (seq: number) => void }|null} engine
+   */
+  bindCheckpoint(engine) {
+    this._checkpoint = engine && typeof engine.noteLogSeq === "function" ? engine : null;
+    if (this._checkpoint && this._pendingLogSeqs.length) {
+      for (let i = 0; i < this._pendingLogSeqs.length; i++) {
+        this._checkpoint.noteLogSeq(this._pendingLogSeqs[i]);
+      }
+      this._pendingLogSeqs.length = 0;
+    }
+    return this;
+  }
+
+  /** @param {number} seq */
+  _queueLogSeq(seq) {
+    if (this._checkpoint) {
+      this._checkpoint.noteLogSeq(seq);
+      return;
+    }
+    this._pendingLogSeqs.push(seq);
   }
 
   get session() {
@@ -163,17 +203,22 @@ export class ControlPlaneHost {
   }
 
   /**
-   * Sync session cursor from DotCheckpointEngine onChunk meta; optional auto-ack.
-   * @param {{ seq?: number, seqs?: number[] }|undefined} meta
+   * Sync session resume cursor from onChunk meta; optional auto-ack.
+   * Prefers **session-log** `meta.logSeq` when present; else connection-local `meta.seq`.
+   * @param {{ seq?: number, seqs?: number[], logSeq?: number, logSeqs?: number[] }|undefined} meta
    */
   notePhaseMeta(meta) {
     if (!meta || !this._session) return;
-    const seq = meta.seq;
-    if (Number.isInteger(seq) && seq > this._session.phaseSeq) {
-      this._session.phaseSeq = seq;
+    const cursor = Number.isInteger(meta.logSeq)
+      ? meta.logSeq
+      : Number.isInteger(meta.seq)
+        ? meta.seq
+        : undefined;
+    if (Number.isInteger(cursor) && cursor > this._session.phaseSeq) {
+      this._session.phaseSeq = cursor;
     }
-    if (this._autoAck && Number.isInteger(seq) && seq > 0) {
-      this.sendAck(seq);
+    if (this._autoAck && Number.isInteger(cursor) && cursor > 0) {
+      this.sendAck(cursor);
     }
   }
 

@@ -66,7 +66,7 @@ function schema(map) {
 describe("annotation span �?versions + exports", () => {
   test("SDK / protocol", () => {
     assert.equal(PROTOCOL_VERSION, "0.6.0");
-    assert.equal(SDK_VERSION, "0.14.0");
+    assert.equal(SDK_VERSION, "0.14.1");
   });
 
   test("helpers exported", () => {
@@ -1144,8 +1144,8 @@ a:1
 });
 
 // ===========================================================================
-// 坑：协议「自定义注解传递�? × SDK Annotation Span（应用层自定义小协议�?
-// 协议�? 无树副作用；Span：可消费同一行并改树 / 逃�?typeCheck
+// 坑：坝议「自定义注解传递�? × SDK Annotation Span（应用层自定义尝坝议�?
+// 坝议�? 无树副作用；Span：坯消费坌一行并改树 / 逃�?typeCheck
 // ===========================================================================
 describe("pitfalls �?custom annotation protocol (#) × Annotation Span", () => {
   /**

@@ -270,6 +270,10 @@ export class XaiopStream {
     return this._engine ? this._engine.phaseSeq : 0;
   }
 
+  get logSeq() {
+    return this._control.phaseSeq;
+  }
+
   get ackedSeq() {
     return this._control.ackedSeq;
   }
@@ -279,7 +283,8 @@ export class XaiopStream {
     if (!base) return null;
     return {
       ...base,
-      seq: this.phaseSeq,
+      seq: base.seq,
+      logSeq: base.seq,
       inboundSeq: this.phaseSeq,
     };
   }
@@ -709,6 +714,7 @@ export class XaiopStream {
       annotationSpan: this._annotationSpanHandlers.slice(),
       onChunk: (diff, meta) => this._deliverChunk(diff, meta),
     });
+    this._control.bindCheckpoint(this._engine);
     if (this._historySnapshot && this._engine.history) {
       this._engine.history.setSource(url);
     }
