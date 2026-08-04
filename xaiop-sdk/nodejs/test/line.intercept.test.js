@@ -20,10 +20,10 @@ import {
   waitStatus,
 } from "./helpers/stream.js";
 
-describe("line intercept â€” versions + classify", () => {
+describe("line intercept â€?versions + classify", () => {
   test("SDK / protocol versions", () => {
     assert.equal(PROTOCOL_VERSION, "0.6.0");
-    assert.equal(SDK_VERSION, "0.13.0");
+    assert.equal(SDK_VERSION, "0.14.0");
   });
 
   test("LINE_KIND is frozen with stable ids", () => {
@@ -45,7 +45,7 @@ describe("line intercept â€” versions + classify", () => {
     ]);
   });
 
-  test("classifyLine â€” kind matrix", () => {
+  test("classifyLine â€?kind matrix", () => {
     assert.equal(classifyLine(".").kind, LINE_KIND.PHASE);
     assert.equal(classifyLine("#note").annotationText, "note");
     assert.equal(classifyLine("k:null").valueText, "null");
@@ -53,7 +53,7 @@ describe("line intercept â€” versions + classify", () => {
   });
 });
 
-describe("line intercept â€” chain helpers", () => {
+describe("line intercept â€?chain helpers", () => {
   test("order, rewrite, null short-circuit", () => {
     const out = runLineInterceptChain("a:1", [
       () => "a:2",
@@ -73,8 +73,8 @@ describe("line intercept â€” chain helpers", () => {
   });
 });
 
-describe("line intercept â€” DotCheckpointEngine", () => {
-  test("skip line with null (â‰  Content key:null)", () => {
+describe("line intercept â€?DotCheckpointEngine", () => {
+  test("skip line with null (â‰?Content key:null)", () => {
     /** @type {unknown[]} */
     const diffs = [];
     const eng = new DotCheckpointEngine({
@@ -135,7 +135,7 @@ a:1
     assert.ok(seen.includes("a:1"));
   });
 
-  test("streamProcessing defaults true â€” intercept runs without explicit flag", () => {
+  test("streamProcessing defaults true â€?intercept runs without explicit flag", () => {
     /** @type {string[]} */
     const seen = [];
     const eng = new DotCheckpointEngine({
@@ -158,7 +158,7 @@ a:1
     assert.deepEqual(eng.committedSnapshot, { a: 1 });
   });
 
-  test("streamProcessing false â€” no intercept", () => {
+  test("streamProcessing false â€?no intercept", () => {
     let calls = 0;
     const eng = new DotCheckpointEngine({
       streamProcessing: false,
@@ -178,7 +178,7 @@ a:1
   });
 });
 
-describe("line intercept â€” Stream / WS", () => {
+describe("line intercept â€?Stream / WS", () => {
   test("RAW stream rewrite", async () => {
     const source = `>
 x:1

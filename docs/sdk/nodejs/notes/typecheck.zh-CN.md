@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-TYPE` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | **否** — SDK 产品能力；非线文法 |
 | 包版本 | `xaiop` **0.10.0+** |
 
@@ -22,7 +22,7 @@
 | **表面** | `TYPE.*`、`objectType` / `arrayType`，或糖 `object<name:string,old:int>` — 比较前一律规范化 |
 | **注册表** | 服务端 path → `{ type, polarity }`；单路径不可变 |
 | **冻结** | 客户端 path → 首次非 `null` 观测类型 |
-| **控制帧** | `#!xaiop/types/v1\n` + 快照 JSON — 相对 XAIOP 线文为带外 |
+| **控制帧** | `#!xaiop/types/v1\n` + 快照 JSON — 相对 XAIOP 线文为带外；自 **0.14.0** 起由控制根在 parse / Span 前 demux（[control-plane.zh-CN.md](control-plane.zh-CN.md)） |
 
 路径用 **JSON 路径**家风（`a.b[0]`，同 encode），不是线文 `a>b`。
 
@@ -75,4 +75,5 @@ hub.onConnection((conn) => {
 
 - API §5.5 / §7 · 测试：`xaiop-sdk/nodejs/test/typecheck.test.js`
 - WS notes：[ws-session.zh-CN.md](ws-session.zh-CN.md)
+- 控制根：[control-plane.zh-CN.md](control-plane.zh-CN.md)
 - 协议 Content 叶类型：[../../../protocol/content.zh-CN.md](../../../protocol/content.zh-CN.md)（仅叶种类）

@@ -6,9 +6,9 @@
 | --- | --- |
 | Doc ID | `SDK-NODE-NOTE-ANNSPAN` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-05 |
 | Normative | **No** — SDK product feature; wire `#` still has no tree side effects |
-| Package | `xaiop` **0.13.0+** |
+| Package | `xaiop` **0.13.0+** (Span); Control Root demux **0.14.0+** |
 
 Primary entry: [../API.md](../API.md) §6.5 · §5.5 · §7.2.  
 Tests: `xaiop-sdk/nodejs/test/annotation.span.test.js`.
@@ -21,12 +21,13 @@ Tests: `xaiop-sdk/nodejs/test/annotation.span.test.js`.
 | --- | --- | --- |
 | **Line intercept** §6.4 | After buffer split → before phase lines / `feedLine` | Per-line observe · rewrite · skip with `null` |
 | **Annotation Span** §6.5 | Phase lines ready → **before Diff / Commit / typeCheck** | On `#`: collect **forward same-level** siblings (+ subtrees) as JSON; remount / drop / keep |
+| **Control Root** §7.7 | Before Span / parse | `#!…` demuxed out; Span **hard-skips** remaining `#!` (defense in depth) — [control-plane.md](control-plane.md) |
 | **`onPhase` / `onChunk`** | After Diff parse + Commit | Read-only Diff |
 | **Type freeze / `typeCheck`** | Post-parse tree | **After** Span; paths marked by Span **escape** checks |
 
 Hook point: `DotCheckpointEngine` (forwarded by Stream / WS surfaces).
 
-Wire `#…`: parsers ignore; no tree change. Annotation Span is an SDK product that **actively consumes** `#` at phase scope.
+Wire `#…`: parsers ignore; no tree change. Annotation Span is an SDK product that **actively consumes** `#` at phase scope. Lines starting with `#!` are **not** Span targets (Control Root; hard-skip if demux missed them).
 
 ---
 
@@ -122,4 +123,4 @@ Tests: `test/annotation.span.test.js` (`pitfalls — custom annotation protocol`
 
 ## 8. Related
 
-- API §6.5 · [line-intercept.md](line-intercept.md) · [typecheck.md](typecheck.md) · [ws-session.md](ws-session.md) · protocol [wire-attention §7.1](../../../protocol/notes/wire-attention.md)
+- API §6.5 · [line-intercept.md](line-intercept.md) · [typecheck.md](typecheck.md) · [control-plane.md](control-plane.md) · [ws-session.md](ws-session.md) · protocol [wire-attention §7.1](../../../protocol/notes/wire-attention.md)

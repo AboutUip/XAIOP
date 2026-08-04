@@ -404,6 +404,11 @@ test("ws: connect locks handlers; listen-accept stays mutable", async () => {
     assert.throws(() => client.clearLineIntercepts(), /locked/);
     assert.throws(() => client.onAnnotationSpan(() => {}), /locked/);
     assert.throws(() => client.clearAnnotationSpans(), /locked/);
+    assert.throws(() => client.onResume(() => {}), /locked/);
+    assert.throws(() => client.onSession(() => {}), /locked/);
+    assert.throws(() => client.onAck(() => {}), /locked/);
+    assert.throws(() => client.onSnapshot(() => {}), /locked/);
+    assert.throws(() => client.onControlError(() => {}), /locked/);
     // Accept side may still register after accept.
     server.onPhase(() => {});
     server.pushJson("ok", 1, { final: true });

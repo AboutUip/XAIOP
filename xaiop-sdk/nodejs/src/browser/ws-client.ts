@@ -9,9 +9,10 @@ import { CompatPolicy } from "../core/compat.js";
 import { cloneJson } from "../core/clone.js";
 import { DotCheckpointEngine } from "../core/checkpoint.js";
 import { encodePhaseJson, encodePhaseObject } from "../core/phase-encode.js";
+import { ControlPlaneHost } from "../core/control-host.js";
+import { ResumeWireLog } from "../core/resume-log.js";
 import {
   TypeFreezeSession,
-  tryParseTypeSchemaFrame,
 } from "../core/types.js";
 
 /**
@@ -25,6 +26,15 @@ import {
  *   typeSchema?: import("../core/types.js").TypeSchemaSnapshot|import("../core/types.js").TypeRegistry,
  *   lineIntercept?: import("../core/line-intercept.js").LineInterceptHandler|import("../core/line-intercept.js").LineInterceptHandler[],
  *   annotationSpan?: import("../core/annotation-span.js").AnnotationSpanHandler|import("../core/annotation-span.js").AnnotationSpanHandler[],
+ *   session?: boolean|{ sessionId?: string, role?: string, capabilities?: string[], epoch?: number },
+ *   autoAck?: boolean,
+ *   autoSession?: boolean,
+ *   retainOutbound?: boolean,
+ *   onControlError?: (err: import("../core/control.js").XaiopControlError) => void,
+ *   onSession?: (body: unknown) => void,
+ *   onResume?: (body: unknown) => void,
+ *   onAck?: (body: unknown) => void,
+ *   onSnapshot?: (body: unknown) => void,
  * }} BrowserWsConnectionOptions
  */
 
@@ -105,6 +115,39 @@ export class XaiopBrowserWsConnection {
     /** @type {boolean} */
     this._handlersLocked = false;
 
+    /** @type {ControlPlaneHost} */
+    this._control = new ControlPlaneHost({
+      send: (text) => this.pushWire(text),
+      getCommittedSnapshot: () => this.getCommittedSnapshot(),
+      session: options.session,
+      autoAck: options.autoAck === true,
+      onControlError: (err) => {
+        if (typeof options.onControlError === "function") {
+          options.onControlError(err);
+        } else if (this._onError) {
+          this._onError(err);
+        }
+      },
+      onSession: options.onSession,
+      onResume: options.onResume,
+      onAck: options.onAck,
+      onSnapshot: (body) => {
+        if (body && typeof body === "object" && "tree" in body) {
+          this._control.lastSnapshot = body.tree;
+        }
+        if (typeof options.onSnapshot === "function") options.onSnapshot(body);
+      },
+      onTypes: (snapshot) => {
+        if (this._typeSession) this._typeSession.applySchema(snapshot);
+      },
+    });
+
+    this._outboundSeq = 0;
+    this._autoRecordOutbound =
+      !!options.session || options.retainOutbound === true;
+    /** @type {ResumeWireLog|null} */
+    this._outboundLog = this._autoRecordOutbound ? new ResumeWireLog() : null;
+
     this._engine = new DotCheckpointEngine({
       streamProcessing: this._streamProcessing,
       compat: this._compatibilityMode ? this._compat.snapshot() : false,
@@ -116,6 +159,7 @@ export class XaiopBrowserWsConnection {
       onChunk: (diff, meta) => {
         this._buffer = this._engine.buffer;
         this._syncCommitted();
+        this._control.notePhaseMeta(meta);
         if (meta?.typeCheckEscapePaths?.length) {
           for (const p of meta.typeCheckEscapePaths) {
             this._typeCheckEscapePaths.push(p);
@@ -134,9 +178,19 @@ export class XaiopBrowserWsConnection {
             );
           }
         }
-        if (this._onPhase) this._onPhase(diff);
+        if (this._onPhase) this._onPhase(diff, meta);
       },
     });
+
+    if (options.autoSession === true) {
+      if (this._ws.readyState === 1) {
+        try { this._control.sendSession(); } catch { /* ignore */ }
+      } else {
+        this._ws.addEventListener("open", () => {
+          try { this._control.sendSession(); } catch { /* ignore */ }
+        }, { once: true });
+      }
+    }
 
     /** @type {(() => void)|null} */
     this._resolveClosed = null;
@@ -290,6 +344,36 @@ export class XaiopBrowserWsConnection {
     return this;
   }
 
+  onResume(fn) {
+    this._assertHandlersMutable("onResume");
+    this._control.onResume(fn);
+    return this;
+  }
+
+  onSession(fn) {
+    this._assertHandlersMutable("onSession");
+    this._control.onSession(fn);
+    return this;
+  }
+
+  onAck(fn) {
+    this._assertHandlersMutable("onAck");
+    this._control.onAck(fn);
+    return this;
+  }
+
+  onSnapshot(fn) {
+    this._assertHandlersMutable("onSnapshot");
+    this._control.onSnapshot(fn);
+    return this;
+  }
+
+  onControlError(fn) {
+    this._assertHandlersMutable("onControlError");
+    this._control.onControlError(fn);
+    return this;
+  }
+
   /**
    * Encode `{ [key]: value }` as one phase and send. Discard the wire after send.
    * @param {string} key
@@ -299,7 +383,9 @@ export class XaiopBrowserWsConnection {
    */
   pushJson(key, value, options = {}) {
     const wire = encodePhaseJson(key, value, options);
-    return this.pushWire(wire);
+    const ok = this.pushWire(wire);
+    if (ok) this._maybeRecordOutbound(wire);
+    return ok;
   }
 
   /**
@@ -310,7 +396,9 @@ export class XaiopBrowserWsConnection {
    */
   pushObject(object, options = {}) {
     const wire = encodePhaseObject(object, options);
-    return this.pushWire(wire);
+    const ok = this.pushWire(wire);
+    if (ok) this._maybeRecordOutbound(wire);
+    return ok;
   }
 
   /**
@@ -340,6 +428,79 @@ export class XaiopBrowserWsConnection {
       throw new TypeError("pushWireLn requires a string");
     }
     return this.pushWire(text.endsWith("\n") ? text : `${text}\n`);
+  }
+
+  get sessionId() {
+    return this._control.sessionId;
+  }
+
+  get phaseSeq() {
+    return this._engine.phaseSeq;
+  }
+
+  get outboundSeq() {
+    return this._outboundSeq;
+  }
+
+  get ackedSeq() {
+    return this._control.ackedSeq;
+  }
+
+  get outboundLog() {
+    return this._outboundLog;
+  }
+
+  noteOutboundPhase(wire, committed) {
+    this._outboundSeq += 1;
+    if (this._outboundLog && typeof wire === "string") {
+      this._outboundLog.record({
+        seq: this._outboundSeq,
+        wire,
+        committed,
+      });
+    }
+    return this._outboundSeq;
+  }
+
+  replayOutboundAfter(fromSeq) {
+    if (!this._outboundLog) {
+      throw new TypeError(
+        "replayOutboundAfter requires session: true (or retainOutbound: true)",
+      );
+    }
+    return this._outboundLog.wiresAfter(fromSeq);
+  }
+
+  _maybeRecordOutbound(wire) {
+    if (!this._autoRecordOutbound) return;
+    this.noteOutboundPhase(wire);
+  }
+
+  sendSession(extra = {}) {
+    return this._control.sendSession(extra);
+  }
+
+  sendAck(seq) {
+    return this._control.sendAck(seq);
+  }
+
+  sendResume(body) {
+    return this._control.sendResume(body);
+  }
+
+  sendSnapshot(json) {
+    return this._control.sendSnapshot(json);
+  }
+
+  getResumeState() {
+    const base = this._control.getResumeState(this.getCommittedSnapshot());
+    if (!base) return null;
+    return {
+      ...base,
+      seq: this._engine.phaseSeq,
+      inboundSeq: this._engine.phaseSeq,
+      outboundSeq: this._outboundSeq,
+    };
   }
 
   /**
@@ -425,14 +586,17 @@ export class XaiopBrowserWsConnection {
       const finishClose = () => {
         try {
           const tail = this._binaryDecoder.decode();
-          if (tail && !this._finished) {
+          let wire = "";
+          if (tail) wire += this._control.push(tail);
+          wire += this._control.flush();
+          if (wire && !this._finished) {
             if (this._asyncParse) {
-              return this._engine.pushAsync(tail).then(() => {
+              return this._engine.pushAsync(wire).then(() => {
                 this._buffer = this._engine.buffer;
                 this._syncCommitted();
               });
             }
-            this._engine.push(tail);
+            this._engine.push(wire);
             this._buffer = this._engine.buffer;
             this._syncCommitted();
           }
@@ -467,14 +631,11 @@ export class XaiopBrowserWsConnection {
 
   /** @param {string} text */
   _ingestText(text) {
-    const schema = tryParseTypeSchemaFrame(text);
-    if (schema) {
-      if (this._typeSession) this._typeSession.applySchema(schema);
-      return;
-    }
+    const wire = this._control.push(text);
+    if (!wire) return;
     if (this._asyncParse) {
       this._asyncIngestChain = this._asyncIngestChain
-        .then(() => this._engine.pushAsync(text))
+        .then(() => this._engine.pushAsync(wire))
         .then(() => {
           this._buffer = this._engine.buffer;
           this._syncCommitted();
@@ -483,7 +644,7 @@ export class XaiopBrowserWsConnection {
           this._fail(err instanceof Error ? err : new Error(String(err)));
         });
     } else {
-      this._engine.push(text);
+      this._engine.push(wire);
       this._buffer = this._engine.buffer;
       this._syncCommitted();
     }

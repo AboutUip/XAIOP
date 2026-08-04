@@ -6,10 +6,10 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-WS` |
 | 状态 | 参考性 |
-| 更新日期 | 2026-08-04 |
+| 更新日期 | 2026-08-05 |
 | 规范性 | **否** — Node SDK 行为 |
 | 代码 | `xaiop-sdk/nodejs/src/node/ws/` · `src/browser/ws-client.ts` |
-| 包版本 | `xaiop` **0.13.0**（实现协议包 **0.6.0**） |
+| 包版本 | `xaiop` **0.14.0**（实现协议包 **0.6.0**） |
 
 实践基线：[../../../practice/skeleton-stream.zh-CN.md](../../../practice/skeleton-stream.zh-CN.md)。  
 相位解析语义：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)。
@@ -75,11 +75,12 @@ await hub.close();
 
 | 面 | 含义 |
 | --- | --- |
-| `onPhase` / `onChunk` | Diff 策略与 `XaiopStream` 相同（默认**窗口合并**缓冲区内完整 `.`；见 [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)） |
+| `onPhase` / `onChunk` | Diff 策略与 `XaiopStream` 相同（默认**窗口合并**缓冲区内完整 `.`；见 [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)）；第二参 `meta` 可含 `seq` / `seqs` |
 | `getCommittedSnapshot()` | 截至上次提交的累积 later-wins — 流中可用 |
 | `getSnapshot()` | 仅对端关闭 / `done` 后为终态 |
 | `done` | 终态 Snapshot 的 Promise |
 | `closed` | 套接字拆完后的 Promise |
+| 控制（可选） | `session` / `sendResume` / `getResumeState` / … — [control-plane.zh-CN.md](control-plane.zh-CN.md) · API [§7.7](../API.zh-CN.md#77-sdk-控制根--会话--续传) |
 
 `connect` / `listen` 连接选项（与 `XaiopStream` 对齐）：
 
@@ -89,8 +90,10 @@ await hub.close();
 | `mergeChunkWindow` | `true` | 缓冲窗口内完整 `.` 批算 → 一次 Diff |
 | `asyncParse` | `false` | 合并式 `pushAsync` 摄入（`setImmediate`） |
 | `compatibilityMode` | `false` | 可选兼容解析 |
+| `session` / `autoSession` / `autoAck` / `retainOutbound` | 关 | 控制根会话 / hello / 自动 ack / 出站日志 |
+| `onSession` / `onResume` / `onAck` / `onSnapshot` / `onControlError` | — | 控制回调（放进 **connect** 选项） |
 
-若对端可能在 `connection` 里**同步推送**，请把 **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`** 放进 **`connect` 选项**——监听器在 `open` 完成前已挂上。`connect` resolve 后这些 mutator **抛错**（`handlersLocked`）；无回放。
+若对端可能在 `connection` 里**同步推送**，请把 **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan` / 控制回调** 放进 **`connect` 选项**——监听器在 `open` 完成前已挂上。`connect` resolve 后这些 mutator **抛错**（`handlersLocked`）；无回放。
 
 ---
 
@@ -118,12 +121,15 @@ Listen 要点：`port ?? 0`、可选已有 `http.Server` + `path`、`host`、`ba
 
 `test/ws.phase-encode.test.js` · `test/ws.session.test.js` — 真 WS 环回（listen → 推相位 → Snapshot）、later-wins、命名数组再进入追加、分片/二进制帧、挂 `http.Server`、同步推送竞态、`XaiopStream` websocket 回退到 `ws`。
 
+控制面 / 续传：`test/control.plane.test.js` · `test/control.resume.test.js` · `test/control.coverage.test.js` — 见 [control-plane.zh-CN.md](control-plane.zh-CN.md)。
+
 ---
 
 ## 7. 相关
 
 - 实践：[../../../practice/skeleton-stream.zh-CN.md](../../../practice/skeleton-stream.zh-CN.md)  
 - 流式解析：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)  
+- **控制根：** [control-plane.zh-CN.md](control-plane.zh-CN.md) · API [§7.7](../API.zh-CN.md#77-sdk-控制根--会话--续传)
 - 行拦截：[line-intercept.zh-CN.md](line-intercept.zh-CN.md) · API [§6.4](../API.zh-CN.md#64-行拦截-onlineintercept)
 - Annotation Span：[annotation-span.zh-CN.md](annotation-span.zh-CN.md) · API [§6.5](../API.zh-CN.md#65-annotation-span-onannotationspan)  
 - 类型检查：[typecheck.zh-CN.md](typecheck.zh-CN.md)  

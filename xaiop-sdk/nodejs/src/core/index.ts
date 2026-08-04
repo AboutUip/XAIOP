@@ -57,6 +57,27 @@ export {
 export { HISTORY_NODE_KIND, ParseHistory } from "./history.js";
 export { DotCheckpointEngine } from "./checkpoint.js";
 export {
+  CONTROL_CAPABILITY,
+  CONTROL_NAME,
+  CONTROL_NS,
+  ControlDemux,
+  ControlIngest,
+  ControlSessionState,
+  XaiopControlError,
+  createSessionId,
+  dispatchControlFrame,
+  encodeAckFrame,
+  encodeControlFrame,
+  encodeResumeFrame,
+  encodeSessionFrame,
+  encodeSnapshotFrame,
+  isSdkControlLine,
+  parseControlBodyJson,
+  parseControlHeader,
+} from "./control.js";
+export { ControlPlaneHost } from "./control-host.js";
+export { ResumeWireLog, XaiopResumeLogError } from "./resume-log.js";
+export {
   LINE_KIND,
   classifyLine,
   emptyLineView,

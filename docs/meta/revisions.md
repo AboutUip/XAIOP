@@ -7,7 +7,7 @@
 | Document ID | `META-REV` |
 | Status | **Frozen** |
 | Version | 0.6.0 |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-05 |
 | Normative | Informative (history) |
 | Depends on | `META-VER` |
 
@@ -48,7 +48,7 @@ English text is authoritative; Chinese mirrors track the same entries.
 | Protocol notes | wire-attention — `#` |
 | `TERM-GLOSS` | Custom annotation transmission |
 | `META-VER` | Sealed package version → `0.6.0` |
-| Node.js SDK | **0.11.0** — ignore `#` lines; `PROTOCOL_VERSION` → `0.6.0`. Tip **0.12.0** — buffer line intercept (`onLineIntercept`). Tip **0.13.0** — Annotation Span (`onAnnotationSpan`; typeCheck escape) |
+| Node.js SDK | **0.11.0** — ignore `#` lines; `PROTOCOL_VERSION` → `0.6.0`. Tip **0.12.0** — buffer line intercept (`onLineIntercept`). Tip **0.13.0** — Annotation Span (`onAnnotationSpan`; typeCheck escape). Tip **0.14.0** — Control Root `#!` demux / session / seq / resume (still protocol **0.6.0**) |
 
 **Compatibility:** Writers that never emit `#` lines remain valid. Parsers that do not ignore `#…` lines **do not conform** to protocol package **0.6.0**.
 

@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-STREAM` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-05 |
 | Normative | **No** — Node SDK behavior |
 | Code | `xaiop-sdk/nodejs/src/stream/` |
-| Package | `xaiop` **0.7.0+** (protocol wire **0.5.0**) |
+| Package | `xaiop` **0.7.0+** (protocol wire **0.6.0**; Control Root / `meta.seq` **0.14.0+**) |
 
 **Protocol baseline (read first):**  
 [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md) ·  
@@ -37,7 +37,7 @@ Transport text → DotCheckpointEngine.push
   → feed phase wire into LiveXaiopParser (once; keeps cumulative tree)
   → materialize live tree → committedSnapshot
   → Diff = phase-local parse (or shared committed for `=`/`!`/`&` after a prior `.`)
-  → onChunk(diff)
+  → onChunk(diff, meta?)   # meta.seq / meta.seqs when phaseSeq on (0.14.0+)
   → finish(): flush tail; reuse last commit when buffer fully covered
 ```
 
@@ -45,6 +45,7 @@ Transport text → DotCheckpointEngine.push
 | --- | --- |
 | Client | `src/stream/XaiopStream.js` · API [../API.md](../API.md) |
 | Checkpoint | `src/stream/checkpoint.js` |
+| Control demux | `src/core/control.ts` (peels `#!` before parse; [control-plane.md](control-plane.md)) |
 | Live parse | `LiveXaiopParser` in `src/parse.js` |
 | Materialize | `src/stream/materialize.js` |
 | Parse | `src/parse.js` |
@@ -114,7 +115,7 @@ Do not implement Diff as `deepDiff(prevCommitted, newCommitted)` unless you docu
 
 | Surface | When | Value |
 | --- | --- | --- |
-| `onChunk` / event `chunk` / async iterator | Each completed `.` phase + EOF tail | Materialized parse of **that phase only** (or `null` if empty) |
+| `onChunk` / event `chunk` / async iterator | Each completed `.` phase + EOF tail | Materialized parse of **that phase only** (or `null` if empty); optional **`meta.seq` / `meta.seqs`** (Control Root phase cursor, **0.14.0+**) |
 | `onDone` / promise / `getSnapshot()` after complete | After `finish()` | Materialized parse of **entire buffer** (later-wins applied) |
 | `getCommittedSnapshot()` | After each `.` / EOF flush | Cumulative parse of committed prefix — **safe mid-stream** (lazy materialize on first read is OK) |
 | `DotCheckpointEngine.committedSnapshot` | Each `.` or EOF flush | Same underlying value as above; bare-engine readers: use the getter after `.` (`committedAt > 0`), not `getSnapshot()` |
@@ -191,6 +192,7 @@ Encode alignment: [../API.md](../API.md) · [encode-attention.md](encode-attenti
 ## Related
 
 - Protocol streaming note: [../../../protocol/notes/streaming-attention.md](../../../protocol/notes/streaming-attention.md)  
+- Control Root / resume: [control-plane.md](control-plane.md)  
 - API: [../API.md](../API.md) · [../README.md](../README.md)  
 - Parity contract: [../../behavioral-contract.md](../../behavioral-contract.md)  
 - Separation: [../../../SEPARATION.md](../../../SEPARATION.md)

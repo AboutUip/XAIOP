@@ -7,7 +7,7 @@
 | 文档 ID | `META-REV` |
 | 状态 | **Frozen（已冻结）** |
 | 版本 | 0.6.0 |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | 信息性（历史） |
 | 依赖 | `META-VER` |
 
@@ -48,7 +48,7 @@ XAIOP **规范包**的有序修订历史。
 | 协议 notes | wire-attention — `#` |
 | `TERM-GLOSS` | 自定义注解传递 |
 | `META-VER` | 封存包版本 → `0.6.0` |
-| Node.js SDK | **0.11.0** — 忽略 `#` 行；`PROTOCOL_VERSION` → `0.6.0`。 现行 tip **0.13.0** — Annotation Span（`onAnnotationSpan`；typeCheck 逃逸）。曾 tip **0.12.0** — 缓冲行拦截（`onLineIntercept`） |
+| Node.js SDK | **0.11.0** — 忽略 `#` 行；`PROTOCOL_VERSION` → `0.6.0`。Tip **0.12.0** — 缓冲行拦截（`onLineIntercept`）。Tip **0.13.0** — Annotation Span（`onAnnotationSpan`；typeCheck 逃逸）。Tip **0.14.0** — 控制根 `#!` demux / session / seq / resume（仍协议 **0.6.0**） |
 
 **兼容性：** 从不发射 `#` 行的写者仍合法。不忽略 `#…` 行的解析器 **不符合** 协议包 **0.6.0**。
 

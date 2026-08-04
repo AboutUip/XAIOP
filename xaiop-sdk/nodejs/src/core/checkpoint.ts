@@ -38,7 +38,7 @@ import { applyAnnotationSpans } from "./annotation-span.js";
  * @property {false|boolean|object} compat
  * @property {boolean} [streamProcessing] Mid-stream `.` phases (default true; same as XaiopStream / WS)
  * @property {boolean} [symbolKeys] Decode U+001F label escapes (default false; pair with encode `symbolKeys`)
- * @property {(diff: unknown, meta?: { typeCheckEscapePaths?: string[] }) => void} onChunk
+ * @property {(diff: unknown, meta?: { typeCheckEscapePaths?: string[], seq?: number, seqs?: number[] }) => void} onChunk
  * @property {boolean} [emitDiff]
  * @property {boolean} [mergeChunkWindow]
  * @property {boolean} [cover] Cover-mode Diff for `&` (default false)
@@ -47,6 +47,7 @@ import { applyAnnotationSpans } from "./annotation-span.js";
  * @property {boolean} [retainWireHistory] Retain per-node wire when history on (default true)
  * @property {LineInterceptHandler|LineInterceptHandler[]} [lineIntercept] Initial line interceptors
  * @property {AnnotationSpanHandler|AnnotationSpanHandler[]} [annotationSpan] Initial # span handlers
+ * @property {boolean} [phaseSeq] Allocate monotonic phase seq in onChunk meta (default true)
  */
 
 export class DotCheckpointEngine {
@@ -140,6 +141,20 @@ export class DotCheckpointEngine {
         }
       }
     }
+
+    /**
+     * Monotonic phase sequence for resume (physical `.` / finish-tail units).
+     * Disabled only when `phaseSeq: false`.
+     * @type {boolean}
+     */
+    this._phaseSeqEnabled = hooks.phaseSeq !== false;
+    /** @type {number} */
+    this._phaseSeq = 0;
+    /**
+     * Seqs allocated for the next `_emitChunk` (window may batch several).
+     * @type {number[]}
+     */
+    this._pendingSeqs = [];
   }
 
   /**
@@ -220,12 +235,39 @@ export class DotCheckpointEngine {
     return next;
   }
 
-  /** Emit Diff to hooks with optional typeCheck escape metadata. */
+  /** Highest completed phase seq (0 = none). */
+  get phaseSeq() {
+    return this._phaseSeq;
+  }
+
+  /**
+   * Allocate one seq for the next emit (call once per physical phase unit).
+   * @returns {number|undefined}
+   */
+  _allocPhaseSeq() {
+    if (!this._phaseSeqEnabled) return undefined;
+    this._phaseSeq += 1;
+    this._pendingSeqs.push(this._phaseSeq);
+    return this._phaseSeq;
+  }
+
+  /** Emit Diff to hooks with optional typeCheck escape + phase seq metadata. */
   _emitChunk(diff) {
     const escapes = this._pendingTypeCheckEscape;
     this._pendingTypeCheckEscape = [];
+    const seqs = this._pendingSeqs;
+    this._pendingSeqs = [];
+    /** @type {{ typeCheckEscapePaths?: string[], seq?: number, seqs?: number[] }} */
+    const meta = {};
     if (escapes && escapes.length > 0) {
-      this._hooks.onChunk(diff, { typeCheckEscapePaths: uniqueEscape(escapes) });
+      meta.typeCheckEscapePaths = uniqueEscape(escapes);
+    }
+    if (seqs && seqs.length > 0) {
+      meta.seqs = seqs.slice();
+      meta.seq = seqs[seqs.length - 1];
+    }
+    if (Object.keys(meta).length > 0) {
+      this._hooks.onChunk(diff, meta);
     } else {
       this._hooks.onChunk(diff);
     }
@@ -448,6 +490,7 @@ export class DotCheckpointEngine {
     if (!this._streamProcessing) {
       const value = this._parseOwned(this._buffer);
       this._storeCommit(this._buffer.length, value, false);
+      this._allocPhaseSeq();
       this._emitChunk(value);
       this._latestSnapshot = value;
       this._segmentStart = this._buffer.length;
@@ -579,6 +622,11 @@ export class DotCheckpointEngine {
       return;
     }
 
+    // One seq per physical `.` even when Diff delivery is window-merged.
+    for (let i = 0; i < closed.length; i++) {
+      this._allocPhaseSeq();
+    }
+
     if (this._history) {
       // Per-`.` records even when Diff delivery stays window-merged.
       for (let i = 0; i < closed.length; i++) {
@@ -666,6 +714,7 @@ export class DotCheckpointEngine {
       this._segmentStart = end;
       return;
     }
+    this._allocPhaseSeq();
     const before = this._history ? this._peekCommit() : null;
     this._feedLiveLines(lines);
     const { diff, committed, fromLive } = this._buildDiff(raw);
@@ -699,6 +748,7 @@ export class DotCheckpointEngine {
         this._segmentStart = this._buffer.length;
         return;
       }
+      this._allocPhaseSeq();
       const before = this._history ? this._peekCommit() : null;
       this._feedLiveLines(lines);
       let diff;
@@ -839,11 +889,13 @@ export class DotCheckpointEngine {
           diff: null,
         });
       }
+      this._allocPhaseSeq();
       this._emitChunk(null);
     } else if (!any && opts.isTail && lines.length > 0) {
       this._feedLiveLines(lines);
       const committed = materializeSnapshot(this._live.value());
       this._storeCommit(bufferEnd, committed, false);
+      this._allocPhaseSeq();
       this._emitChunk(
         this._emitDiff ? isolateDiff(committed, committed) : null,
       );
@@ -862,6 +914,7 @@ export class DotCheckpointEngine {
    * @param {{ committedDiff?: boolean }} [opts]
    */
   _emitCoverChunk(wireLines, tombstone, bufferStart, bufferEnd, kind, opts = {}) {
+    this._allocPhaseSeq();
     const before = this._history ? this._peekCommit() : null;
     this._sawDot = true;
     const wire = linesToWire(wireLines);

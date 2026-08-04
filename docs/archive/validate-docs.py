@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-TIP_SDK = "0.13.0"
+TIP_SDK = "0.14.0"
 TIP_PROTOCOL = "0.6.0"
 
 MD_GLOBS = [

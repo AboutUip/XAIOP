@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-WS` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-05 |
 | Normative | **No** — Node SDK behavior |
 | Code | `xaiop-sdk/nodejs/src/node/ws/` · `src/browser/ws-client.ts` |
-| Package | `xaiop` **0.13.0** (implements protocol package **0.6.0**) |
+| Package | `xaiop` **0.14.0** (implements protocol package **0.6.0**) |
 
 Practice baseline: [../../../practice/skeleton-stream.md](../../../practice/skeleton-stream.md).  
 Phase parse semantics: [streaming-parse.md](streaming-parse.md).
@@ -75,11 +75,12 @@ Hardened encode rules apply (rejected keys still throw `XaiopEncodeError` — no
 
 | Surface | Meaning |
 | --- | --- |
-| `onPhase` / `onChunk` | Diff under the same policy as `XaiopStream` (default **window-merged** complete `.` in the buffer; see [streaming-parse.md](streaming-parse.md)) |
+| `onPhase` / `onChunk` | Diff under the same policy as `XaiopStream` (default **window-merged** complete `.` in the buffer; see [streaming-parse.md](streaming-parse.md)); second arg `meta` may include `seq` / `seqs` |
 | `getCommittedSnapshot()` | Cumulative later-wins through last commit — safe mid-stream |
 | `getSnapshot()` | Final only after peer close / `done` |
 | `done` | Promise of final Snapshot |
 | `closed` | Promise when socket teardown finishes |
+| Control (optional) | `session` / `sendResume` / `getResumeState` / … — [control-plane.md](control-plane.md) · API [§7.7](../API.md#77-sdk-control-root---session--resume) |
 
 `connect` / `listen` connection options (aligned with `XaiopStream`):
 
@@ -89,8 +90,10 @@ Hardened encode rules apply (rejected keys still throw `XaiopEncodeError` — no
 | `mergeChunkWindow` | `true` | Batch complete `.` in the buffer window → one Diff |
 | `asyncParse` | `false` | Coalesced `pushAsync` ingest (`setImmediate`) |
 | `compatibilityMode` | `false` | Opt-in compat parse |
+| `session` / `autoSession` / `autoAck` / `retainOutbound` | off | Control Root session / hello / auto-ack / outbound log |
+| `onSession` / `onResume` / `onAck` / `onSnapshot` / `onControlError` | — | Control callbacks (put in **connect** options) |
 
-Pass **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`** in **`connect` options** if the peer may push synchronously in `connection` — listeners are attached before `open` completes. After `connect` resolves, those mutators **throw** (`handlersLocked`); there is no replay.
+Pass **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan` / control callbacks** in **`connect` options** if the peer may push synchronously in `connection` — listeners are attached before `open` completes. After `connect` resolves, those mutators **throw** (`handlersLocked`); there is no replay.
 
 ---
 
@@ -118,12 +121,15 @@ Phase Diff algorithm (leading `.` inject, empty → `null`): [streaming-parse.md
 
 `test/ws.phase-encode.test.js` · `test/ws.session.test.js` — real loopback (listen → push phases → Snapshot), later-wins, named-array re-enter append, fragmented/binary frames, attach-to-`http.Server`, sync push race, `XaiopStream` websocket transport fallback to `ws`.
 
+Control plane / resume: `test/control.plane.test.js` · `test/control.resume.test.js` · `test/control.coverage.test.js` — see [control-plane.md](control-plane.md).
+
 ---
 
 ## 7. Related
 
 - Practice: [../../../practice/skeleton-stream.md](../../../practice/skeleton-stream.md)  
 - Streaming parse: [streaming-parse.md](streaming-parse.md)  
+- **Control Root:** [control-plane.md](control-plane.md) · API [§7.7](../API.md#77-sdk-control-root---session--resume)
 - Line intercept: [line-intercept.md](line-intercept.md) · API [§6.4](../API.md#64-line-intercept-onlineintercept)
 - Annotation Span: [annotation-span.md](annotation-span.md) · API [§6.5](../API.md#65-annotation-span-onannotationspan)  
 - Type check: [typecheck.md](typecheck.md)  

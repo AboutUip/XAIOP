@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.6.0 Frozen（已封存）  
-**SDK 版本**: 0.13.0（TypeScript）  
+**SDK 版本**: 0.14.0（TypeScript）  
 **运行时**: 默认入口 **Node.js ≥ 18（ESM）**；浏览器用子路径（见 §0）  
 **代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）  
 **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -22,7 +22,7 @@
 | --- | --- |
 | 默认 `"xaiop"` 可在浏览器直接用 | **否**（会拉入 `ws` / `node:stream`） |
 | 浏览器是否提供服务端 `listen` | **否** — 用 Node `XaiopWs.listen`，浏览器只 `connect` / `XaiopStream` |
-| 浏览器是否支持 **`.` 相位 Diff** | **是** — 与 Node 共用 `DotCheckpointEngine`（`onChunk` / `onPhase`、Commit、可选 `cover` / `mergeChunkWindow` / `typeCheck` / **行拦截** / **Annotation Span**） |
+| 浏览器是否支持 **`.` 相位 Diff** | **是** — 与 Node 共用 `DotCheckpointEngine`（`onChunk` / `onPhase`、Commit、可选 `cover` / `mergeChunkWindow` / `typeCheck` / **行拦截** / **Annotation Span** / **控制根**） |
 | 线语义 | 三入口共享同一 `core`（协议包 **0.6.0**） |
 
 本仓库 SDK **重心在 Node.js**；其它语言移植不必与 Node 全表面对齐。
@@ -37,8 +37,8 @@
 3. [解析 API](#3-解析-api)
 4. [编码 API](#4-编码-api)
 5. [引擎 API](#5-引擎-api)（含 [§5.5 类型检查](#55-类型检查实例)）
-6. [流式 API](#6-流式-api)（含 [§6.4 行拦截](#64-行拦截-onlineintercept) · [§6.5 Annotation Span](#65-annotation-span-onannotationspan)）
-7. [WebSocket API](#7-websocket-api)（含 [§7.6 浏览器](#76-浏览器-xaiopbrowser--相位客户端)）
+6. [流式 API](#6-流式-api)（含 [§6.4 行拦截](#64-行拦截-onlineintercept) · [§6.5 Annotation Span](#65-annotation-span-onannotationspan) · 相位 `meta.seq`）
+7. [WebSocket API](#7-websocket-api)（含 [§7.6 浏览器](#76-浏览器-xaiopbrowser--相位客户端) · [§7.7 控制根](#77-sdk-控制根--会话--续传)）
 8. [合并与注入](#8-合并与注入)
 9. [兼容模式](#9-兼容模式)
 10. [类型与常量](#10-类型与常量)
@@ -106,7 +106,7 @@ await client.done;
 
 ## 2. 核心概念
 
-**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.13.0**）。
+**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.14.0**）。
 
 - 完整文法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)
 - 封存与发行索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -435,7 +435,7 @@ eng.uploadSync(`>\n>data\nfork:ok\n`); // OK
 | --- | --- |
 | 连接 | **严格**（该连接 `compatibilityMode === false`） |
 | 内容 | 注册表**非空**；若传 `XaiopEngine` 则其 **`typeCheck === true`** |
-| 形态 | 控制帧（**非** XAIOP 线文）：前缀 `#!xaiop/types/v1\n` + JSON 快照；收端在喂 Parser 前剥离 |
+| 形态 | 控制帧（**非** XAIOP 线文）：前缀 `#!xaiop/types/v1\n` + JSON 快照；由控制根在 parse / Span 前 demux（**0.14.0+**） |
 | 失败 | 前提不满足 → `TypeError`；套接字非 OPEN → `false` |
 
 深潜：[notes/typecheck.zh-CN.md](notes/typecheck.zh-CN.md)。
@@ -484,13 +484,14 @@ const final = await stream.send({ transport: TRANSPORT_KIND.HTTP });
 | `typeSchema` | — | 预载类型快照或 `TypeRegistry` |
 | `lineIntercept` | — | 初始行拦截 handler 或数组（§6.4） |
 | `annotationSpan` | — | 初始 Annotation Span handler 或数组（§6.5） |
+| `session` / 控制回调 | — | 可选控制根入站游标（§7.7）；见 [notes/control-plane.zh-CN.md](notes/control-plane.zh-CN.md) |
 | `modes` | `["callback"]` | 可多选 |
 
 #### Snapshot / chunk
 
 | API | 时机 | 值 |
 | --- | --- | --- |
-| `onChunk` / 迭代器 | 相位 / 窗口边界 | Diff JSON；空相可为 `null` |
+| `onChunk` / 迭代器 | 相位 / 窗口边界 | Diff JSON；空相可为 `null`；**第二参 `meta`** 可含 `seq` / `seqs`（相位序号，§7.7）与 `typeCheckEscapePaths` |
 | `getCommittedSnapshot()` | 每次提交后 | 至最近 `.` / EOF 的累积 later-wins |
 | `getSnapshot()` / `onDone` | finish 后 | 全缓冲 parse；空 → `{}` |
 | 流中途 `getSnapshot()` | `streaming` | 通常 `undefined` |
@@ -623,7 +624,7 @@ eng.onLineIntercept(({ raw, view }) => {
 
 ### 6.5 Annotation Span (`onAnnotationSpan`)
 
-**SDK 产品能力**（非协议线文法）：协议 `#…` 仍无树副作用。本能力在**本相位**行表就绪之后、**Diff / Commit / `typeCheck` 之前**，遇 `#` 时向前收集**同层级**兄弟（含子树），以**注解文本 + 模板化 JSON** 调用处理器，并可 remount / 丢弃。
+**SDK 产品能力**（非协议线文法）：协议 `#…` 仍无树副作用。本能力在**本相位**行表就绪之后、**Diff / Commit / `typeCheck` 之前**，遇 `#` 时向前收集**同层级**兄弟（含子树），以**注解文本 + 模板化 JSON** 调用处理器，并可 remount / 丢弃。以 `#!` 开头的行为控制根（**0.14.0+**）：先 demux；若漏剥，Span **硬跳过** `#!`。
 
 | 对比 | 行拦截 §6.4 | Annotation Span §6.5 |
 | --- | --- | --- |
@@ -687,8 +688,8 @@ await hub.close();
 | `XaiopWs.connect(url, options?)` | → `Promise<XaiopWsConnection>`；语义见 §7.5 |
 | `XaiopWs.encodePhaseJson` / `encodePhaseObject` | 只编码不发送 |
 
-**`WsConnectOptions`：** `streamProcessing`、`mergeChunkWindow`、`asyncParse`、`cover`、`compatibilityMode`、`typeCheck`、`typeSchema`、`lineIntercept`、`annotationSpan`、`protocols`、`handshakeTimeoutMs`（默认 **15000**）、`headers`，以及构造期回调 `onPhase` / `onChunk` / `onDone` / `onError`。  
-**`WsListenOptions`：** 上述解析相关项 + `port` / `host` / `server` / `path` / `backlog` / `perMessageDeflate` / `maxPayload`。
+**`WsConnectOptions`：** `streamProcessing`、`mergeChunkWindow`、`asyncParse`、`cover`、`compatibilityMode`、`typeCheck`、`typeSchema`、`lineIntercept`、`annotationSpan`、**`session`**、**`autoSession`**、**`autoAck`**、**`retainOutbound`**、`protocols`、`handshakeTimeoutMs`（默认 **15000**）、`headers`，以及构造期回调 `onPhase` / `onChunk` / `onDone` / `onError` / **`onControlError`** / **`onSession`** / **`onResume`** / **`onAck`** / **`onSnapshot`**。  
+**`WsListenOptions`：** 上述解析/控制相关项 + `port` / `host` / `server` / `path` / `backlog` / `perMessageDeflate` / `maxPayload`。
 
 ### 7.2 `XaiopWsConnection`
 
@@ -699,10 +700,16 @@ await hub.close();
 | `pushWire(text)` | 原始线文**原样发送**（不自动补 `\n`）；连续帧须自行保证行边界，否则对端可能粘行；非 OPEN → `false` |
 | `pushWireLn(text)` | 同 `pushWire`，但若不以 LF 结尾则追加 `\n` |
 | `pushTypeConsistency(engine\|registry\|snapshot)` | 推送已注册类型 schema（控制帧）；前提见 §5.5 |
+| `session` / `autoSession` / `autoAck` / `retainOutbound` | 控制会话 / hello / 自动 ack / 出站日志（§7.7） |
+| `sendSession` / `sendAck` / `sendResume` / `sendSnapshot` | 出站控制帧 |
+| `getResumeState()` / `phaseSeq` / `outboundSeq` / `sessionId` / `ackedSeq` | 续传游标（`getResumeState` 含 `inboundSeq` / `outboundSeq`） |
+| `outboundLog` / `replayOutboundAfter` / `noteOutboundPhase` | 生产端出站相位日志 |
+| `ResumeWireLog` | 应用侧跨重连持久日志 |
 | `typeCheck` | 只读；本连接是否启用客户端类型检查 |
-| `onPhase` / `onChunk` | Diff 回调（`onChunk` 为别名）；**替换**回调；**`connect` resolve 后锁定** — 用 connect options |
+| `onPhase` / `onChunk` | Diff 回调（`onChunk` 为别名）；**`(diff, meta?)`** 可含 `seq` / `seqs`；**`connect` resolve 后锁定** — 用 connect options |
 | `onLineIntercept` / `clearLineIntercepts` | 缓冲行拦截（§6.4）；**`connect` 后锁定**；优先 options 的 `lineIntercept` |
 | `onAnnotationSpan` / `clearAnnotationSpans` | 相位 Annotation Span（§6.5）；**`connect` 后锁定**；优先 options 的 `annotationSpan` |
+| `onResume` / `onSession` / `onAck` / `onSnapshot` / `onControlError` | 控制回调；**`connect` 后锁定**；listen-accept 侧不锁 |
 | `onDone` / `onError` | 终态 / 错误；**`connect` 后锁定** |
 | `handlersLocked` | 成功 `XaiopWs.connect` / `XaiopBrowserWs.connect` 后为 `true` |
 | `getCommittedSnapshot` / `getSnapshot` | 同 Stream：流中用 committed；终态前 `getSnapshot()` 为 `undefined` |
@@ -740,7 +747,7 @@ encodePhaseObject(object, { final?, encodeOptions? }): string
 
 因此 **`onPhase` / `onDone` / `onError` 以及 `done` 的 settle 均可发生在 `await connect(...)` 返回之前**（接受端在 `connection` 里同步推送时尤其常见）。
 
-**必须：** 需要处理早帧时，把回调放进 **`connect` 的 options**（`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`）。成功 `connect` 之后连接进入 **handler 锁定**：再调 `onPhase` / `onLineIntercept` / … 会抛 `TypeError`（listen-accept 侧不锁，仍可晚注册）。  
+**必须：** 需要处理早帧时，把回调放进 **`connect` 的 options**（`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan` / 控制回调 `onResume`、`onSession`、…）。成功 `connect` 之后连接进入 **handler 锁定**：再调 `onPhase` / `onLineIntercept` / `onResume` / … 会抛 `TypeError`（listen-accept 侧不锁，仍可晚注册）。  
 **禁止依赖：** `await connect` 之后再挂回调去接同步首包——可能已晚且**不回放**。  
 若业务要「等 connect 返回再处理」：应用层自行排队；不要要求 SDK 延后投递。
 
@@ -748,12 +755,12 @@ encodePhaseObject(object, { final?, encodeOptions? }): string
 
 ### 7.6 浏览器 `xaiop/browser` — 相位客户端
 
-从 **`xaiop/browser`** 导入（不要用默认 `"xaiop"`）。与 Node **共用** `core` 的 `DotCheckpointEngine`：按 `.` 切相、later-wins Diff/Commit、可选 `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`**（§5.5）/ **行拦截**（§6.4）/ **Annotation Span**（§6.5）。
+从 **`xaiop/browser`** 导入（不要用默认 `"xaiop"`）。与 Node **共用** `core` 的 `DotCheckpointEngine`：按 `.` 切相、later-wins Diff/Commit、可选 `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`**（§5.5）/ **行拦截**（§6.4）/ **Annotation Span**（§6.5）/ **控制根**（§7.7）。
 
 | API | 相位 | 说明 |
 | --- | --- | --- |
-| `XaiopStream` | **有** | `onChunk` = 相位 Diff；传输：`fetch` / SSE / **原生** `WebSocket` / RAW（无 `ws` / `node:stream`）；可 `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan` |
-| `XaiopBrowserWs.connect` | **有** | `onPhase` / `onChunk`；可选 `pushJson` / `pushObject` / `pushWire` / `pushWireLn`；可 `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan`；**无** `listen` / hub / `pushTypeConsistency`（推送在 Node 服务端）；`connect` 后 handler 锁定 |
+| `XaiopStream` | **有** | `onChunk(diff, meta?)` = 相位 Diff + 可选 `seq`；传输：`fetch` / SSE / **原生** `WebSocket` / RAW（无 `ws` / `node:stream`）；可 `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan` / `session` / `phaseSeq` |
+| `XaiopBrowserWs.connect` | **有** | 与 Node 客户端同相位 + 控制根表面（`session` / `sendResume` / …）；可选 `pushJson` / `pushObject` / `pushWire` / `pushWireLn`；**无** `listen` / hub / `pushTypeConsistency`（推送在 Node 服务端）；`connect` 后 handler 锁定 |
 | `XaiopBrowserWs.encodePhaseJson` / `encodePhaseObject` | — | 同 Node 相位编码辅助 |
 | `xaiop/core` | 无网络 | 可本地 `DotCheckpointEngine`，需自行喂文本 |
 
@@ -775,9 +782,23 @@ console.log(await client.done);
 | 套接字 | 仅 `globalThis.WebSocket` |
 | `listen` / `XaiopWsHub` | **不提供**（服务端仍用 `import { XaiopWs } from "xaiop"`） |
 | `connect` 早帧语义 | **相同**：回调放进 options；resolve ≠ 无事件 |
-| 相位 / Diff / Commit / `cover` / `typeCheck` / 行拦截 / Annotation Span | **相同**（同一 checkpoint / 冻结会话）；`pushTypeConsistency` 仅服务端 |
+| 相位 / Diff / Commit / `cover` / `typeCheck` / 行拦截 / Annotation Span / 控制根 | **相同**（同一 checkpoint / 冻结会话）；`pushTypeConsistency` 仅服务端 |
 
-生产端（Node listen）+ 浏览器消费端是推荐骨架组合。实践：[../../practice/skeleton-stream.zh-CN.md](../../practice/skeleton-stream.zh-CN.md) · notes：[notes/ws-session.zh-CN.md](notes/ws-session.zh-CN.md) §9–§10 · [notes/typecheck.zh-CN.md](notes/typecheck.zh-CN.md) · [notes/line-intercept.zh-CN.md](notes/line-intercept.zh-CN.md) · [notes/annotation-span.zh-CN.md](notes/annotation-span.zh-CN.md)。
+生产端（Node listen）+ 浏览器消费端是推荐骨架组合。实践：[../../practice/skeleton-stream.zh-CN.md](../../practice/skeleton-stream.zh-CN.md) · notes：[notes/ws-session.zh-CN.md](notes/ws-session.zh-CN.md) §9–§10 · [notes/typecheck.zh-CN.md](notes/typecheck.zh-CN.md) · [notes/line-intercept.zh-CN.md](notes/line-intercept.zh-CN.md) · [notes/annotation-span.zh-CN.md](notes/annotation-span.zh-CN.md) · [notes/control-plane.zh-CN.md](notes/control-plane.zh-CN.md)。
+
+### 7.7 SDK 控制根（`#!`）— 会话 / 续传
+
+产品约定（**不是** Frozen 0.6.0 文法改写）：以 `#!` 开头的逻辑行属于 **SDK 控制面**，在 parse / Annotation Span **之前** demux。详见 **[notes/control-plane.zh-CN.md](notes/control-plane.zh-CN.md)**。
+
+| 项 | 摘要 |
+| --- | --- |
+| 官方帧 | `#!xaiop/types/v1`、`session/v1`、`ack/v1`、`resume/v1`、`snapshot/v1` |
+| 未知 `#!` | 丢弃 + `XaiopControlError`（`onControlError`）；永不进线文管道 |
+| Seq | 每个物理 `.` 单调递增（`onPhase` / `onChunk` 的 `meta.seq` / `meta.seqs`） |
+| 续传 | `sendResume({ sessionId, fromSeq })` → 从 `fromSeq+1` 续推；**不**重放历史 Diff；可选 `sendSnapshot` |
+| connect 选项 | `session`、`autoSession`、`autoAck`、`retainOutbound`、`onSession`、`onResume`、`onAck`、`onSnapshot`、`onControlError` |
+| 生产端日志 | `session` 或 `retainOutbound` 时 `pushJson`/`pushObject` 自动记出站相位；`replayOutboundAfter(fromSeq)`；跨重连请用应用侧按 `sessionId` 持有的 `ResumeWireLog` |
+| Stream | `onChunk(diff, meta)` 收到相位 `meta.seq` / `meta.seqs`；`getResumeState()` / `phaseSeq` 选项 |
 
 ---
 
@@ -865,7 +886,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.13.0"` |
+| `SDK_VERSION` | `"0.14.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |
@@ -874,6 +895,12 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | `HISTORY_NODE_KIND` | `DOT` · `TAIL` |
 | `LINE_KIND` / `classifyLine` / `emptyLineView` / `runLineInterceptChain` | 行拦截分类与链工具（§6.4） |
 | `applyAnnotationSpans` / `encodeAsSiblingLines` / `pathEscapesTypeCheck` | Annotation Span 辅助（§6.5） |
+| `CONTROL_NS` / `CONTROL_NAME` / `CONTROL_CAPABILITY` | SDK 控制根常量（§7.7） |
+| `ControlDemux` / `ControlIngest` / `ControlPlaneHost` / `ControlSessionState` | 控制 demux / 会话辅助 |
+| `ResumeWireLog` / `XaiopResumeLogError` | 续传用持久出站相位日志 |
+| `encodeControlFrame` / `encodeSessionFrame` / `encodeAckFrame` / `encodeResumeFrame` / `encodeSnapshotFrame` | 控制帧编解码 |
+| `isSdkControlLine` / `parseControlHeader` / `dispatchControlFrame` | 控制分类 / 路由 |
+| `XaiopControlError` | 软控制面错误（`code`，可选 `header` / `frame`） |
 | `COMPAT_FIX_IDS` / `COMPAT_FIX_DEFAULTS` | 八项 fix 列表与默认 |
 | `TYPE` / `objectType` / `arrayType` | 类型检查常量与组合子（§5.5） |
 | `TypeRegistry` / `TypeChecker` / `TypeFreezeSession` | 注册表 / 服务端检查 / 客户端冻结 |
@@ -892,6 +919,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | `XaiopSyntaxError` | 非法线格式；可选 `.line`。严格：立即失败。兼容：恢复失败或错误变化时仍抛 |
 | `XaiopEncodeError` | 非法编码输入 / 选项 / 拒绝的键；可选 `.path`（如 `$.meta.name`） |
 | `XaiopTypeError` | 类型注册 / 冻结 / schema 检查失败；可选 `.path` / `.expected` / `.actual` / `.polarity` |
+| `XaiopControlError` | 未知 / 畸形控制帧（默认软错误；见 §7.7） |
 | `Error` | 未知 `dataId`；Stream busy 等 |
 | `TypeError` | 参数类型非法（非 string 源、非法 `conflict` / `as`、`pushTypeConsistency` 前提不满足 等） |
 
@@ -921,4 +949,4 @@ try {
 | [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) | Node 产品选择目录（可选） |
 | [../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md) | 协议文法 |
 | [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md) | 封存 / 发行 |
-| [notes/](notes/) | 流式解析、历史、编码坑点、WS（§9/§10）、类型检查、调整策略 |
+| [notes/](notes/) | 流式解析、历史、编码坑点、WS、类型检查、行拦截、Annotation Span、**控制根**、调整策略 |

@@ -8,7 +8,7 @@
 | 状态 | 信息性 |
 | 最近更新 | 2026-08-04 |
 | 规范性 | **否** — SDK 产品目录（非协议符合性） |
-| 参考实现（重心） | Node.js `xaiop` **0.13.0**（`xaiop-sdk/nodejs/`） |
+| 参考实现（重心） | Node.js `xaiop` **0.14.0**（`xaiop-sdk/nodejs/`） |
 | 协议线格式 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
@@ -178,7 +178,7 @@ finish 时:
 
 API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md)。
 
-**Java（`io.xaiop:xaiop` 0.5.0）：** 实现本消费端表面的 **HTTP / SSE / RAW**（状态机、模式、`mergeChunkWindow`、监听器隔离、UTF-8 解码、SSE 拼接）。相对 Node 的缺口：**无 WebSocket**、无 `cover` Diff、无线拦截 / Annotation Span，线格式仍为协议 **0.4.0**。指南：[java/README.zh-CN.md](java/README.zh-CN.md)。
+**Java（`io.xaiop:xaiop` 0.5.0）：** 实现本消费端表面的 **HTTP / SSE / RAW**（状态机、模式、`mergeChunkWindow`、监听器隔离、UTF-8 解码、SSE 拼接）。相对 Node 的缺口：**无 WebSocket**、无 `cover` Diff、无线拦截 / Annotation Span / 控制根，线格式仍为协议 **0.4.0**。指南：[java/README.zh-CN.md](java/README.zh-CN.md)。
 
 ---
 

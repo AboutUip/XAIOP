@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.6.0 Frozen (sealed)  
-**SDK**: 0.13.0 (TypeScript)  
+**SDK**: 0.14.0 (TypeScript)  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
 **Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`)  
 **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
@@ -22,7 +22,7 @@
 | --- | --- |
 | Default `"xaiop"` works in browsers as-is | **No** (pulls `ws` / `node:stream`) |
 | Browser server `listen` | **No** — use Node `XaiopWs.listen`; browser only `connect` / `XaiopStream` |
-| Browser **`.` phase Diff** | **Yes** — same `DotCheckpointEngine` as Node (`onChunk` / `onPhase`, Commit, optional `cover` / `mergeChunkWindow` / `typeCheck` / **line intercept** / **Annotation Span**) |
+| Browser **`.` phase Diff** | **Yes** — same `DotCheckpointEngine` as Node (`onChunk` / `onPhase`, Commit, optional `cover` / `mergeChunkWindow` / `typeCheck` / **line intercept** / **Annotation Span** / **Control Root**) |
 | Wire semantics | All three entries share one `core` (protocol package **0.6.0**) |
 
 This repository’s **SDK focus is Node.js**; other-language ports need not match the full Node surface.
@@ -37,8 +37,8 @@ This repository’s **SDK focus is Node.js**; other-language ports need not matc
 3. [Parse API](#3-parse-api)
 4. [Encode API](#4-encode-api)
 5. [Engine API](#5-engine-api) (incl. [§5.5 Type checking](#55-type-checking-instance))
-6. [Streaming API](#6-streaming-api) (incl. [§6.4 Line intercept](#64-line-intercept-onlineintercept) · [§6.5 Annotation Span](#65-annotation-span-onannotationspan))
-7. [WebSocket API](#7-websocket-api) (incl. [§7.6 Browser](#76-browser-xaiopbrowser--phase-client))
+6. [Streaming API](#6-streaming-api) (incl. [§6.4 Line intercept](#64-line-intercept-onlineintercept) · [§6.5 Annotation Span](#65-annotation-span-onannotationspan) · phase `meta.seq`)
+7. [WebSocket API](#7-websocket-api) (incl. [§7.6 Browser](#76-browser-xaiopbrowser--phase-client) · [§7.7 Control Root](#77-sdk-control-root---session--resume))
 8. [Merge and inject](#8-merge-and-inject)
 9. [Compatibility mode](#9-compatibility-mode)
 10. [Types and constants](#10-types-and-constants)
@@ -106,7 +106,7 @@ Primary methods are **async**, with matching **sync** variants (parse / encode /
 
 ## 2. Core concepts
 
-**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.13.0**).
+**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.14.0**).
 
 - Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 - Seal and release index: [../../meta/releases.md](../../meta/releases.md)
@@ -435,7 +435,7 @@ eng.uploadSync(`>\n>data\nfork:ok\n`); // OK
 | --- | --- |
 | Connection | **Strict** (`compatibilityMode === false` on that connection) |
 | Payload | Non-empty registry; if passing `XaiopEngine`, its **`typeCheck === true`** |
-| Shape | Control frame (**not** XAIOP wire): prefix `#!xaiop/types/v1\n` + JSON snapshot; receiver strips it before the parser |
+| Shape | Control frame (**not** XAIOP wire): prefix `#!xaiop/types/v1\n` + JSON snapshot; demuxed by Control Root before parse / Span (**0.14.0+**) |
 | Failure | Bad prerequisites → `TypeError`; socket not OPEN → `false` |
 
 Deep-dive: [notes/typecheck.md](notes/typecheck.md).
@@ -484,13 +484,14 @@ const final = await stream.send({ transport: TRANSPORT_KIND.HTTP });
 | `typeSchema` | — | Preload type snapshot or `TypeRegistry` |
 | `lineIntercept` | — | Initial line-intercept handler or array (§6.4) |
 | `annotationSpan` | — | Initial Annotation Span handler or array (§6.5) |
+| `session` / control callbacks | — | Optional Control Root inbound cursor (§7.7); see [notes/control-plane.md](notes/control-plane.md) |
 | `modes` | `["callback"]` | Multi-select allowed |
 
 #### Snapshot / chunk
 
 | API | When | Value |
 | --- | --- | --- |
-| `onChunk` / iterator | Phase / window boundary | Diff JSON; empty phase may be `null` |
+| `onChunk` / iterator | Phase / window boundary | Diff JSON; empty phase may be `null`; **second arg `meta`** may include `seq` / `seqs` (phase sequence, §7.7) and `typeCheckEscapePaths` |
 | `getCommittedSnapshot()` | After each commit | Cumulative later-wins through last `.` / EOF |
 | `getSnapshot()` / `onDone` | After finish | Full-buffer parse; empty → `{}` |
 | Mid-stream `getSnapshot()` | `streaming` | Usually `undefined` |
@@ -623,7 +624,7 @@ Deep dive: [notes/line-intercept.md](notes/line-intercept.md) · tests: `test/li
 
 ### 6.5 Annotation Span (`onAnnotationSpan`)
 
-**SDK product feature** (not wire grammar): wire `#…` still has no tree side effects. After **this phase’s** lines are ready and **before Diff / Commit / `typeCheck`**, on `#` collect **forward same-level** siblings (+ subtrees), call handlers with **annotation text + template JSON**, and remount / drop / keep.
+**SDK product feature** (not wire grammar): wire `#…` still has no tree side effects. After **this phase’s** lines are ready and **before Diff / Commit / `typeCheck`**, on `#` collect **forward same-level** siblings (+ subtrees), call handlers with **annotation text + template JSON**, and remount / drop / keep. Lines starting with `#!` are Control Root (**0.14.0+**): demuxed before Span; Span **hard-skips** any remaining `#!`.
 
 | Contrast | Line intercept §6.4 | Annotation Span §6.5 |
 | --- | --- | --- |
@@ -687,8 +688,8 @@ await hub.close();
 | `XaiopWs.connect(url, options?)` | → `Promise<XaiopWsConnection>`; semantics in §7.5 |
 | `XaiopWs.encodePhaseJson` / `encodePhaseObject` | Encode only (no send) |
 
-**`WsConnectOptions`:** `streamProcessing`, `mergeChunkWindow`, `asyncParse`, `cover`, `compatibilityMode`, `typeCheck`, `typeSchema`, `lineIntercept`, `annotationSpan`, `protocols`, `handshakeTimeoutMs` (default **15000**), `headers`, and construction-time `onPhase` / `onChunk` / `onDone` / `onError`.  
-**`WsListenOptions`:** the parse-related options above + `port` / `host` / `server` / `path` / `backlog` / `perMessageDeflate` / `maxPayload`.
+**`WsConnectOptions`:** `streamProcessing`, `mergeChunkWindow`, `asyncParse`, `cover`, `compatibilityMode`, `typeCheck`, `typeSchema`, `lineIntercept`, `annotationSpan`, **`session`**, **`autoSession`**, **`autoAck`**, **`retainOutbound`**, `protocols`, `handshakeTimeoutMs` (default **15000**), `headers`, and construction-time `onPhase` / `onChunk` / `onDone` / `onError` / **`onControlError`** / **`onSession`** / **`onResume`** / **`onAck`** / **`onSnapshot`**.  
+**`WsListenOptions`:** the parse/control-related options above + `port` / `host` / `server` / `path` / `backlog` / `perMessageDeflate` / `maxPayload`.
 
 ### 7.2 `XaiopWsConnection`
 
@@ -699,10 +700,16 @@ await hub.close();
 | `pushWire(text)` | Raw wire **as-is** (no auto `\n`); consecutive frames must already be line-safe or peer may glue; not OPEN → `false` |
 | `pushWireLn(text)` | Like `pushWire`, but appends `\n` when `text` does not already end with LF |
 | `pushTypeConsistency(engine\|registry\|snapshot)` | Push registered type schema (control frame); prerequisites in §5.5 |
+| `session` / `autoSession` / `autoAck` / `retainOutbound` | Control session / hello / auto-ack / outbound log (§7.7) |
+| `sendSession` / `sendAck` / `sendResume` / `sendSnapshot` | Outbound control frames |
+| `getResumeState()` / `phaseSeq` / `outboundSeq` / `sessionId` / `ackedSeq` | Resume cursors (`getResumeState` includes `inboundSeq` / `outboundSeq`) |
+| `outboundLog` / `replayOutboundAfter` / `noteOutboundPhase` | Producer outbound phase log |
+| `ResumeWireLog` | App-owned durable log across reconnects |
 | `typeCheck` | Read-only; whether client type checking is on for this connection |
-| `onPhase` / `onChunk` | Diff callback (`onChunk` alias); **replaces** callback; **locked after `connect` resolves** — use connect options |
+| `onPhase` / `onChunk` | Diff callback (`onChunk` alias); **`(diff, meta?)`** with `seq` / `seqs`; **locked after `connect`** — use connect options |
 | `onLineIntercept` / `clearLineIntercepts` | Buffer-line intercept (§6.4); **locked after `connect`**; prefer `lineIntercept` in connect options |
 | `onAnnotationSpan` / `clearAnnotationSpans` | Phase Annotation Span (§6.5); **locked after `connect`**; prefer `annotationSpan` in options |
+| `onResume` / `onSession` / `onAck` / `onSnapshot` / `onControlError` | Control callbacks; **locked after `connect`**; listen-accept stays unlocked |
 | `onDone` / `onError` | Final / error; **locked after `connect`** |
 | `handlersLocked` | `true` after successful `XaiopWs.connect` / `XaiopBrowserWs.connect` |
 | `getCommittedSnapshot` / `getSnapshot` | Same as Stream: committed mid-stream; `getSnapshot()` is `undefined` until final |
@@ -740,8 +747,8 @@ Internal `connect` order: **create socket → immediately construct `XaiopWsConn
 
 Therefore **`onPhase` / `onDone` / `onError` and settlement of `done` may all happen before `await connect(...)` returns** (especially when the accept side pushes synchronously in `connection`).
 
-**Required:** put **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`** in **`connect` options**.  
-After `await connect(...)` returns, mutators (`onPhase`, `onLineIntercept`, `onAnnotationSpan`, `onDone`, `onError`, and their `clear*`) **throw** (`handlersLocked`) — there is **no replay** of early frames.  
+**Required:** put **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan` / control callbacks (`onResume`, `onSession`, …)** in **`connect` options**.  
+After `await connect(...)` returns, mutators (`onPhase`, `onLineIntercept`, `onAnnotationSpan`, `onResume`, `onSession`, `onAck`, `onSnapshot`, `onControlError`, `onDone`, `onError`, and their `clear*`) **throw** (`handlersLocked`) — there is **no replay** of early frames.  
 Listen-accept connections stay unlocked so a producer/consumer can still attach in `hub.onConnection` if needed.  
 If the app needs “process only after connect returns”: queue in the application layer; do not ask the SDK to defer delivery.
 
@@ -749,12 +756,12 @@ Full table and test reference: [notes/ws-session.md](notes/ws-session.md) §5.
 
 ### 7.6 Browser `xaiop/browser` — phase client
 
-Import from **`xaiop/browser`** (not the default `"xaiop"`). Shares Node’s `DotCheckpointEngine` in `core`: `.` phases, later-wins Diff/Commit, optional `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`** (§5.5) / **line intercept** (§6.4) / **Annotation Span** (§6.5).
+Import from **`xaiop/browser`** (not the default `"xaiop"`). Shares Node’s `DotCheckpointEngine` in `core`: `.` phases, later-wins Diff/Commit, optional `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`** (§5.5) / **line intercept** (§6.4) / **Annotation Span** (§6.5) / **Control Root** (§7.7).
 
 | API | Phases | Notes |
 | --- | --- | --- |
-| `XaiopStream` | **Yes** | `onChunk` = phase Diff; transports: `fetch` / SSE / **native** `WebSocket` / RAW (no `ws` / `node:stream`); optional `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan` |
-| `XaiopBrowserWs.connect` | **Yes** | `onPhase` / `onChunk`; optional `pushJson` / `pushObject` / `pushWire` / `pushWireLn`; optional `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan`; **no** `listen` / hub / `pushTypeConsistency` (push from Node server); handlers locked after connect |
+| `XaiopStream` | **Yes** | `onChunk(diff, meta?)` = phase Diff + optional `seq`; transports: `fetch` / SSE / **native** `WebSocket` / RAW (no `ws` / `node:stream`); optional `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan` / `session` / `phaseSeq` |
+| `XaiopBrowserWs.connect` | **Yes** | Same phase + Control Root surface as Node client (`session` / `sendResume` / …); optional `pushJson` / `pushObject` / `pushWire` / `pushWireLn`; **no** `listen` / hub / `pushTypeConsistency` (push from Node server); handlers locked after connect |
 | `XaiopBrowserWs.encodePhaseJson` / `encodePhaseObject` | — | Same phase encode helpers as Node |
 | `xaiop/core` | No network | Local `DotCheckpointEngine` only; you feed text yourself |
 
@@ -776,9 +783,23 @@ console.log(await client.done);
 | Socket | `globalThis.WebSocket` only |
 | `listen` / `XaiopWsHub` | **Not provided** (server still `import { XaiopWs } from "xaiop"`) |
 | `connect` early-frame semantics | **Same**: callbacks in options; resolve ≠ “no events yet” |
-| Phase / Diff / Commit / `cover` / `typeCheck` / line intercept / Annotation Span | **Same** (one checkpoint / freeze session); `pushTypeConsistency` is server-side |
+| Phase / Diff / Commit / `cover` / `typeCheck` / line intercept / Annotation Span / Control Root | **Same** (one checkpoint / freeze session); `pushTypeConsistency` is server-side |
 
-Recommended skeleton combo: Node listen (producer) + browser consume. Practice: [../../practice/skeleton-stream.md](../../practice/skeleton-stream.md) · notes: [notes/ws-session.md](notes/ws-session.md) §9–§10 · [notes/typecheck.md](notes/typecheck.md) · [notes/line-intercept.md](notes/line-intercept.md) · [notes/annotation-span.md](notes/annotation-span.md).
+Recommended skeleton combo: Node listen (producer) + browser consume. Practice: [../../practice/skeleton-stream.md](../../practice/skeleton-stream.md) · notes: [notes/ws-session.md](notes/ws-session.md) §9–§10 · [notes/typecheck.md](notes/typecheck.md) · [notes/line-intercept.md](notes/line-intercept.md) · [notes/annotation-span.md](notes/annotation-span.md) · [notes/control-plane.md](notes/control-plane.md).
+
+### 7.7 SDK Control Root (`#!`) — session / resume
+
+Product convention (not a Frozen 0.6.0 grammar change): lines starting with `#!` are the **SDK control plane**. They are demuxed **before** parse / Annotation Span. Full note: **[notes/control-plane.md](notes/control-plane.md)**.
+
+| Item | Summary |
+| --- | --- |
+| Official frames | `#!xaiop/types/v1`, `session/v1`, `ack/v1`, `resume/v1`, `snapshot/v1` |
+| Unknown `#!` | Discard + `XaiopControlError` (`onControlError`); never enter the wire pipeline |
+| Seq | Monotonic per physical `.` (`meta.seq` / `meta.seqs` on `onPhase` / `onChunk`) |
+| Resume | `sendResume({ sessionId, fromSeq })` → continue from `fromSeq+1`; **no** historical Diff replay; optional `sendSnapshot` |
+| Connect options | `session`, `autoSession`, `autoAck`, `retainOutbound`, `onSession`, `onResume`, `onAck`, `onSnapshot`, `onControlError` |
+| Producer log | `pushJson`/`pushObject` auto-record when `session` or `retainOutbound`; `replayOutboundAfter(fromSeq)`; durable cross-reconnect: app-owned `ResumeWireLog` by `sessionId` |
+| Stream | `onChunk(diff, meta)` receives phase `meta.seq` / `meta.seqs`; `getResumeState()` / `phaseSeq` option |
 
 ---
 
@@ -866,7 +887,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.13.0"` |
+| `SDK_VERSION` | `"0.14.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |
@@ -875,6 +896,12 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | `HISTORY_NODE_KIND` | `DOT` · `TAIL` |
 | `LINE_KIND` / `classifyLine` / `emptyLineView` / `runLineInterceptChain` | Line-intercept classify + chain helpers (§6.4) |
 | `applyAnnotationSpans` / `encodeAsSiblingLines` / `pathEscapesTypeCheck` | Annotation Span helpers (§6.5) |
+| `CONTROL_NS` / `CONTROL_NAME` / `CONTROL_CAPABILITY` | SDK Control Root constants (§7.7) |
+| `ControlDemux` / `ControlIngest` / `ControlPlaneHost` / `ControlSessionState` | Control demux / session helpers |
+| `ResumeWireLog` / `XaiopResumeLogError` | Durable outbound phase log for resume |
+| `encodeControlFrame` / `encodeSessionFrame` / `encodeAckFrame` / `encodeResumeFrame` / `encodeSnapshotFrame` | Control frame codecs |
+| `isSdkControlLine` / `parseControlHeader` / `dispatchControlFrame` | Control classify / route |
+| `XaiopControlError` | Soft control-plane errors (`code`, optional `header` / `frame`) |
 | `COMPAT_FIX_IDS` / `COMPAT_FIX_DEFAULTS` | Eight-fix list and defaults |
 | `TYPE` / `objectType` / `arrayType` | Type-check constants and builders (§5.5) |
 | `TypeRegistry` / `TypeChecker` / `TypeFreezeSession` | Registry / server check / client freeze |
@@ -893,6 +920,7 @@ Declarations are emitted by `tsc` under `dist/**/*.d.ts` (default / `browser` / 
 | `XaiopSyntaxError` | Illegal wire; optional `.line`. Strict: fail immediately. Compat: still throws when recovery fails or the error changes |
 | `XaiopEncodeError` | Illegal encode input / options / rejected keys; optional `.path` (e.g. `$.meta.name`) |
 | `XaiopTypeError` | Type registry / freeze / schema check failure; optional `.path` / `.expected` / `.actual` / `.polarity` |
+| `XaiopControlError` | Unknown / malformed control frame (soft by default; see §7.7) |
 | `Error` | Unknown `dataId`; Stream busy; etc. |
 | `TypeError` | Bad argument types (non-string source, illegal `conflict` / `as`, `pushTypeConsistency` prerequisites, etc.) |
 
@@ -922,4 +950,4 @@ try {
 | [../behavioral-contract.md](../behavioral-contract.md) | Node product-choice catalog (optional) |
 | [../../protocol/syntax.md](../../protocol/syntax.md) | Protocol grammar |
 | [../../meta/releases.md](../../meta/releases.md) | Seal / releases |
-| [notes/](notes/) | Streaming parse, history, encode pitfalls, WS (§9/§10), type check, adjustment policy |
+| [notes/](notes/) | Streaming parse, history, encode pitfalls, WS, type check, line intercept, Annotation Span, **Control Root**, adjustment policy |

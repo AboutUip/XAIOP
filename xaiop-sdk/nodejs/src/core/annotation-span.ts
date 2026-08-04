@@ -58,6 +58,14 @@ export function applyAnnotationSpans(phaseLines, handlers) {
       continue;
     }
 
+    // SDK Control Root (`#!…`) must never become Annotation Span.
+    // Demux normally strips these before the engine; this is defense in depth.
+    if (line.startsWith("#!")) {
+      out.push(line);
+      i += 1;
+      continue;
+    }
+
     if (line.startsWith("#")) {
       const depth = stack.length;
       const parentPath = pathFromStack(stack);

@@ -8,7 +8,7 @@
 | Status | Informative |
 | Last updated | 2026-08-04 |
 | Normative | **No** — SDK product catalog (not protocol conformance) |
-| Reference implementation (primary) | Node.js `xaiop` **0.13.0** (`xaiop-sdk/nodejs/`) |
+| Reference implementation (primary) | Node.js `xaiop` **0.14.0** (`xaiop-sdk/nodejs/`) |
 | Protocol wire | Frozen **v0.6.0** |
 
 **Isolation:** Protocol = **cursor IR** wire only · Practice = writers & transport · This page = **what an SDK must match for official parity** — [../SEPARATION.md](../SEPARATION.md).  
@@ -178,7 +178,7 @@ Parity-minded ports **SHOULD** expose equivalents of:
 
 API: [nodejs/API.md](nodejs/API.md) §6 · [nodejs/notes/streaming-parse.md](nodejs/notes/streaming-parse.md).
 
-**Java (`io.xaiop:xaiop` 0.5.0):** implements this consumer surface for **HTTP / SSE / RAW** (status machine, modes, `mergeChunkWindow`, listener isolation, UTF-8 decoder, SSE join). Gaps vs Node: **no WebSocket**, no `cover` Diff, no line intercept / Annotation Span, wire remains protocol **0.4.0**. Guide: [java/README.md](java/README.md).
+**Java (`io.xaiop:xaiop` 0.5.0):** implements this consumer surface for **HTTP / SSE / RAW** (status machine, modes, `mergeChunkWindow`, listener isolation, UTF-8 decoder, SSE join). Gaps vs Node: **no WebSocket**, no `cover` Diff, no line intercept / Annotation Span / Control Root, wire remains protocol **0.4.0**. Guide: [java/README.md](java/README.md).
 
 ---
 

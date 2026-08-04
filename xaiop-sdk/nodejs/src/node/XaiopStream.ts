@@ -17,9 +17,9 @@ import {
   STREAM_MODES,
 } from "../core/modes.js";
 import { isStreamBusy, STREAM_STATUS } from "../core/states.js";
+import { ControlPlaneHost } from "../core/control-host.js";
 import {
   TypeFreezeSession,
-  tryParseTypeSchemaFrame,
 } from "../core/types.js";
 import { openTransport, TRANSPORT_KIND } from "./transport.js";
 
@@ -48,6 +48,12 @@ export class XaiopStream {
    *   typeSchema?: import("../core/types.js").TypeSchemaSnapshot|import("../core/types.js").TypeRegistry,
    *   lineIntercept?: import("../core/line-intercept.js").LineInterceptHandler|import("../core/line-intercept.js").LineInterceptHandler[],
    *   annotationSpan?: import("../core/annotation-span.js").AnnotationSpanHandler|import("../core/annotation-span.js").AnnotationSpanHandler[],
+   *   session?: boolean|{ sessionId?: string, role?: string, capabilities?: string[], epoch?: number },
+   *   onControlError?: (err: import("../core/control.js").XaiopControlError) => void,
+   *   onSession?: (body: unknown) => void,
+   *   onResume?: (body: unknown) => void,
+   *   onAck?: (body: unknown) => void,
+   *   onSnapshot?: (body: unknown) => void,
    * }} [options]
    */
   constructor(url, options = {}) {
@@ -87,6 +93,25 @@ export class XaiopStream {
     }
     /** @type {Set<StreamMode>} */
     this._modes = normalizeModes(options.modes);
+
+    /** @type {ControlPlaneHost} */
+    this._control = new ControlPlaneHost({
+      send: () => false,
+      getCommittedSnapshot: () => this.getCommittedSnapshot(),
+      session: options.session,
+      autoAck: false,
+      onControlError: (err) => {
+        if (typeof options.onControlError === "function") options.onControlError(err);
+        else if (this._onError) this._onError(err);
+      },
+      onSession: options.onSession,
+      onResume: options.onResume,
+      onAck: options.onAck,
+      onSnapshot: options.onSnapshot,
+      onTypes: (snapshot) => {
+        if (this._typeSession) this._typeSession.applySchema(snapshot);
+      },
+    });
 
     /** @type {StreamStatus} */
     this._status = STREAM_STATUS.IDLE;
@@ -241,6 +266,30 @@ export class XaiopStream {
       this._committedSnapshot = c;
     }
     return cloneJson(this._committedSnapshot);
+  }
+
+  get sessionId() {
+    return this._control.sessionId;
+  }
+
+  /** Inbound applied phase seq (0 until engine commits). */
+  get phaseSeq() {
+    return this._engine ? this._engine.phaseSeq : 0;
+  }
+
+  get ackedSeq() {
+    return this._control.ackedSeq;
+  }
+
+  /** @returns {{ sessionId: string, seq: number, epoch: number, committedSnapshot?: unknown }|null} */
+  getResumeState() {
+    const base = this._control.getResumeState(this.getCommittedSnapshot());
+    if (!base) return null;
+    return {
+      ...base,
+      seq: this.phaseSeq,
+      inboundSeq: this.phaseSeq,
+    };
   }
 
   /** @returns {string} */
@@ -689,14 +738,11 @@ export class XaiopStream {
             this._emitStatus();
           }
           try {
-            const schema = tryParseTypeSchemaFrame(text);
-            if (schema) {
-              if (this._typeSession) this._typeSession.applySchema(schema);
-              return;
-            }
+            const wire = this._control.push(text);
+            if (!wire) return;
             if (this._asyncParse) {
               this._asyncIngestChain = this._asyncIngestChain
-                .then(() => this._engine.pushAsync(text))
+                .then(() => this._engine.pushAsync(wire))
                 .then(() => {
                   this._buffer = this._engine.buffer;
                   this._syncCommittedFromEngine();
@@ -710,7 +756,7 @@ export class XaiopStream {
                   );
                 });
             } else {
-              this._engine.push(text);
+              this._engine.push(wire);
               this._buffer = this._engine.buffer;
               this._syncCommittedFromEngine();
               if (this._engine.snapshot !== undefined) {
@@ -723,6 +769,29 @@ export class XaiopStream {
         },
         onDone: () => {
           try {
+            const wire = this._control.flush();
+            if (wire) {
+              if (this._asyncParse) {
+                this._asyncIngestChain = this._asyncIngestChain
+                  .then(() => this._engine.pushAsync(wire))
+                  .then(() => {
+                    this._buffer = this._engine.buffer;
+                    this._syncCommittedFromEngine();
+                  })
+                  .catch((err) => {
+                    this._fail(
+                      err instanceof Error ? err : new Error(String(err)),
+                    );
+                  });
+                void this._asyncIngestChain.then(() =>
+                  this._completeSuccessfully(),
+                );
+                return;
+              }
+              this._engine.push(wire);
+              this._buffer = this._engine.buffer;
+              this._syncCommittedFromEngine();
+            }
             this._completeSuccessfully();
           } catch (err) {
             this._fail(err instanceof Error ? err : new Error(String(err)));
@@ -849,6 +918,7 @@ export class XaiopStream {
    * @param {{ typeCheckEscapePaths?: string[] }} [meta]
    */
   _deliverChunk(diff, meta) {
+    this._control.notePhaseMeta(meta);
     // Commit lands in the engine before this hook; sync so mid-chunk readers see it.
     this._syncCommittedFromEngine();
     if (meta?.typeCheckEscapePaths?.length) {
@@ -870,10 +940,10 @@ export class XaiopStream {
     }
     if (!this._wantsPhaseDiff()) return;
     if (this._modes.has(STREAM_MODES.CALLBACK) && this._onChunk) {
-      this._onChunk(diff);
+      this._onChunk(diff, meta);
     }
     if (this._modes.has(STREAM_MODES.EVENTS)) {
-      this._emit("chunk", diff);
+      this._emit("chunk", diff, meta);
     }
     if (this._modes.has(STREAM_MODES.ASYNC_ITERATOR)) {
       this._iterQueue.push(diff);

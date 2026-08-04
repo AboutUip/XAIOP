@@ -10,7 +10,7 @@
 | 运行时 | Java 17+ |
 | 代码 | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-仓库 **SDK 重心在 Node.js**（`xaiop` **0.13.0** ↔ 协议 **0.6.0**）；本 Java 包实现协议 **0.4.0** 线子集，并提供与 Node 对齐的 **流式消费端**（HTTP / SSE / RAW）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。
+仓库 **SDK 重心在 Node.js**（`xaiop` **0.14.0** ↔ 协议 **0.6.0**）；本 Java 包实现协议 **0.4.0** 线子集，并提供与 Node 对齐的 **流式消费端**（HTTP / SSE / RAW）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。
 
 **隔离：** 协议 = 仅线格式 · 实践 = 模型与流式传输 · 本包 = API — [../../SEPARATION.md](../../SEPARATION.md)。  
 **一致性：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（协议合规 ≠ 与本 SDK 等价）。  

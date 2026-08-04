@@ -1,6 +1,6 @@
 # XAIOP Node.js SDK
 
-Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.13.0** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.  
+Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.14.0** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.  
 **Docs:** **[API](../../docs/sdk/nodejs/API.md)** · [Notes](../../docs/sdk/nodejs/notes/) · [Node catalog](../../docs/sdk/behavioral-contract.md)  
 **Practice:** [streaming transport](../../docs/practice/streaming-transport.md) · [skeleton stream](../../docs/practice/skeleton-stream.md) · [sealed LLM archive](../../docs/archive/practice-llm-emit-2026-08-04/)  
 **Protocol (wire only):** [../../docs/protocol/](../../docs/protocol/) · [Separation](../../docs/SEPARATION.md)
@@ -28,6 +28,7 @@ import { parseSync } from "xaiop/core";                    // isomorphic wire co
 | Type registry / freeze / WS type push | Implemented (`TYPE`, `registerType*`, `typeCheck`, `pushTypeConsistency`; SDK **0.10.0+**) |
 | Line intercept (buffer rewrite/skip) | Implemented (`onLineIntercept` / `LINE_KIND`; SDK **0.12.0+**) |
 | Annotation Span (phase `#`) | Implemented (`onAnnotationSpan`; typeCheck escape; SDK **0.13.0+**) |
+| SDK Control Root (`#!`) | Implemented (demux · session / ack / resume / snapshot · `ResumeWireLog`; SDK **0.14.0+**) |
 | Fine-grained compat fix APIs (per correction, returns `boolean`) | Implemented |
 | `!path` / `@path` | Implemented (`!` broadcast + outer prune, cross-phase; `@` exact create-or-enter) |
 | Emit (`encode` / `uploadJson`, controllable `.`) | Implemented (SDK 0.3.0+) |
@@ -58,15 +59,15 @@ const frag = await engine.get(fragId);
 console.log(frag instanceof XaiopFragment); // true
 ```
 
-See **[docs/sdk/nodejs/API.md](../../docs/sdk/nodejs/API.md)** for the full surface (stream, WS, types, line intercept, Annotation Span).
+See **[docs/sdk/nodejs/API.md](../../docs/sdk/nodejs/API.md)** for the full surface (stream, WS, types, line intercept, Annotation Span, Control Root).
 
 ## Build / pack
 
 ```bash
 npm run pack
-# → dist/xaiop-0.13.0.tgz
+# → dist/xaiop-0.14.0.tgz
 ```
 
 ```bash
-npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.13.0.tgz
+npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.14.0.tgz
 ```

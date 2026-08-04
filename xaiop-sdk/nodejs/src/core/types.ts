@@ -7,6 +7,7 @@
  * Paths use JSON-path house style (`a.b[0]`), same as encode `parseJsonPath`.
  */
 import { formatJsonPath, parseJsonPath } from "./encode.js";
+import { CONTROL_NS, CONTROL_NAME, encodeControlFrame } from "./control.js";
 
 /** @typedef {'int'|'float'|'bool'|'string'|'null'|'object'|'array'|'any'} TypeKind */
 /** @typedef {'allow'|'deny'} TypePolarity */
@@ -34,6 +35,7 @@ import { formatJsonPath, parseJsonPath } from "./encode.js";
  * }} TypeSchemaSnapshot
  */
 
+/** Header + LF; body follows on the next line (see Control Root / `encodeTypeSchemaFrame`). */
 export const TYPE_SCHEMA_FRAME_PREFIX = "#!xaiop/types/v1\n";
 
 /** Base type constants (canonical). */
@@ -1004,7 +1006,7 @@ export function encodeTypeSchemaFrame(snapshot) {
   if (!snapshot || snapshot.version !== 1) {
     throw new TypeError("encodeTypeSchemaFrame requires snapshot version 1");
   }
-  return TYPE_SCHEMA_FRAME_PREFIX + JSON.stringify(snapshot);
+  return encodeControlFrame(CONTROL_NS, CONTROL_NAME.TYPES, 1, snapshot);
 }
 
 /**

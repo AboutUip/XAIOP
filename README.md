@@ -15,7 +15,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="Cursor IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="Streaming" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
-  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.13.0-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.14.0-22c55e?style=flat-square&labelColor=0b1220" />
   <img alt="Line-oriented" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
 </p>
 
@@ -92,13 +92,13 @@ Materializes as:
 - **Introduction** — [docs/overview/introduction.md](docs/overview/introduction.md)
 - **Protocol (wire only)** — [docs/protocol/](docs/protocol/) · [separation](docs/SEPARATION.md) · [releases](docs/meta/releases.md) · [META-VER](docs/meta/status-and-versioning.md)
 - **Practice** — [docs/practice/](docs/practice/) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
-- **Node.js SDK** — **[docs/sdk/nodejs/API.md](docs/sdk/nodejs/API.md)** (§6.4 line intercept · §6.5 Annotation Span) · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [parity](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/nodejs/) · [SDK timing](dev/sdk-timing/)
+- **Node.js SDK** — **[docs/sdk/nodejs/API.md](docs/sdk/nodejs/API.md)** (§6.4 line intercept · §6.5 Annotation Span · §7.7 Control Root) · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [parity](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/nodejs/) · [SDK timing](dev/sdk-timing/)
 - **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [code](xaiop-sdk/java/)
 - **Preview docs** — same origin as lab: `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) (Docsify over `docs/`; shared dark theme)
 - **Lab UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / live stream / API markdown render
 - **Sealed archives** — [docs/archive/](docs/archive/) (LLM emit / metrics recipes deliberately out of live hubs)
 
-Java SDK is active (`io.xaiop:xaiop` **0.5.0** — parse · encode · merge · checkpoint · **XaiopStream** HTTP/SSE/RAW; wire still **0.4.0**; WS / cover / typeCheck later). Node.js `xaiop` **0.13.0** implements protocol **0.6.0**. Python is still pending. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
+Java SDK is active (`io.xaiop:xaiop` **0.5.0** — parse · encode · merge · checkpoint · **XaiopStream** HTTP/SSE/RAW; wire still **0.4.0**; WS / cover / typeCheck later). Node.js `xaiop` **0.14.0** implements protocol **0.6.0**. Python is still pending. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
 
 **Announcement (2026-08-04):** Skills are **no longer provided** as an official product; source remains downloadable from [`skills/`](skills/). Full notes: [docs/meta/release-notes-2026-08-04.md](docs/meta/release-notes-2026-08-04.md).
 

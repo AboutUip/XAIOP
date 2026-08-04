@@ -6,10 +6,10 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-STREAM` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | **否** — Node SDK 行为 |
 | 代码 | `xaiop-sdk/nodejs/src/stream/` |
-| 包 | `xaiop` **0.7.0+**（协议线 **0.5.0**） |
+| 包 | `xaiop` **0.7.0+**（协议线 **0.6.0**；控制根 / `meta.seq` **0.14.0+**） |
 
 **协议基线（先读）：**  
 [../../../protocol/notes/wire-attention.zh-CN.md](../../../protocol/notes/wire-attention.zh-CN.md) ·  
@@ -37,7 +37,7 @@
   → 将相位线文喂入 LiveXaiopParser（只喂一次；保活累积树）
   → materialize 活树 → committedSnapshot
   → Diff = 相位局部 parse（先前已有 `.` 且相含 `=`/`!`/`&` 时与 committed 共用）
-  → onChunk(diff)
+  → onChunk(diff, meta?)   # phaseSeq 开启时含 meta.seq / meta.seqs（0.14.0+）
   → finish()：冲刷尾段；缓冲已盖满则复用末次 commit
 ```
 
@@ -45,6 +45,7 @@
 | --- | --- |
 | 客户端 | `src/stream/XaiopStream.js` · API [../API.zh-CN.md](../API.zh-CN.md) |
 | Checkpoint | `src/stream/checkpoint.js` |
+| 控制 demux | `src/core/control.ts`（parse 前剥 `#!`；[control-plane.zh-CN.md](control-plane.zh-CN.md)） |
 | Live parse | `src/parse.js` 中的 `LiveXaiopParser` |
 | Materialize | `src/stream/materialize.js` |
 | Parse | `src/parse.js` |
@@ -114,7 +115,7 @@ closedPhases = takeCompleteDotPhases(buffer)   # 可跨多次 push()
 
 | 面 | 时机 | 值 |
 | --- | --- | --- |
-| `onChunk` 等 | 每个完整 `.` 相位 + EOF 尾段 | **该相位**的物化 parse（空相位可为 `null`） |
+| `onChunk` 等 | 每个完整 `.` 相位 + EOF 尾段 | **该相位**的物化 parse（空相位可为 `null`）；可选 **`meta.seq` / `meta.seqs`**（控制根相位游标，**0.14.0+**） |
 | `onDone` / 完成后 `getSnapshot()` | `finish()` 之后 | **全缓冲**物化 parse（later-wins） |
 | `getCommittedSnapshot()` | 每个 `.` / EOF flush 后 | 已提交前缀的累积 parse — **可在流中使用**（首次读取惰性物化亦可） |
 | `DotCheckpointEngine.committedSnapshot` | 每个 `.` / EOF flush | 与上相同；裸用引擎时：在 `.` 之后读 getter（`committedAt > 0`），不要用中途的 `getSnapshot()` / `snapshot` |
@@ -159,6 +160,7 @@ closedPhases = takeCompleteDotPhases(buffer)   # 可跨多次 push()
 ## 相关
 
 - 协议流式 note：[../../../protocol/notes/streaming-attention.zh-CN.md](../../../protocol/notes/streaming-attention.zh-CN.md)  
+- 控制根 / 续传：[control-plane.zh-CN.md](control-plane.zh-CN.md)  
 - API：[../API.zh-CN.md](../API.zh-CN.md) · [../README.zh-CN.md](../README.zh-CN.md)  
 - 对等契约：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)  
 - 编码对齐：[../API.zh-CN.md](../API.zh-CN.md) · [encode-attention.zh-CN.md](encode-attention.zh-CN.md)  

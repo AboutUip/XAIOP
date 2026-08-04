@@ -10,7 +10,7 @@
 | Runtime | Java 17+ |
 | Code | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-This repository’s **SDK focus is Node.js** (`xaiop` **0.13.0** ↔ protocol **0.6.0**); this Java
+This repository’s **SDK focus is Node.js** (`xaiop` **0.14.0** ↔ protocol **0.6.0**); this Java
 package implements a **0.4.0** wire subset plus a Node-aligned **stream consumer** (HTTP / SSE / RAW). Pin the artifact version; read
 `Xaiop.PROTOCOL_VERSION` when you need the wire version.
 

@@ -6,7 +6,7 @@
 | --- | --- |
 | Doc ID | `SDK-NODE-NOTE-TYPE` |
 | Status | Informative |
-| Updated | 2026-08-04 |
+| Updated | 2026-08-05 |
 | Normative | **No** — SDK product feature; not wire grammar |
 | Package | `xaiop` **0.10.0+** |
 
@@ -22,7 +22,7 @@ Primary API: [../API.md](../API.md) §5.5 · §7.2 · §11.
 | **Surface** | `TYPE.*`, `objectType` / `arrayType`, or sugar `object<name:string,old:int>` — always normalized before compare |
 | **Registry** | Server map path → `{ type, polarity }`; immutable per path |
 | **Freeze** | Client map path → observed type after first non-`null` |
-| **Control frame** | `#!xaiop/types/v1\n` + snapshot JSON — out-of-band vs XAIOP wire |
+| **Control frame** | `#!xaiop/types/v1\n` + snapshot JSON — out-of-band vs XAIOP wire; since **0.14.0** demuxed by Control Root before parse / Span ([control-plane.md](control-plane.md)) |
 
 Paths use **JSON-path** house style (`a.b[0]`), same as encode — not wire `a>b`.
 
@@ -75,4 +75,5 @@ Accepts engine, `TypeRegistry`, or snapshot. Not OPEN → `false`.
 
 - API §5.5 / §7 · tests: `xaiop-sdk/nodejs/test/typecheck.test.js`
 - WS notes: [ws-session.md](ws-session.md)
+- Control Root: [control-plane.md](control-plane.md)
 - Protocol content types: [../../../protocol/content.md](../../../protocol/content.md) (leaf kinds only)

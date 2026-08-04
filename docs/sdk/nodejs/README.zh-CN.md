@@ -5,7 +5,7 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `xaiop` |
-| SDK | **0.13.0**（TypeScript） |
+| SDK | **0.14.0**（TypeScript） |
 | 协议包 | **0.6.0** Frozen（已封存） |
 | 运行时 | Node.js ≥ 18（默认入口）；浏览器 → `xaiop/browser` |
 | 代码 | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` → `dist/`） |
@@ -46,5 +46,6 @@ npm test   # 先 tsc 再跑测试
 | [notes/ws-session.zh-CN.md](notes/ws-session.zh-CN.md) | `XaiopWs` + **浏览器相位**（`xaiop/browser` · §9）+ **类型推送**（§10） |
 | [notes/typecheck.zh-CN.md](notes/typecheck.zh-CN.md) | 类型注册 / 冻结检查 / `pushTypeConsistency` |
 | [notes/line-intercept.zh-CN.md](notes/line-intercept.zh-CN.md) | 缓冲行拦截（`onLineIntercept`） |
-| [notes/annotation-span.zh-CN.md](notes/annotation-span.zh-CN.md) | 相位 Annotation Span（typeCheck 逃逸） |
+| [notes/annotation-span.zh-CN.md](notes/annotation-span.zh-CN.md) | 相位 Annotation Span（typeCheck 逃逸；**0.13.0+**） |
+| [notes/control-plane.zh-CN.md](notes/control-plane.zh-CN.md) | SDK 控制根 `#!` · 会话 / 续传（**0.14.0+**） |
 | [notes/adjustment-policy.zh-CN.md](notes/adjustment-policy.zh-CN.md) | 兼容修复：按设计 vs 可慎重调整 |

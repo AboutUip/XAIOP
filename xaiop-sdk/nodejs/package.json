@@ -1,6 +1,6 @@
 {
   "name": "xaiop",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "XAIOP protocol SDK — Node.js primary; browser client via xaiop/browser (protocol v0.6.0 Frozen)",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "build:ts": "tsc -p tsconfig.json",
-    "test": "npm run build:ts && node --test test/engine.test.js test/bang.at.test.js test/amp.delete.test.js test/hash.annotation.test.js test/checkpoint.opt.test.js test/checkpoint.window.test.js test/live.parse.test.js test/encode.test.js test/encode.stability.test.js test/merge.test.js test/history.test.js test/stream.test.js test/stream.consistency.test.js test/ws.phase-encode.test.js test/ws.session.test.js test/typecheck.test.js test/line.intercept.test.js test/annotation.span.test.js test/symbol.keys.test.js",
+    "test": "npm run build:ts && node test/run-all.mjs",
     "bench": "node ../../dev/sdk-timing/bench.mjs",
     "compare": "node ../../dev/sdk-timing/compare.mjs",
     "build": "npm test && node scripts/build.js",

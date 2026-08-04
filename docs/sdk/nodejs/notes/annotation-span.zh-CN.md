@@ -6,9 +6,9 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-ANNSPAN` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | **否** — SDK 产品能力；协议 `#` 仍无树副作用 |
-| 包版本 | `xaiop` **0.13.0+** |
+| 包版本 | `xaiop` **0.13.0+**（Span）；控制根 demux **0.14.0+** |
 
 主入口：[../API.zh-CN.md](../API.zh-CN.md) §6.5 · §5.5 · §7.2。  
 测试：`xaiop-sdk/nodejs/test/annotation.span.test.js`。
@@ -21,12 +21,13 @@
 | --- | --- | --- |
 | **行拦截** §6.4 | 缓冲拆行后 → 相位行表 / `feedLine` 前 | 逐行观察 · 改写 · `null` 跳过 |
 | **Annotation Span** §6.5 | 相位行表已齐 → **Diff / Commit / typeCheck 前** | 遇 `#`：向前收集**同层级**兄弟（含子树）为 JSON；改写 / 丢弃 / 保持 |
+| **控制根** §7.7 | 在 Span / parse 之前 | `#!…` 先 demux；若漏剥，Span **硬跳过** `#!` — [control-plane.zh-CN.md](control-plane.zh-CN.md) |
 | **`onPhase` / `onChunk`** | Diff 已解析并 Commit | 只读 Diff |
 | **类型冻结 / `typeCheck`** | 解析后的树 | **在 Span 之后**；Span 标记的路径**逃逸**检查 |
 
 挂载点：`DotCheckpointEngine`（`XaiopStream` / `XaiopWsConnection` / `XaiopBrowserWsConnection` 转发）。
 
-协议 `#…`：解析器忽略、不改树。Annotation Span 是 SDK 在相位上**主动消费** `#` 的产品能力。
+协议 `#…`：解析器忽略、不改树。Annotation Span 是 SDK 在相位上**主动消费** `#` 的产品能力。以 `#!` 开头的行**不是** Span 目标（控制根；demux 漏剥时硬跳过）。
 
 ---
 
@@ -122,4 +123,4 @@ const client = await XaiopWs.connect(url, {
 
 ## 8. 相关
 
-- API §6.5 · [line-intercept.zh-CN.md](line-intercept.zh-CN.md) · [typecheck.zh-CN.md](typecheck.zh-CN.md) · [ws-session.zh-CN.md](ws-session.zh-CN.md) · 协议 [wire-attention §6.1](../../../protocol/notes/wire-attention.zh-CN.md)
+- API §6.5 · [line-intercept.zh-CN.md](line-intercept.zh-CN.md) · [typecheck.zh-CN.md](typecheck.zh-CN.md) · [control-plane.zh-CN.md](control-plane.zh-CN.md) · [ws-session.zh-CN.md](ws-session.zh-CN.md) · 协议 [wire-attention §6.1](../../../protocol/notes/wire-attention.zh-CN.md)
