@@ -106,6 +106,8 @@ Normative: [../hierarchy.md](../hierarchy.md) §6–§9.
 
 A standalone line that begins with `#` is **custom annotation transmission** (official name; not a “comment primitive”). Position unrestricted; protocol does not interpret text after `#`; no Cursor / tree effect. A `#` inside Content (e.g. `note:#x`) remains Content.
 
+**Related (Draft 0.7.0):** JSON keys that would begin with `#` (or other line-class heads) use the U+001F label-escape dialect — see [label-escape.md](label-escape.md). That is **not** custom annotation transmission.
+
 Normative: [../hierarchy.md](../hierarchy.md) §11 · [../syntax.md](../syntax.md) §3.
 
 ---

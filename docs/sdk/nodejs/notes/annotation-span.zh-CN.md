@@ -49,7 +49,7 @@
 
 5. 多处理器：**注册顺序**；**第一个非 `undefined` 决定结果**（`null` 亦算决定）；其后不跑。
 6. 捕获止于：本层 `<` / `<name` 离开、`=` / `@` / `!` 重定位、相位 `.`。
-7. 仅 `streamProcessing: true`（默认）的行扫描 / 相位收口路径生效；`streamProcessing: false` 整缓冲一次 parse **不**跑 Span（与行拦截一致）。
+7. 仅 `streamProcessing: true`（裸 `DotCheckpointEngine` 默认开，与 `XaiopStream` / WS 相同）的行扫描 / 相位收口路径生效；`streamProcessing: false` 整缓冲一次 parse **不**跑 Span（与行拦截一致）。
 
 ---
 

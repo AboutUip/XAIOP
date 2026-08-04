@@ -36,6 +36,14 @@ public final class Parse {
     return parseWith(source, (Object) overrides);
   }
 
+  public static Object parse(String source, ParseOptions options) {
+    if (source == null) {
+      throw new NullPointerException("XAIOP source must be a string");
+    }
+    ParseOptions opts = options == null ? ParseOptions.defaults() : options;
+    return new Parser(source, opts.compat(), opts.symbolKeys()).parse();
+  }
+
   private static Object parseWith(String source, Object compatArg) {
     if (source == null) {
       throw new NullPointerException("XAIOP source must be a string");
@@ -74,15 +82,24 @@ public final class Parse {
     }
 
     public LiveXaiopParser(boolean compat) {
-      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) compat));
+      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) compat), false);
+    }
+
+    public LiveXaiopParser(boolean compat, boolean symbolKeys) {
+      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) compat), symbolKeys);
+    }
+
+    public LiveXaiopParser(ParseOptions options) {
+      ParseOptions opts = options == null ? ParseOptions.defaults() : options;
+      this.p = Parser.createLive(opts.compat(), opts.symbolKeys());
     }
 
     public LiveXaiopParser(CompatPolicy policy) {
-      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) policy));
+      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) policy), false);
     }
 
     public LiveXaiopParser(Map<CompatFixId, Boolean> overrides) {
-      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) overrides));
+      this.p = Parser.createLive(Compat.resolveCompatOptions((Object) overrides), false);
     }
 
     /**

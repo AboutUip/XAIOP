@@ -135,6 +135,29 @@ a:1
     assert.ok(seen.includes("a:1"));
   });
 
+  test("streamProcessing defaults true — intercept runs without explicit flag", () => {
+    /** @type {string[]} */
+    const seen = [];
+    const eng = new DotCheckpointEngine({
+      compat: false,
+      onChunk: () => {},
+      lineIntercept: ({ raw }) => {
+        seen.push(raw);
+        return undefined;
+      },
+    });
+    assert.equal(eng.streamProcessing, true);
+    eng.push(`>
+a:1
+.
+`);
+    eng.finish();
+    assert.ok(seen.includes(">"));
+    assert.ok(seen.includes("a:1"));
+    assert.ok(seen.includes("."));
+    assert.deepEqual(eng.committedSnapshot, { a: 1 });
+  });
+
   test("streamProcessing false — no intercept", () => {
     let calls = 0;
     const eng = new DotCheckpointEngine({

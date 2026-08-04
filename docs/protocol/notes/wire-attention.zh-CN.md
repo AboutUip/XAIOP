@@ -86,6 +86,8 @@
 
 独立单行且以 `#` 开头 = **自定义注解传递**（官方名称；不是「注释原语」）。位置不限；协议不解释 `#` 之后内容；无 Cursor / 树副作用。Content 值中的 `#`（如 `note:#x`）仍是 Content。
 
+**相关（Draft 0.7.0）：** 若 JSON 键要以 `#`（或其他行类首字符）开头，使用 U+001F label 转义方言 — 见 [label-escape.zh-CN.md](label-escape.zh-CN.md)。那 **不是** 自定义注解传递。
+
 权威：[../hierarchy.zh-CN.md](../hierarchy.zh-CN.md) §11 · [../syntax.zh-CN.md](../syntax.zh-CN.md) §3。
 
 ---

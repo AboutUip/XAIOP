@@ -107,7 +107,8 @@ Additional locked rules:
 4. **Array document root** starts with `-` and **does not** insert object-style top-level `.` phases (`dotPolicy` is ignored for phasing on array roots).
 5. Trailing `<` immediately before `.` or EOF may be omitted (redundant with reset / end).
 6. Reject keys: empty / whitespace / `:`, trailing `-`, characters `>` `<` = `!`.
-7. Sparse array `undefined` holes → error; object `null` under `omit` drops keys; **array null still encodes** unless `nullPolicy: "error"`.
+7. Reject string values containing CR/LF, or **beginning with U+0020 SPACE** (forced-string marker is not payload — refuse rather than silent strip).
+8. Sparse array `undefined` holes → error; object `null` under `omit` drops keys; **array null still encodes** unless `nullPolicy: "error"`.
 
 Full guide: [nodejs/API.md](nodejs/API.md) §4 · [nodejs/notes/encode-attention.md](nodejs/notes/encode-attention.md).
 
@@ -119,10 +120,11 @@ Full guide: [nodejs/API.md](nodejs/API.md) §4 · [nodejs/notes/encode-attention
 | --- | --- |
 | Role | Offline merge before send / after receive — **not** WS / `.` Diff transport |
 | Operand order | Base **JSON** + overlay **XAIOP** (or JSON via `injectJson` / `mergeJson`) |
-| `conflict` | `overwrite` (**default**) or `keep` — **conflicting keys only**; plain objects deep-merge; arrays/scalars atomic at that key |
+| `conflict` | `overwrite` (**default**) or `keep` — **conflicting keys only**; plain objects deep-merge; arrays/scalars atomic at that key; **absent overlay keys are not deletes** |
 | Returns | `mergeToJson` → JSON; `mergeToXaiop` → wire (default encode `dotPolicy: "none"`) |
 | Engine inject | `injectXaiop` / `injectJson` mutate store by `dataId`; `as: "json"\|"xaiop"` selects return shape |
 | Fragments | Stored `XaiopFragment` is materialized before merge |
+| vs stream Diff | **Do not** apply `onChunk` Diffs via `mergeJson` — Diff is subtree replace / commit surface; merge is offline deep-merge |
 
 Guide: [nodejs/API.md](nodejs/API.md) §8.
 
@@ -202,7 +204,7 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 - [ ] Strict default; compat opt-in; encode always strict  
 - [ ] Eight compat fixes (or documented subset) with same rewrite / pop-and-retry / locate retries  
 - [ ] Fragment vs complete root vs empty `{}`; stream materialize policy stated  
-- [ ] Encode defaults + array-root no top-level `.` + trailing `\n` + key hazards  
+- [ ] Encode defaults + array-root no top-level `.` + trailing `\n` + key hazards + reject leading U+0020 strings  
 - [ ] Merge/inject: `overwrite`/`keep` on conflicting keys only; inject mutates store; not streaming  
 - [ ] Diff = `.` phase; default **window-merge** (`mergeChunkWindow`); empty → `null` when stepwise; commit vs chunk; leading-`.` inject on later phases  
 - [ ] Async ingest optional (`pushAsync` / `asyncParse`) — coalesced, not fake Promise  

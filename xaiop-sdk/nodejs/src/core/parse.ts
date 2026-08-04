@@ -1,12 +1,21 @@
 // @ts-nocheck
-import { resolveCompatOptions } from "./compat.js";
+import { CompatPolicy, resolveCompatOptions } from "./compat.js";
+import { decodeWireLabel } from "./label-escape.js";
 
 /** @typedef {'object'|'array'|'fragment'} NodeKind */
 /** @typedef {import("./compat.js").CompatFixId} CompatFixId */
 
 /**
+ * @typedef {{
+ *   compat?: boolean|import("./compat.js").CompatPolicy|Partial<Record<CompatFixId, boolean>>,
+ *   symbolKeys?: boolean,
+ * }} ParseOptions
+ */
+
+/**
  * Deterministic XAIOP parser (protocol v0.6.0 Frozen).
  * Silent repair exists only under an explicit compatibility policy.
+ * Optional {@link ParseOptions.symbolKeys}: decode U+001F label escapes (pair with encode).
  */
 
 export class XaiopSyntaxError extends Error {
@@ -45,25 +54,50 @@ export class XaiopFragment {
 }
 
 /**
- * @param {string} source
- * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>} [compat=false]
- *   `false` = strict; `true` = all fixes on; object / CompatPolicy = fine-grained policy
- * @returns {unknown|XaiopFragment}
+ * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>|ParseOptions} [second=false]
+ * @returns {{ compat: ReturnType<typeof resolveCompatOptions>, symbolKeys: boolean }}
  */
-export function parseSync(source, compat = false) {
-  if (typeof source !== "string") {
-    throw new TypeError("XAIOP source must be a string");
+function resolveParseOptions(second = false) {
+  if (
+    second &&
+    typeof second === "object" &&
+    !(second instanceof CompatPolicy) &&
+    ("symbolKeys" in second ||
+      ("compat" in second && !("forcedRoot" in /** @type {object} */ (second))))
+  ) {
+    const o = /** @type {ParseOptions} */ (second);
+    return {
+      compat: resolveCompatOptions(o.compat ?? false),
+      symbolKeys: o.symbolKeys === true,
+    };
   }
-  return new Parser(source, { compat: resolveCompatOptions(compat) }).parse();
+  return {
+    compat: resolveCompatOptions(/** @type {any} */ (second)),
+    symbolKeys: false,
+  };
 }
 
 /**
  * @param {string} source
- * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>} [compat=false]
+ * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>|ParseOptions} [compatOrOptions=false]
+ *   `false` = strict; `true` = all fixes on; `{ compat?, symbolKeys? }` = options object
+ * @returns {unknown|XaiopFragment}
+ */
+export function parseSync(source, compatOrOptions = false) {
+  if (typeof source !== "string") {
+    throw new TypeError("XAIOP source must be a string");
+  }
+  const { compat, symbolKeys } = resolveParseOptions(compatOrOptions);
+  return new Parser(source, { compat, symbolKeys }).parse();
+}
+
+/**
+ * @param {string} source
+ * @param {boolean|CompatPolicy|Partial<Record<CompatFixId, boolean>>|ParseOptions} [compatOrOptions=false]
  * @returns {Promise<unknown|XaiopFragment>}
  */
-export async function parseAsync(source, compat = false) {
-  return parseSync(source, compat);
+export async function parseAsync(source, compatOrOptions = false) {
+  return parseSync(source, compatOrOptions);
 }
 
 /**
@@ -73,10 +107,11 @@ export async function parseAsync(source, compat = false) {
  */
 export class LiveXaiopParser {
   /**
-   * @param {boolean|import("./compat.js").CompatPolicy|Partial<Record<CompatFixId, boolean>>} [compat=false]
+   * @param {boolean|import("./compat.js").CompatPolicy|Partial<Record<CompatFixId, boolean>>|ParseOptions} [compatOrOptions=false]
    */
-  constructor(compat = false) {
-    this._p = Parser.createLive(resolveCompatOptions(compat));
+  constructor(compatOrOptions = false) {
+    const { compat, symbolKeys } = resolveParseOptions(compatOrOptions);
+    this._p = Parser.createLive(compat, symbolKeys);
   }
 
   /**
@@ -90,6 +125,9 @@ export class LiveXaiopParser {
 
   /**
    * Feed every logical line in `text` (same splitting as `parseSync`).
+   * **No half-line buffer across calls:** a trailing segment without LF/CRLF is
+   * treated as a complete line. Arbitrary network chunks belong on
+   * `DotCheckpointEngine.push` / `XaiopStream`, not here.
    * @param {string} text
    * @returns {this}
    */
@@ -126,7 +164,7 @@ export class LiveXaiopParser {
 class Parser {
   /**
    * @param {string} source
-   * @param {{ compat?: Readonly<Record<CompatFixId, boolean>>|null }} [options]
+   * @param {{ compat?: Readonly<Record<CompatFixId, boolean>>|null, symbolKeys?: boolean }} [options]
    */
   constructor(source, options = {}) {
     this.lines = splitLines(source);
@@ -156,14 +194,22 @@ class Parser {
      * @type {Readonly<Record<CompatFixId, boolean>>|null}
      */
     this.compat = options.compat ?? null;
+    /** @type {boolean} */
+    this.symbolKeys = options.symbolKeys === true;
   }
 
   /**
    * @param {Readonly<Record<CompatFixId, boolean>>|null} compat
+   * @param {boolean} [symbolKeys]
    * @returns {Parser}
    */
-  static createLive(compat) {
-    return new Parser("", { compat });
+  static createLive(compat, symbolKeys = false) {
+    return new Parser("", { compat, symbolKeys });
+  }
+
+  /** @param {string} wireName */
+  _logicalName(wireName) {
+    return decodeWireLabel(wireName, this.symbolKeys);
   }
 
   /**
@@ -403,8 +449,8 @@ class Parser {
     }
 
     if (line.startsWith("<") && line.length > 1) {
-      const name = line.slice(1);
-      assertName(name, this.lineNo);
+      const name = this._logicalName(line.slice(1));
+      assertName(name, this.lineNo, this.symbolKeys);
       this.precheckBroadcastPop();
       this.runOnCursors(() => {
         this.popOnly();
@@ -446,8 +492,8 @@ class Parser {
     }
 
     if (line.startsWith(">") && line.endsWith("-") && line.length > 2) {
-      const name = line.slice(1, -1);
-      assertName(name, this.lineNo);
+      const name = this._logicalName(line.slice(1, -1));
+      assertName(name, this.lineNo, this.symbolKeys);
       this.runOnCursors(() => this.createEnterNamedArray(name));
       return;
     }
@@ -461,15 +507,16 @@ class Parser {
       const name = line.slice(1);
       // In-line >a>b composition: allow split
       if (name.includes(">")) {
-        const parts = name.split(">");
-        for (const p of parts) assertName(p, this.lineNo);
+        const parts = name.split(">").map((p) => this._logicalName(p));
+        for (const p of parts) assertName(p, this.lineNo, this.symbolKeys);
         this.runOnCursors(() => {
           for (const p of parts) this.createEnterNamedObject(p);
         });
         return;
       }
-      assertName(name, this.lineNo);
-      this.runOnCursors(() => this.createEnterNamedObject(name));
+      const logical = this._logicalName(name);
+      assertName(logical, this.lineNo, this.symbolKeys);
+      this.runOnCursors(() => this.createEnterNamedObject(logical));
       return;
     }
 
@@ -481,7 +528,7 @@ class Parser {
         { line: this.lineNo },
       );
     }
-    const key = line.slice(0, colon);
+    const key = this._logicalName(line.slice(0, colon));
     const rawValue = line.slice(colon + 1);
     const value = parseValue(rawValue);
     this.runOnCursors(() => this.writeContent(key, value));
@@ -759,14 +806,20 @@ class Parser {
     const tree =
       this.docKind === "fragment" ? this.fragmentEntries : this.root;
 
-    let found = fuzzyFind(tree, path.split(">").filter(Boolean));
+    const segsOf = (p) =>
+      p
+        .split(">")
+        .filter(Boolean)
+        .map((s) => this._logicalName(s));
+
+    let found = fuzzyFind(tree, segsOf(path));
     if (!found && this.compat) {
       const trimmed = path.trim();
       const cleared = path.replace(/\s+/g, "");
 
       // Retry 1: trim leading/trailing whitespace (e.g. `= siblings` → `siblings`)
       if (this.fixEnabled("locatePathTrim") && trimmed && trimmed !== path) {
-        found = fuzzyFind(tree, trimmed.split(">").filter(Boolean));
+        found = fuzzyFind(tree, segsOf(trimmed));
       }
 
       // Retry 2: strip all whitespace (e.g. `=child > inner` → `child>inner`)
@@ -777,7 +830,7 @@ class Parser {
         cleared !== path &&
         cleared !== trimmed
       ) {
-        found = fuzzyFind(tree, cleared.split(">").filter(Boolean));
+        found = fuzzyFind(tree, segsOf(cleared));
       }
 
       // Retry 3: `=siblings-` → locate `siblings` only if that value is an array
@@ -790,7 +843,7 @@ class Parser {
         if (forSuffix.split(">").some((s) => s.length > 1 && s.endsWith("-"))) {
           found = fuzzyFindCompatArrayCreateSuffix(
             tree,
-            forSuffix.split(">").filter(Boolean),
+            segsOf(forSuffix),
           );
         }
       }
@@ -813,7 +866,7 @@ class Parser {
    */
   exactEnter(path) {
     this.requireNotBroadcast("@");
-    const segments = splitPathSegments(path, this.lineNo, "@");
+    const segments = splitPathSegments(path, this.lineNo, "@", this.symbolKeys);
     if (this.docKind === "none") {
       this.ensureDocumentObjectRoot();
     }
@@ -893,7 +946,7 @@ class Parser {
         line: this.lineNo,
       });
     }
-    const segments = splitPathSegments(path, this.lineNo, "!");
+    const segments = splitPathSegments(path, this.lineNo, "!", this.symbolKeys);
     const matches = [];
     const tree =
       this.docKind === "fragment" ? this.fragmentEntries : this.root;
@@ -920,7 +973,7 @@ class Parser {
    * @param {string} path
    */
   deleteAtPath(path) {
-    const segments = splitPathSegments(path, this.lineNo, "&");
+    const segments = splitPathSegments(path, this.lineNo, "&", this.symbolKeys);
 
     if (this.broadcastStacks) {
       this.precheckBroadcastDelete(segments);
@@ -1167,15 +1220,15 @@ function syntaxErrorKey(err) {
 /**
  * @param {string} name
  * @param {number} lineNo
+ * @param {boolean} [symbolKeys]
  */
-function assertName(name, lineNo) {
-  if (
-    !name ||
-    /\s/.test(name) ||
-    name.includes(":") ||
-    name.includes("@") ||
-    name.includes("&")
-  ) {
+function assertName(name, lineNo, symbolKeys = false) {
+  if (!name || /\s/.test(name) || name.includes(":")) {
+    throw new XaiopSyntaxError(`invalid label name: ${JSON.stringify(name)}`, {
+      line: lineNo,
+    });
+  }
+  if (!symbolKeys && (name.includes("@") || name.includes("&"))) {
     throw new XaiopSyntaxError(`invalid label name: ${JSON.stringify(name)}`, {
       line: lineNo,
     });
@@ -1188,7 +1241,7 @@ function assertName(name, lineNo) {
  * @param {string} op
  * @returns {string[]}
  */
-function splitPathSegments(path, lineNo, op) {
+function splitPathSegments(path, lineNo, op, symbolKeys = false) {
   if (!path) {
     throw new XaiopSyntaxError(`empty ${op} path`, { line: lineNo });
   }
@@ -1202,8 +1255,8 @@ function splitPathSegments(path, lineNo, op) {
       line: lineNo,
     });
   }
-  const segments = path.split(">");
-  for (const s of segments) assertName(s, lineNo);
+  const segments = path.split(">").map((s) => decodeWireLabel(s, symbolKeys));
+  for (const s of segments) assertName(s, lineNo, symbolKeys);
   return segments;
 }
 

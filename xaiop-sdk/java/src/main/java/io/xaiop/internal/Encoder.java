@@ -35,7 +35,7 @@ public final class Encoder {
   private static final Pattern PLAIN_SEGMENT = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
   private static final Pattern BAD_SEGMENT = Pattern.compile("[\\s:><=!]");
   private static final Pattern WHITESPACE = Pattern.compile("\\s");
-  private static final Pattern CURSOR_CHAR = Pattern.compile("[><=!]");
+  private static final Pattern CURSOR_CHAR = Pattern.compile("[><=!&]");
 
   /** Largest integer exactly representable by a IEEE-754 double (JS {@code MAX_SAFE_INTEGER}). */
   private static final long MAX_SAFE_INTEGER = 9007199254740991L;
@@ -112,6 +112,7 @@ public final class Encoder {
     EncodeOptions.UndefinedPolicy undefinedPolicy;
     Predicate<EncodeOptions.PhaseContext> shouldPhase;
     List<String> pathCuts;
+    boolean symbolKeys;
   }
 
   private static Opt normalize(EncodeOptions options) {
@@ -153,6 +154,7 @@ public final class Encoder {
       throw new XaiopEncodeError("dotPolicy:'custom' requires shouldPhase(ctx)");
     }
     opt.shouldPhase = options.shouldPhase();
+    opt.symbolKeys = options.symbolKeys();
     opt.pathCuts = null;
     return opt;
   }
@@ -209,6 +211,7 @@ public final class Encoder {
     opt.phaseEvery = MAX_SAFE_INTEGER;
     opt.maxPhases = null;
     opt.shouldPhase = null;
+    opt.symbolKeys = options.symbolKeys();
     opt.pathCuts = normalized;
     return opt;
   }
@@ -295,7 +298,10 @@ public final class Encoder {
         Object next = j + 1 < targetAncestors.size() ? targetAncestors.get(j + 1) : null;
         boolean isArrayEnter =
             next instanceof Integer || (arrayTail && j == targetAncestors.size() - 1);
-        lines.add(isArrayEnter ? ">" + seg + "-" : ">" + seg);
+        lines.add(
+            isArrayEnter
+                ? ">" + LabelEscape.encodeWireLabel(String.valueOf(seg), opt.symbolKeys) + "-"
+                : ">" + LabelEscape.encodeWireLabel(String.valueOf(seg), opt.symbolKeys));
         openStack.add(seg);
       }
     }
@@ -308,24 +314,25 @@ public final class Encoder {
     }
 
     private void emitObject(String key, Object val, List<Object> segs) {
-      assertKey(key, formatJsonPath(segs));
+      String path = formatJsonPath(segs);
+      String wk = wireLabel(key, path, opt.symbolKeys);
 
       reopenTo(segs.subList(0, segs.size() - 1), false);
 
       if (val == null) {
         if (opt.nullPolicy == EncodeOptions.NullPolicy.ERROR) {
-          throw new XaiopEncodeError("null value not allowed", formatJsonPath(segs));
+          throw new XaiopEncodeError("null value not allowed", path);
         }
         if (opt.nullPolicy == EncodeOptions.NullPolicy.OMIT) {
           return;
         }
-        lines.add(formatContent(key, null, formatJsonPath(segs)));
+        lines.add(formatContent(wk, null, path));
         maybeCut(segs);
         return;
       }
 
       if (val instanceof List<?> list) {
-        lines.add(">" + key + "-");
+        lines.add(">" + wk + "-");
         openStack.add(key);
         emitArray(list, segs);
         if (!afterDot && !openStack.isEmpty() && Objects.equals(peek(), key)) {
@@ -337,7 +344,7 @@ public final class Encoder {
       }
 
       if (val instanceof Map<?, ?> map) {
-        lines.add(">" + key);
+        lines.add(">" + wk);
         openStack.add(key);
         for (Entry e : orderedEntries(map, opt.keyOrder)) {
           emitObject(e.key(), e.value(), append(segs, e.key()));
@@ -350,7 +357,7 @@ public final class Encoder {
         return;
       }
 
-      lines.add(formatContent(key, val, formatJsonPath(segs)));
+      lines.add(formatContent(wk, val, path));
       maybeCut(segs);
     }
 
@@ -578,7 +585,7 @@ public final class Encoder {
 
   private static void emitObjectEntry(
       List<String> lines, String key, Object value, Opt opt, String path) {
-    assertKey(key, path);
+    String wk = wireLabel(key, path, opt.symbolKeys);
 
     if (value == null) {
       if (opt.nullPolicy == EncodeOptions.NullPolicy.ERROR) {
@@ -587,19 +594,19 @@ public final class Encoder {
       if (opt.nullPolicy == EncodeOptions.NullPolicy.OMIT) {
         return;
       }
-      lines.add(formatContent(key, null, path));
+      lines.add(formatContent(wk, null, path));
       return;
     }
 
     if (value instanceof List<?> list) {
-      lines.add(">" + key + "-");
+      lines.add(">" + wk + "-");
       emitArrayElements(lines, list, opt, path);
       lines.add("<");
       return;
     }
 
     if (value instanceof Map<?, ?> map) {
-      lines.add(">" + key);
+      lines.add(">" + wk);
       for (Entry e : orderedEntries(map, opt.keyOrder)) {
         emitObjectEntry(lines, e.key(), e.value(), opt, path + "." + e.key());
       }
@@ -607,7 +614,7 @@ public final class Encoder {
       return;
     }
 
-    lines.add(formatContent(key, value, path));
+    lines.add(formatContent(wk, value, path));
   }
 
   private static void emitArrayElements(List<String> lines, List<?> arr, Opt opt, String path) {
@@ -650,7 +657,7 @@ public final class Encoder {
     if (value instanceof Number n) return ":" + formatNumberToken(n, path);
     if (value instanceof CharSequence cs) {
       String s = cs.toString();
-      assertNoNewline(s, path);
+      assertEncodableString(s, path);
       return needsForcedString(s) ? ": " + s : ":" + s;
     }
     throw new XaiopEncodeError("unsupported array element type: " + typeName(value), path);
@@ -662,7 +669,7 @@ public final class Encoder {
     if (value instanceof Number n) return key + ":" + formatNumberToken(n, path);
     if (value instanceof CharSequence cs) {
       String s = cs.toString();
-      assertNoNewline(s, path);
+      assertEncodableString(s, path);
       return needsForcedString(s) ? key + ": " + s : key + ":" + s;
     }
     throw new XaiopEncodeError("unsupported value type: " + typeName(value), path);
@@ -755,7 +762,7 @@ public final class Encoder {
     return INT_TOKEN.matcher(s).matches() || FLOAT_TOKEN.matcher(s).matches();
   }
 
-  private static void assertKey(String key, String path) {
+  private static void assertKey(String key, String path, boolean symbolKeys) {
     if (key == null || key.isEmpty()) {
       throw new XaiopEncodeError("object keys must be non-empty strings", path);
     }
@@ -766,15 +773,36 @@ public final class Encoder {
       throw new XaiopEncodeError(
           "invalid label name (trailing \"-\" reserved for arrays): " + Json.stringify(key), path);
     }
-    if (CURSOR_CHAR.matcher(key).find()) {
+    if (LabelEscape.keyNeedsSymbolEscape(key) && !symbolKeys) {
+      throw new XaiopEncodeError(
+          "invalid label name (must not begin with line-operator or U+001F; enable symbolKeys to escape): "
+              + Json.stringify(key),
+          path);
+    }
+    String body =
+        LabelEscape.keyNeedsSymbolEscape(key) && symbolKeys ? key.substring(1) : key;
+    if (CURSOR_CHAR.matcher(body).find()) {
       throw new XaiopEncodeError(
           "invalid label name (contains Cursor/operator character): " + Json.stringify(key), path);
     }
   }
 
-  private static void assertNoNewline(String s, String path) {
+  private static String wireLabel(String key, String path, boolean symbolKeys) {
+    assertKey(key, path, symbolKeys);
+    return LabelEscape.encodeWireLabel(key, symbolKeys);
+  }
+
+  private static void assertEncodableString(String s, String path) {
     if (s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0) {
       throw new XaiopEncodeError("string values must not contain CR/LF", path);
+    }
+    // PROT-CONTENT forced-string: spaces after ':' are markers, not payload.
+    // Emitting key: + value that begins with U+0020 would silently drop those
+    // spaces on parse — refuse instead of corrupting data.
+    if (!s.isEmpty() && s.charAt(0) == ' ') {
+      throw new XaiopEncodeError(
+          "string values must not begin with U+0020 SPACE (wire forced-string marker would strip leading spaces)",
+          path);
     }
   }
 

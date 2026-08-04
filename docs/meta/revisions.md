@@ -22,6 +22,19 @@ English text is authoritative; Chinese mirrors track the same entries.
 
 ## 2. Package history
 
+### 0.7.0 — Draft (in progress)
+
+**Kind:** Additive normative dialect (Label escape / symbol-key mode).
+
+**Summary:** Reserve **U+001F** as Label escape introducer. Default: keys MUST NOT begin with line-class heads `#` `@` `>` `<` `=` `!` `&` or U+001F. Opt-in symbol-key mode prefixes one U+001F on encode and strips one layer on parse (double-escape when the logical key already begins with U+001F). Does not alter standalone `#…` custom annotation transmission.
+
+| Area | Change |
+| --- | --- |
+| `PROT-NOTE-LABEL-ESC` | Draft note [protocol/notes/label-escape.md](../protocol/notes/label-escape.md) |
+| Node.js / Java SDK | `symbolKeys` on encode + parse (+ stream / WS / checkpoint) |
+
+---
+
 ### 0.6.0 — 2026-08-04 (Frozen)
 
 **Kind:** Additive normative (Hierarchy / Syntax — custom annotation transmission).

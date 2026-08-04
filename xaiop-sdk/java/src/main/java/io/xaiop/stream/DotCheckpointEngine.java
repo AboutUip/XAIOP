@@ -2,6 +2,7 @@ package io.xaiop.stream;
 
 import io.xaiop.Json;
 import io.xaiop.Parse;
+import io.xaiop.ParseOptions;
 import io.xaiop.compat.Compat;
 import io.xaiop.compat.CompatFixId;
 import io.xaiop.compat.CompatPolicy;
@@ -43,6 +44,7 @@ import java.util.function.Consumer;
  */
 public final class DotCheckpointEngine implements AutoCloseable {
   private final Map<CompatFixId, Boolean> compat;
+  private final boolean symbolKeys;
   private final boolean streamProcessing;
   private final Consumer<Object> onChunk;
   private final boolean emitDiff;
@@ -70,6 +72,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
     if (options == null) throw new NullPointerException("checkpoint options are required");
     if (options.onChunk == null) throw new NullPointerException("onChunk hook is required");
     this.compat = Compat.resolveCompatOptions(options.compat);
+    this.symbolKeys = options.symbolKeys;
     this.streamProcessing = options.streamProcessing;
     this.onChunk = options.onChunk;
     this.emitDiff = options.emitDiff;
@@ -96,8 +99,13 @@ public final class DotCheckpointEngine implements AutoCloseable {
   }
 
   /**
-   * Materialized parse of {@code buffer[0..committedAt)}. Only advances when a {@code .} phase
-   * completes or the tail is flushed at finish -- never from mid-phase partial wire.
+   * Materialized parse of {@code buffer[0..committedAt)}. Advances when a {@code .} phase
+   * completes or the unfinished tail is flushed at {@link #finish()} — never from mid-phase
+   * partial wire.
+   *
+   * <p>After a phase commit the value may be <b>live-backed</b> until first read: this method
+   * materializes (and caches) then. Use {@link #committedAt()} {@code > 0} to test whether a
+   * commit exists.
    */
   public synchronized Object committedSnapshot() {
     if (commitFromLive && live != null) {
@@ -327,10 +335,12 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
   private void feedLiveLines(List<String> lines) {
     if (live == null) {
-      live = new Parse.LiveXaiopParser(compat);
+      live = new Parse.LiveXaiopParser(ParseOptions.of(compat, symbolKeys));
     }
+    // Invalidate cached commit; live is ahead until storeCommit. Keep commitFromLive
+    // true so peeks still materialize from live between feed and store.
     committedSnapshot = null;
-    commitFromLive = false;
+    commitFromLive = true;
     for (String line : lines) {
       live.feedLine(line);
     }
@@ -362,7 +372,8 @@ public final class DotCheckpointEngine implements AutoCloseable {
   /** Fresh parse; ownership transferred (plain roots are not cloned again). */
   private Object parseOwned(String text) {
     if (text.isEmpty()) return null;
-    return Materialize.materializeOwned(Parse.parse(text, compat));
+    return Materialize.materializeOwned(
+        Parse.parse(text, ParseOptions.of(compat, symbolKeys)));
   }
 
   // --- async plumbing --------------------------------------------------------
@@ -503,6 +514,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
   /** Hooks / tuning for {@link DotCheckpointEngine}. */
   public static final class Options {
     private Object compat;
+    private boolean symbolKeys;
     private boolean streamProcessing = true;
     private Consumer<Object> onChunk;
     private boolean emitDiff = true;
@@ -532,6 +544,12 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
     public Options compat(Map<CompatFixId, Boolean> overrides) {
       this.compat = overrides;
+      return this;
+    }
+
+    /** Decode U+001F label escapes (default {@code false}; pair with encode {@code symbolKeys}). */
+    public Options symbolKeys(boolean enabled) {
+      this.symbolKeys = enabled;
       return this;
     }
 

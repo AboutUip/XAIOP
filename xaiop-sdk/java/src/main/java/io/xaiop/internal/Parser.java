@@ -6,7 +6,6 @@ import io.xaiop.XaiopSyntaxError;
 import io.xaiop.compat.CompatFixId;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,17 +71,32 @@ public final class Parser {
   private Phase phase = Phase.INIT;
   /** Fine-grained compatibility policy, or {@code null} for strict (protocol-faithful) parse. */
   private final Map<CompatFixId, Boolean> compat;
+  /** Decode U+001F label escapes (pair with encode {@code symbolKeys}). */
+  private final boolean symbolKeys;
 
   public Parser(String source, Map<CompatFixId, Boolean> compat) {
+    this(source, compat, false);
+  }
+
+  public Parser(String source, Map<CompatFixId, Boolean> compat, boolean symbolKeys) {
     if (source == null) {
       throw new NullPointerException("XAIOP source must be a string");
     }
     this.lines = splitLines(source);
     this.compat = compat;
+    this.symbolKeys = symbolKeys;
   }
 
   public static Parser createLive(Map<CompatFixId, Boolean> compat) {
-    return new Parser("", compat);
+    return createLive(compat, false);
+  }
+
+  public static Parser createLive(Map<CompatFixId, Boolean> compat, boolean symbolKeys) {
+    return new Parser("", compat, symbolKeys);
+  }
+
+  private String logicalName(String wireName) {
+    return LabelEscape.decodeWireLabel(wireName, symbolKeys);
   }
 
   public void feedLine(String line) {
@@ -295,8 +309,8 @@ public final class Parser {
     }
 
     if (line.startsWith("<") && line.length() > 1) {
-      String name = line.substring(1);
-      assertName(name, lineNo);
+      String name = logicalName(line.substring(1));
+      assertName(name, lineNo, symbolKeys);
       precheckBroadcastPop();
       runOnCursors(
           () -> {
@@ -334,8 +348,8 @@ public final class Parser {
     }
 
     if (line.startsWith(">") && line.endsWith("-") && line.length() > 2) {
-      String name = line.substring(1, line.length() - 1);
-      assertName(name, lineNo);
+      String name = logicalName(line.substring(1, line.length() - 1));
+      assertName(name, lineNo, symbolKeys);
       runOnCursors(() -> createEnterNamedArray(name));
       return;
     }
@@ -348,15 +362,16 @@ public final class Parser {
       // In-line >a>b composition: allow split
       if (name.contains(">")) {
         String[] parts = name.split(">", -1);
-        for (String p : parts) assertName(p, lineNo);
+        for (String p : parts) assertName(logicalName(p), lineNo, symbolKeys);
         runOnCursors(
             () -> {
-              for (String p : parts) createEnterNamedObject(p);
+              for (String p : parts) createEnterNamedObject(logicalName(p));
             });
         return;
       }
-      assertName(name, lineNo);
-      runOnCursors(() -> createEnterNamedObject(name));
+      String logical = logicalName(name);
+      assertName(logical, lineNo, symbolKeys);
+      runOnCursors(() -> createEnterNamedObject(logical));
       return;
     }
 
@@ -366,7 +381,7 @@ public final class Parser {
       throw new XaiopSyntaxError(
           "Bare Label or unknown line form: " + Json.stringify(line), lineNo);
     }
-    String key = line.substring(0, colon);
+    String key = logicalName(line.substring(0, colon));
     String rawValue = line.substring(colon + 1);
     Object value = parseValue(rawValue);
     runOnCursors(() -> writeContent(key, value));
@@ -614,7 +629,7 @@ public final class Parser {
     }
     Object tree = docKind == DocKind.FRAGMENT ? fragmentEntries : root;
 
-    List<Frame> found = fuzzyFind(tree, splitNonEmpty(path));
+    List<Frame> found = fuzzyFind(tree, pathSegments(path));
     if (found == null && compat != null) {
       String trimmed = path.trim();
       String cleared = path.replaceAll("\\s+", "");
@@ -624,7 +639,7 @@ public final class Parser {
           && fixEnabled(CompatFixId.locatePathTrim)
           && !trimmed.isEmpty()
           && !trimmed.equals(path)) {
-        found = fuzzyFind(tree, splitNonEmpty(trimmed));
+        found = fuzzyFind(tree, pathSegments(trimmed));
       }
 
       // Retry 2: strip all whitespace (e.g. `=child > inner` -> `child>inner`)
@@ -633,7 +648,7 @@ public final class Parser {
           && !cleared.isEmpty()
           && !cleared.equals(path)
           && !cleared.equals(trimmed)) {
-        found = fuzzyFind(tree, splitNonEmpty(cleared));
+        found = fuzzyFind(tree, pathSegments(cleared));
       }
 
       // Retry 3: `=siblings-` -> locate `siblings` only if that value is an array
@@ -655,7 +670,7 @@ public final class Parser {
           }
         }
         if (hasArraySuffix) {
-          found = fuzzyFindCompatArrayCreateSuffix(tree, splitNonEmpty(forSuffix));
+          found = fuzzyFindCompatArrayCreateSuffix(tree, pathSegments(forSuffix));
         }
       }
     }
@@ -804,17 +819,28 @@ public final class Parser {
 
   private static final Pattern WHITESPACE_RE = Pattern.compile("\\s");
 
-  private static void assertName(String name, int lineNo) {
+  private List<String> pathSegments(String path) {
+    List<String> segs = splitNonEmpty(path);
+    List<String> out = new ArrayList<>(segs.size());
+    for (String s : segs) {
+      out.add(logicalName(s));
+    }
+    return out;
+  }
+
+  private static void assertName(String name, int lineNo, boolean symbolKeys) {
     if (name == null
         || name.isEmpty()
         || WHITESPACE_RE.matcher(name).find()
-        || name.contains(":")
-        || name.contains("@")) {
+        || name.contains(":")) {
+      throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+    }
+    if (!symbolKeys && (name.contains("@") || name.contains("&"))) {
       throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
     }
   }
 
-  private static List<String> splitPathSegments(String path, int lineNo, String op) {
+  private List<String> splitPathSegments(String path, int lineNo, String op) {
     if (path == null || path.isEmpty()) {
       throw new XaiopSyntaxError("empty " + op + " path", lineNo);
     }
@@ -831,8 +857,11 @@ public final class Parser {
     if (invalid) {
       throw new XaiopSyntaxError("invalid " + op + " path: " + Json.stringify(path), lineNo);
     }
-    List<String> segments = new ArrayList<>(Arrays.asList(parts));
-    for (String s : segments) assertName(s, lineNo);
+    List<String> segments = new ArrayList<>(parts.length);
+    for (String p : parts) {
+      segments.add(logicalName(p));
+    }
+    for (String s : segments) assertName(s, lineNo, symbolKeys);
     return segments;
   }
 

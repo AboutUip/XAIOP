@@ -78,6 +78,28 @@ y:2
   assert.deepEqual(engine.snapshot, { a: { x: 1 }, b: { y: 2 } });
 });
 
+test("checkpoint: committedSnapshot readable after . before finish (bare engine)", () => {
+  /** @type {unknown[]} */
+  const atChunk = [];
+  const engine = new DotCheckpointEngine({
+    compat: false,
+    streamProcessing: true,
+    mergeChunkWindow: false,
+    onChunk: () => {
+      atChunk.push(structuredClone(engine.committedSnapshot));
+    },
+  });
+  engine.push(">\na:1\n.\n");
+  assert.ok(engine.committedAt > 0);
+  assert.deepEqual(engine.committedSnapshot, { a: 1 });
+  assert.deepEqual(atChunk[0], { a: 1 });
+  engine.push(">b\nc:2\n.\n");
+  assert.deepEqual(engine.committedSnapshot, { a: 1, b: { c: 2 } });
+  assert.deepEqual(atChunk[1], { a: 1, b: { c: 2 } });
+  engine.finish();
+  assert.deepEqual(engine.committedSnapshot, { a: 1, b: { c: 2 } });
+});
+
 test("checkpoint: finish snapshot aliases last commit when buffer fully committed", () => {
   const engine = new DotCheckpointEngine({
     compat: false,

@@ -3,8 +3,9 @@
  * XaiopWs — first-class WebSocket session for skeleton / phase streaming.
  *
  * One package surface:
- *   - listen  → accept + pushJson / pushWire / end
+ *   - listen  → accept + pushJson / pushWire / pushWireLn / end
  *   - connect → consume onPhase / getCommittedSnapshot / onDone
+ *              (handlers locked after open — pass early callbacks in options)
  *
  * HTTP / SSE / RAW remain on `XaiopStream` for other paths; skeleton long-lived
  * product sessions are WS-primary here.
@@ -58,6 +59,7 @@ export class XaiopWs {
       }
       throw err;
     }
+    conn.lockHandlers();
     return conn;
   }
 

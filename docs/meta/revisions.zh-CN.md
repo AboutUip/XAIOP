@@ -22,6 +22,19 @@ XAIOP **规范包**的有序修订历史。
 
 ## 2. 包历史
 
+### 0.7.0 — Draft（进行中）
+
+**类型：** 加法性规范方言（Label 转义 / 符号键模式）。
+
+**摘要：** 保留 **U+001F** 为 Label 转义头。默认：键不得以行类首字符 `#` `@` `>` `<` `=` `!` `&` 或 U+001F 开头。可选符号键模式：encode 前缀一层 U+001F，parse 剥一层（逻辑键已以 U+001F 开头则双重转义）。不改变独立 `#…` 自定义注解传递。
+
+| 区域 | 变更 |
+| --- | --- |
+| `PROT-NOTE-LABEL-ESC` | Draft 笔记 [protocol/notes/label-escape.zh-CN.md](../protocol/notes/label-escape.zh-CN.md) |
+| Node.js / Java SDK | encode + parse（及 stream / WS / checkpoint）的 `symbolKeys` |
+
+---
+
 ### 0.6.0 — 2026-08-04（Frozen）
 
 **类型：** 加法性规范变更（Hierarchy / Syntax — 自定义注解传递）。

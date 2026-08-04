@@ -40,7 +40,7 @@ Hook point: `DotCheckpointEngine` (forwarded by `XaiopStream` / `XaiopWsConnecti
 
 3. `view` is a **fixed template** minimal classify (`LINE_KIND`), **not** a type system / `typeCheck`.
 4. When interceptors are registered, Diff owned-parse uses the **effective** line wire (may differ from the transport buffer).
-5. Only the `streamProcessing: true` (default) line-scan path; `streamProcessing: false` whole-buffer parse does **not** run interceptors.
+5. Only the `streamProcessing: true` (default on bare `DotCheckpointEngine`, same as `XaiopStream` / WS) line-scan path; `streamProcessing: false` whole-buffer parse does **not** run interceptors.
 6. `jumpTo` rebuild **re-runs** the chain on the retained prefix when interceptors remain.
 7. Phase close uses the **post-intercept** text: skipping `.` keeps the phase open; rewriting a line to `.` closes early.
 

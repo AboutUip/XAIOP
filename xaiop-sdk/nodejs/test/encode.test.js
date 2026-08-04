@@ -122,12 +122,31 @@ test("CR/LF in strings rejected", () => {
   assert.throws(() => encodeSync({ a: "x\ry" }), /CR\/LF/);
 });
 
+test("leading U+0020 SPACE in strings rejected (no silent strip)", () => {
+  assert.throws(
+    () => encodeSync({ s: "  spaced" }),
+    (e) =>
+      e instanceof XaiopEncodeError &&
+      /U\+0020 SPACE/.test(e.message) &&
+      e.path === "$.s",
+  );
+  assert.throws(() => encodeSync({ s: " " }), /U\+0020 SPACE/);
+  assert.throws(() => encodeSync({ s: "   42" }), /U\+0020 SPACE/);
+  assert.throws(() => encodeSync(["  x"]), /U\+0020 SPACE/);
+  // Tab / trailing space / empty remain encodable and round-trip.
+  assert.deepEqual(parseSync(encodeSync({ s: "\tspaced" })), { s: "\tspaced" });
+  assert.deepEqual(parseSync(encodeSync({ s: "spaced  " })), { s: "spaced  " });
+  assert.deepEqual(parseSync(encodeSync({ s: "" })), { s: "" });
+});
+
 test("invalid keys rejected", () => {
   assert.throws(() => encodeSync({ "": 1 }), /non-empty/);
   assert.throws(() => encodeSync({ "a b": 1 }), /invalid label/);
   assert.throws(() => encodeSync({ "a:b": 1 }), /invalid label/);
   assert.throws(() => encodeSync({ "foo-": 1 }), /trailing "-"/);
   assert.throws(() => encodeSync({ "a>b": 1 }), /operator/);
+  assert.throws(() => encodeSync({ "#k": 1 }), /symbolKeys|U\+001F|line-operator/);
+  assert.throws(() => encodeSync({ "@k": 1 }), /symbolKeys|U\+001F|line-operator/);
 });
 
 test("unsupported types rejected", () => {

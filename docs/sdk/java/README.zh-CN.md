@@ -156,7 +156,8 @@ Object jsonDone = once.send(new XaiopStream.SendOptions()
 `dotPolicyPaths` 与 `phaseEvery`、`maxPhases`、`shouldPhase` 互斥，会拒绝重复路径与值中不存在的
 路径，也不允许切在数组元素对象内部（下标必须是路径的最后一段）。
 
-被拒绝的键（空、含空白、含 `:`、末尾 `-`、含 `>` `<` `=` `!`）、字符串中的 CR/LF、非有限数值以及
+被拒绝的键（空、含空白、含 `:`、末尾 `-`、含 `>` `<` `=` `!`）、字符串中的 CR/LF、
+**以 U+0020 SPACE 开头的字符串**（`:` 后空格是强制 string 标记而非载荷）、非有限数值以及
 不支持的值类型都会抛出 `XaiopEncodeError`。对这些**值级与键级**失败，`getPath()` 返回出错节点的
 JSON 路径（如 `$.ok.bad`）；对**选项级**失败（如非法的 `phaseEvery`）则为 `null`，因为它们并不
 对应某个节点。

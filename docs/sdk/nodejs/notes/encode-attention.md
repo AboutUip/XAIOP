@@ -6,11 +6,11 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-ENCODE` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-05 |
 | Normative | **No** |
 | Full guide | [../API.md](../API.md) |
 
-Protocol wire rules remain Frozen **0.3.0**. Encode is an **SDK** feature (`xaiop` **0.6.0+**).
+Protocol wire rules remain Frozen **0.6.0**. Encode is an **SDK** feature (`xaiop` **0.6.0+**).
 
 ---
 
@@ -39,6 +39,17 @@ Rejected to prevent silent shape corruption:
 | empty / whitespace / `:` | Invalid Label name |
 | ends with `-` | `>name-` is array enter |
 | contains `>` `<` `=` `!` | Operator / path ambiguity |
+
+---
+
+## 2b. String value hazards (SDK validation)
+
+| Value | Why rejected |
+| --- | --- |
+| contains CR / LF | Content is one line; newline would break wire |
+| begins with **U+0020 SPACE** | After `:`, leading spaces are the **forced-string** marker ([content.md](../../../protocol/content.md) §6), not payload — `encode` **MUST** refuse rather than emit wire that parse would strip |
+
+Still accepted (and round-trip): empty string, leading **tab**, trailing spaces, strings that only need forced-string for typed tokens (`"1"`, `"true"`, …).
 
 ---
 

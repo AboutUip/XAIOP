@@ -22,7 +22,7 @@
 
 | 面 | API | 典型用途 |
 | --- | --- | --- |
-| 接受 / 推 | `XaiopWs.listen` → `pushJson` / `pushObject` / `pushWire` → `end` | 骨架流生产端 |
+| 接受 / 推 | `XaiopWs.listen` → `pushJson` / `pushObject` / `pushWire` / `pushWireLn` → `end` | 骨架流生产端 |
 | 连接 / 收 | `XaiopWs.connect` → `onPhase` / `getCommittedSnapshot` / `done` | 消费端 |
 
 依赖：Node `ws`（Node ≥ 18 无需 polyfill）。  
@@ -61,7 +61,8 @@ await hub.close();
 | --- | --- |
 | `pushJson(key, value, { final? })` | `encodeSync({[key]:value}, {dotPolicy:"none"})`；非 `final` 时保证尾 `\n` 再追加 `.\n` |
 | `pushObject(obj, { final? })` | 普通对象同理（一相多键） |
-| `pushWire(text)` | 原始 XAIOP 文本 |
+| `pushWire(text)` | 原样发送；**不**自动补 `\n`。连续帧须自行保证行边界，否则对端可能粘行。非 OPEN → `false` |
+| `pushWireLn(text)` | 同 `pushWire`；若不以 LF 结尾则追加 `\n` |
 | `encodePhaseJson` / `encodePhaseObject` | 只编码不发送（发送后可丢弃） |
 
 `final: true` 不加相位分隔 `.`（最后一块）。非 final 相位总以 `.\n` 结束，以便对端发出中途 Diff。
@@ -89,7 +90,7 @@ await hub.close();
 | `asyncParse` | `false` | 合并式 `pushAsync` 摄入（`setImmediate`） |
 | `compatibilityMode` | `false` | 可选兼容解析 |
 
-若对端可能在 `connection` 里**同步推送**，请把 `onPhase` / `onDone` 放进 **`connect` 选项**——监听器在 `open` 完成前已挂上。
+若对端可能在 `connection` 里**同步推送**，请把 **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`** 放进 **`connect` 选项**——监听器在 `open` 完成前已挂上。`connect` resolve 后这些 mutator **抛错**（`handlersLocked`）；无回放。
 
 ---
 
@@ -98,7 +99,7 @@ await hub.close();
 | 关注点 | 官方行为 |
 | --- | --- |
 | 连接握手 | `handshakeTimeoutMs` 默认 **15000**；等待 `ws` open |
-| 挂接顺序 | `XaiopWsConnection` 在等待 `open` **之前**绑定 message 处理器（接受端同步推送不可丢） |
+| 挂接顺序 | `XaiopWsConnection` 在等待 `open` **之前**绑定 message 处理器（接受端同步推送不可丢）；**`connect` 后 `lockHandlers()`**，晚注册不能静默丢帧 |
 | 二进制帧 | 跨 chunk 流式 UTF-8 `TextDecoder`；对端关闭时先 flush 再 `finish()` |
 | 已关闭 / 非 OPEN 时 `push*` | 返回 **`false`**（不抛）。Encode 错误在 `send` **之前**抛出 |
 | `end({ code?, reason? })` | 等到 `bufferedAmount === 0` 或满 **2s**，再 `close(code ?? 1000, reason ?? "")` |

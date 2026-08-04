@@ -44,6 +44,7 @@ export class XaiopStream {
    *   retainWireHistory?: boolean,
    *   cover?: boolean,
    *   typeCheck?: boolean,
+   *   symbolKeys?: boolean,
    *   typeSchema?: import("../core/types.js").TypeSchemaSnapshot|import("../core/types.js").TypeRegistry,
    *   lineIntercept?: import("../core/line-intercept.js").LineInterceptHandler|import("../core/line-intercept.js").LineInterceptHandler[],
    *   annotationSpan?: import("../core/annotation-span.js").AnnotationSpanHandler|import("../core/annotation-span.js").AnnotationSpanHandler[],
@@ -76,6 +77,8 @@ export class XaiopStream {
     this._cover = options.cover === true;
     /** Client type freeze / schema check (strict only). */
     this._typeCheck = !!options.typeCheck && !this._compatibilityMode;
+    /** U+001F label escape dialect (pair with encode `symbolKeys`). */
+    this._symbolKeys = options.symbolKeys === true;
     this._compat = new CompatPolicy();
     /** @type {TypeFreezeSession|null} */
     this._typeSession = this._typeCheck ? new TypeFreezeSession() : null;
@@ -654,6 +657,7 @@ export class XaiopStream {
     this._engine = new DotCheckpointEngine({
       streamProcessing: this._streamProcessing,
       compat: this._compatibilityMode ? this._compat.snapshot() : false,
+      symbolKeys: this._symbolKeys,
       emitDiff: this._wantsPhaseDiff(),
       mergeChunkWindow: this._mergeChunkWindow,
       historySnapshot: this._historySnapshot,

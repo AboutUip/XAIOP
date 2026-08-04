@@ -138,6 +138,11 @@ empty:null
 
 → `{ "empty": null }`
 
+**Encoder implication:** a JSON string whose first character is U+0020 SPACE cannot be placed
+losslessly after `:` (those spaces are this marker). Conforming encode APIs **MUST** refuse such
+values rather than emit wire that parses to a different string. Leading tab (`U+0009`) is not this
+marker and may round-trip.
+
 ---
 
 ## 7. Empty lines

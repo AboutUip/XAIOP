@@ -50,6 +50,7 @@ export class XaiopWsConnection {
     this._mergeChunkWindow = options.mergeChunkWindow !== false;
     this._asyncParse = options.asyncParse === true;
     this._cover = options.cover === true;
+    this._symbolKeys = options.symbolKeys === true;
     this._typeCheck = !!options.typeCheck && !this._compatibilityMode;
     this._compat = new CompatPolicy();
 
@@ -93,9 +94,14 @@ export class XaiopWsConnection {
     /** @type {string[]} */
     this._typeCheckEscapePaths = [];
 
+    /** After `XaiopWs.connect` resolves, consumer handler mutators throw. */
+    /** @type {boolean} */
+    this._handlersLocked = false;
+
     this._engine = new DotCheckpointEngine({
       streamProcessing: this._streamProcessing,
       compat: this._compatibilityMode ? this._compat.snapshot() : false,
+      symbolKeys: this._symbolKeys,
       mergeChunkWindow: this._mergeChunkWindow,
       cover: this._cover,
       lineIntercept: options.lineIntercept,
@@ -181,8 +187,33 @@ export class XaiopWsConnection {
     return cloneJson(this._committedSnapshot);
   }
 
+  /**
+   * Called by `XaiopWs.connect` after handshake so late `onPhase` /
+   * `onLineIntercept` / … cannot miss early frames silently.
+   * Listen-accept connections stay unlocked (attach in `onConnection` if needed).
+   * @returns {this}
+   */
+  lockHandlers() {
+    this._handlersLocked = true;
+    return this;
+  }
+
+  /** @returns {boolean} */
+  get handlersLocked() {
+    return this._handlersLocked;
+  }
+
+  _assertHandlersMutable(api) {
+    if (this._handlersLocked) {
+      throw new TypeError(
+        `${api} after connect is locked — pass onPhase/onDone/onError/lineIntercept/annotationSpan in connect options (no replay of early frames)`,
+      );
+    }
+  }
+
   /** @param {(diff: unknown) => void} fn */
   onPhase(fn) {
+    this._assertHandlersMutable("onPhase");
     this._onPhase = typeof fn === "function" ? fn : null;
     return this;
   }
@@ -199,12 +230,14 @@ export class XaiopWsConnection {
    * @returns {this}
    */
   onLineIntercept(fn) {
+    this._assertHandlersMutable("onLineIntercept");
     this._engine.onLineIntercept(fn);
     return this;
   }
 
   /** @returns {this} */
   clearLineIntercepts() {
+    this._assertHandlersMutable("clearLineIntercepts");
     this._engine.clearLineIntercepts();
     return this;
   }
@@ -215,24 +248,28 @@ export class XaiopWsConnection {
    * @returns {this}
    */
   onAnnotationSpan(fn) {
+    this._assertHandlersMutable("onAnnotationSpan");
     this._engine.onAnnotationSpan(fn);
     return this;
   }
 
   /** @returns {this} */
   clearAnnotationSpans() {
+    this._assertHandlersMutable("clearAnnotationSpans");
     this._engine.clearAnnotationSpans();
     return this;
   }
 
   /** @param {(json: unknown) => void} fn */
   onDone(fn) {
+    this._assertHandlersMutable("onDone");
     this._onDone = typeof fn === "function" ? fn : null;
     return this;
   }
 
   /** @param {(err: Error) => void} fn */
   onError(fn) {
+    this._assertHandlersMutable("onError");
     this._onError = typeof fn === "function" ? fn : null;
     return this;
   }
@@ -261,7 +298,10 @@ export class XaiopWsConnection {
   }
 
   /**
-   * Send raw XAIOP text (complete lines preferred).
+   * Send raw XAIOP text **as-is** (no automatic newline).
+   * Consecutive frames that should form separate logical lines **MUST** already
+   * end with `\n` (or include internal newlines); otherwise the peer may glue
+   * frames. Prefer {@link pushWireLn} when you want a trailing LF ensured.
    * @param {string} text
    * @returns {boolean}
    */
@@ -274,6 +314,19 @@ export class XaiopWsConnection {
     }
     this._ws.send(text);
     return true;
+  }
+
+  /**
+   * Like {@link pushWire}, but appends `\n` when `text` does not already end
+   * with LF (CRLF endings are left unchanged).
+   * @param {string} text
+   * @returns {boolean}
+   */
+  pushWireLn(text) {
+    if (typeof text !== "string") {
+      throw new TypeError("pushWireLn requires a string");
+    }
+    return this.pushWire(text.endsWith("\n") ? text : `${text}\n`);
   }
 
   /**

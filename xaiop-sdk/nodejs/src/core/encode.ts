@@ -1,12 +1,18 @@
 // @ts-nocheck
 /**
- * JSON → XAIOP encoder (protocol v0.5.0 wire).
+ * JSON → XAIOP encoder (protocol v0.5.0+ wire).
  *
  * Emits strict wire only (no compatibility-mode shapes).
  * `.` frequency is controlled by `dotPolicy` / `phaseEvery` / `shouldPhase`,
  * or by a **path-array overload** of `dotPolicy` (JSON paths like `a.b[0].c`).
  * Aligns with DotCheckpointEngine phase boundaries.
+ * Optional `symbolKeys`: U+001F label escape for operator-headed JSON keys.
  */
+
+import {
+  encodeWireLabel,
+  keyNeedsSymbolEscape,
+} from "./label-escape.js";
 
 /** @typedef {'none'|'perTopLevelKey'|'perNKeys'|'custom'} DotPolicyName */
 
@@ -32,6 +38,7 @@
  *   nullPolicy?: 'encode'|'omit'|'error',
  *   undefinedPolicy?: 'omit'|'error',
  *   shouldPhase?: (ctx: PhaseContext) => boolean,
+ *   symbolKeys?: boolean,
  * }} EncodeOptions
  */
 
@@ -221,6 +228,7 @@ function normalizeOptions(options) {
     nullPolicy,
     undefinedPolicy,
     shouldPhase: options.shouldPhase,
+    symbolKeys: options.symbolKeys === true,
     /** @type {null} */
     pathCuts: null,
   };
@@ -328,6 +336,7 @@ function normalizePathCutOptions(options, paths) {
     nullPolicy,
     undefinedPolicy,
     shouldPhase: undefined,
+    symbolKeys: options.symbolKeys === true,
     pathCuts: normalized,
   };
 }
@@ -395,7 +404,7 @@ function encodeWithPathCuts(value, opt) {
       const isArrayEnter =
         typeof next === "number" ||
         (arrayTail && j === targetAncestors.length - 1);
-      lines.push(isArrayEnter ? `>${seg}-` : `>${seg}`);
+      lines.push(isArrayEnter ? `>${encodeWireLabel(String(seg), opt.symbolKeys)}-` : `>${encodeWireLabel(String(seg), opt.symbolKeys)}`);
       openStack.push(seg);
     }
   }
@@ -451,7 +460,8 @@ function encodeWithPathCuts(value, opt) {
    * @param {'object'|'array'} rootKindLocal
    */
   function emitObjectPath(key, val, segs, rootKindLocal) {
-    assertKey(key, formatJsonPath(segs));
+    assertKey(key, formatJsonPath(segs), opt.symbolKeys);
+    const wk = encodeWireLabel(key, opt.symbolKeys);
 
     if (val === undefined) {
       if (opt.undefinedPolicy === "error") {
@@ -474,14 +484,14 @@ function encodeWithPathCuts(value, opt) {
       if (opt.nullPolicy === "omit") {
         return;
       }
-      lines.push(formatContent(key, null, formatJsonPath(segs)));
+      lines.push(formatContent(wk, null, formatJsonPath(segs)));
       // Content does not push stack; cut still applies to this node.
       maybeCut(segs);
       return;
     }
 
     if (Array.isArray(val)) {
-      lines.push(`>${key}-`);
+      lines.push(`>${wk}-`);
       openStack.push(key);
       emitArrayPath(val, segs, rootKindLocal);
       // leave array unless cut already reset
@@ -494,7 +504,7 @@ function encodeWithPathCuts(value, opt) {
     }
 
     if (isPlainObject(val)) {
-      lines.push(`>${key}`);
+      lines.push(`>${wk}`);
       openStack.push(key);
       const keys = orderedKeys(val, opt.keyOrder);
       for (const k of keys) {
@@ -508,7 +518,7 @@ function encodeWithPathCuts(value, opt) {
       return;
     }
 
-    lines.push(formatContent(key, val, formatJsonPath(segs)));
+    lines.push(formatContent(wk, val, formatJsonPath(segs)));
     maybeCut(segs);
   }
 
@@ -860,7 +870,8 @@ function applyMaxPhases(phases, maxPhases) {
  * @param {string} path
  */
 function emitObjectEntry(lines, key, value, opt, path) {
-  assertKey(key, path);
+  assertKey(key, path, opt.symbolKeys);
+  const wk = encodeWireLabel(key, opt.symbolKeys);
 
   if (value === undefined) {
     if (opt.undefinedPolicy === "error") {
@@ -875,19 +886,19 @@ function emitObjectEntry(lines, key, value, opt, path) {
     if (opt.nullPolicy === "omit") {
       return;
     }
-    lines.push(formatContent(key, null, path));
+    lines.push(formatContent(wk, null, path));
     return;
   }
 
   if (Array.isArray(value)) {
-    lines.push(`>${key}-`);
+    lines.push(`>${wk}-`);
     emitArrayElements(lines, value, opt, path);
     lines.push("<");
     return;
   }
 
   if (isPlainObject(value)) {
-    lines.push(`>${key}`);
+    lines.push(`>${wk}`);
     const keys = orderedKeys(value, opt.keyOrder);
     for (const k of keys) {
       emitObjectEntry(lines, k, /** @type {any} */ (value)[k], opt, `${path}.${k}`);
@@ -896,7 +907,7 @@ function emitObjectEntry(lines, key, value, opt, path) {
     return;
   }
 
-  lines.push(formatContent(key, value, path));
+  lines.push(formatContent(wk, value, path));
 }
 
 /**
@@ -965,7 +976,7 @@ function formatScalarElement(value, path) {
   if (typeof value === "boolean") return `:${value ? "true" : "false"}`;
   if (typeof value === "number") return `:${formatNumberToken(value, path)}`;
   if (typeof value === "string") {
-    assertNoNewline(value, path);
+    assertEncodableString(value, path);
     if (needsForcedString(value)) return `: ${value}`;
     return `:${value}`;
   }
@@ -987,7 +998,7 @@ function formatContent(key, value, path) {
     return `${key}:${formatNumberToken(value, path)}`;
   }
   if (typeof value === "string") {
-    assertNoNewline(value, path);
+    assertEncodableString(value, path);
     if (needsForcedString(value)) return `${key}: ${value}`;
     return `${key}:${value}`;
   }
@@ -1040,8 +1051,9 @@ function needsForcedString(s) {
 /**
  * @param {string} key
  * @param {string} path
+ * @param {boolean} [symbolKeys]
  */
-function assertKey(key, path) {
+function assertKey(key, path, symbolKeys = false) {
   if (typeof key !== "string" || key.length === 0) {
     throw new XaiopEncodeError("object keys must be non-empty strings", {
       path,
@@ -1059,7 +1071,15 @@ function assertKey(key, path) {
       { path },
     );
   }
-  if (/[><=!&]/.test(key)) {
+  if (keyNeedsSymbolEscape(key) && !symbolKeys) {
+    throw new XaiopEncodeError(
+      `invalid label name (must not begin with line-operator or U+001F; enable symbolKeys to escape): ${JSON.stringify(key)}`,
+      { path },
+    );
+  }
+  // Cursor/operator characters after an escaped head (or anywhere when unescaped)
+  const body = keyNeedsSymbolEscape(key) && symbolKeys ? key.slice(1) : key;
+  if (/[><=!&]/.test(body)) {
     throw new XaiopEncodeError(
       `invalid label name (contains Cursor/operator character): ${JSON.stringify(key)}`,
       { path },
@@ -1071,11 +1091,20 @@ function assertKey(key, path) {
  * @param {string} s
  * @param {string} path
  */
-function assertNoNewline(s, path) {
+function assertEncodableString(s, path) {
   if (s.includes("\n") || s.includes("\r")) {
     throw new XaiopEncodeError("string values must not contain CR/LF", {
       path,
     });
+  }
+  // PROT-CONTENT forced-string: spaces after `:` are markers, not payload.
+  // Emitting `key:` + value that begins with U+0020 would silently drop those
+  // spaces on parse — refuse instead of corrupting data.
+  if (s.charCodeAt(0) === 0x20) {
+    throw new XaiopEncodeError(
+      "string values must not begin with U+0020 SPACE (wire forced-string marker would strip leading spaces)",
+      { path },
+    );
   }
 }
 

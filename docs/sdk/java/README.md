@@ -163,8 +163,9 @@ Object jsonDone = once.send(new XaiopStream.SendOptions()
 duplicates and paths that do not exist in the value, and refuses to cut inside an array element
 object (an index must be the final segment).
 
-Rejected keys (empty, whitespace, `:`, trailing `-`, `>` `<` `=` `!`), CR/LF in strings, non-finite
-numbers and unsupported value types throw `XaiopEncodeError`. `getPath()` returns the JSON path of
+Rejected keys (empty, whitespace, `:`, trailing `-`, `>` `<` `=` `!`), CR/LF in strings,
+**strings beginning with U+0020 SPACE** (forced-string markers after `:` are not payload),
+non-finite numbers and unsupported value types throw `XaiopEncodeError`. `getPath()` returns the JSON path of
 the offending node (e.g. `$.ok.bad`) for those **value- and key-level** failures; it is `null` for
 **option-level** failures such as a bad `phaseEvery`, which are not tied to a node.
 

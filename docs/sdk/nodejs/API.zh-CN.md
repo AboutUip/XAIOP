@@ -243,15 +243,17 @@ cursorRestoreLines(): string[]     // cover 恢复用的 `>` / `>name-` 链；�
 | 方法 | 说明 |
 | --- | --- |
 | `feedLine` | 完整逻辑行（无尾 LF/CRLF） |
-| `feedText` | 按与 `parseSync` 相同规则拆行 |
+| `feedText` | 按与 `parseSync` 相同规则拆行 — **跨调用无半行缓冲**；无 LF 的尾段视为完整一行。任意网络分片请用 `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | 当前文档（继续 feed 会就地突变） |
 | `cursorRestoreLines` | 广播激活时不可用；匿名 / 数组元素帧在栈上 → 语法错误 |
 
 ```js
 const live = new LiveXaiopParser();
+// 可以：完整行（无 LF 的尾段仍算一行）
 live.feedText(">\n>a\nx:1\n.\n>b\ny:2\n");
 live.cursorRestoreLines(); // → [">b"]
 live.value();              // → { a: { x: 1 }, b: { y: 2 } }
+// 不要拿 TCP/WS 字节切片硬拆：feedText(">me") 再 feedText("ta\n") ≠ feedText(">meta\n")
 ```
 
 ### 3.3 `XaiopFragment`
@@ -283,6 +285,7 @@ encode(value, options?: EncodeOptions): Promise<string>
 **保证：** 对编码器接受的值，`parseSync(encodeSync(value, opt))` 与 `value` 深度相等；线文以恰好一个 `\n` 结尾。  
 **不保证：** `encode(parse(手写线))` 字节相同。
 
+**拒绝的字符串值（抛 `XaiopEncodeError`）：** 含 CR/LF；**以 U+0020 SPACE 开头**（`:` 后空格是强制 string 标记而非载荷——若照常发出，parse 会静默剥掉前导空格）。Tab（`U+0009`）与尾随空格仍可编码。
 ```js
 import { encodeSync, DOT_POLICY } from "xaiop";
 
@@ -306,6 +309,7 @@ encodeSync(obj, { dotPolicy: ["meta", "items[0]"] }); // 路径切相
 | `nullPolicy` | `"encode"` | `"encode"` 类型化 null；`"omit"` 省略对象 null 键（数组仍编码）；`"error"` 遇 null 抛错 |
 | `undefinedPolicy` | `"omit"` | `"omit"` \| `"error"` |
 | `shouldPhase` | — | `dotPolicy: "custom"` 时必填 |
+| `symbolKeys` | `false` | 可选 U+001F label 转义方言，允许键以 `#` `@` `>` `<` `=` `!` `&` 或 U+001F 开头；**encode 与 parse 须同开**；见 [label-escape](../../protocol/notes/label-escape.zh-CN.md) |
 
 路径数组重载与 `phaseEvery` / `maxPhases` / `shouldPhase` **互斥**；要求 `style: "reset"`；数组下标只能是路径**末段**。辅助：`parseJsonPath` / `formatJsonPath`。
 
@@ -317,9 +321,10 @@ encodeSync(obj, { dotPolicy: ["meta", "items[0]"] }); // 路径切相
 | --- | --- |
 | 空 / 空白 / 含 `:` | 非法 Label 名 |
 | 以 `-` 结尾 | 与 `>name-` 数组进入冲突 |
-| 含 `>` `<` `=` `!` **`&`** | Cursor / 定位 / 删除算子歧义 |
+| 键体含 `>` `<` `=` `!` **`&`** | Cursor / 定位 / 删除算子歧义 |
+| **以** `#` `@` `>` `<` `=` `!` `&` 或 **U+001F** **开头** | 行类 / 保留转义头 — 除非 `symbolKeys: true` |
 
-常量：`DOT_POLICY`。
+常量：`DOT_POLICY` · `LABEL_ESCAPE_INTRODUCER`（`"\u001f"`）。
 
 ---
 
@@ -521,9 +526,9 @@ Fragment 在上述表面物化为普通对象（`materializeSnapshot`）。
 
 ```js
 const eng = new DotCheckpointEngine({
-  streamProcessing: true,
-  mergeChunkWindow: true,
-  emitDiff: true,
+  streamProcessing: true,   // 默认
+  mergeChunkWindow: true,   // 默认
+  emitDiff: true,           // 默认
   cover: false,
   historySnapshot: false,
   historyRealtime: false,
@@ -542,6 +547,13 @@ eng.onLineIntercept(fn); // 见 §6.4
 eng.onAnnotationSpan(fn); // 见 §6.5
 ```
 
+| 选项 | 默认 | 说明 |
+| --- | --- | --- |
+| `streamProcessing` | `true` | 流中 `.` 相位 + 行扫描路径（拦截 / Span）；与 `XaiopStream` / WS 相同。裸 `new DotCheckpointEngine({...})` 不传该标志时为 **开**。 |
+| `mergeChunkWindow` | `true` | 缓冲窗口内完整 `.` 批算 → 一次 Diff |
+| `emitDiff` | `true` | 仅需 Commit / 终态时可设 `false` |
+| `cover` | `false` | `&` 的 cover 模式 Diff |
+
 | 方法 | 说明 |
 | --- | --- |
 | `push` / `pushAsync` | 同步摄入 / `setImmediate` 合并扫描 |
@@ -549,6 +561,7 @@ eng.onAnnotationSpan(fn); // 见 §6.5
 | `jumpTo(index)` | 需 `historyRealtime`；丢弃定位点之后的节点 |
 | `onLineIntercept` / `clearLineIntercepts` | 完整行拆出后、解析前；见 §6.4 |
 | `onAnnotationSpan` / `clearAnnotationSpans` | 相位 `#` 跨度；见 §6.5 |
+| `streamProcessing` / `mergeChunkWindow` | 只读 getter（解析后的默认） |
 
 ### 6.3 `ParseHistory` / Snapshot 辅助
 
@@ -683,13 +696,15 @@ await hub.close();
 | --- | --- |
 | `pushJson(key, value, { final? })` | 一相一键；非 final 保证尾 `.\n`；非 OPEN → `false` |
 | `pushObject(object, { final? })` | 一相多键；同上 |
-| `pushWire(text)` | 原始线文；非 string → `TypeError`；非 OPEN → `false` |
+| `pushWire(text)` | 原始线文**原样发送**（不自动补 `\n`）；连续帧须自行保证行边界，否则对端可能粘行；非 OPEN → `false` |
+| `pushWireLn(text)` | 同 `pushWire`，但若不以 LF 结尾则追加 `\n` |
 | `pushTypeConsistency(engine\|registry\|snapshot)` | 推送已注册类型 schema（控制帧）；前提见 §5.5 |
 | `typeCheck` | 只读；本连接是否启用客户端类型检查 |
-| `onPhase` / `onChunk` | Diff 回调（`onChunk` 为别名）；**替换**回调，不回放历史 |
-| `onLineIntercept` / `clearLineIntercepts` | 缓冲行拦截（§6.4）；与 `onPhase` 分层 |
-| `onAnnotationSpan` / `clearAnnotationSpans` | 相位 Annotation Span（§6.5）；**typeCheck 前**，处理区逃逸类型检查 |
-| `onDone` / `onError` | 终态 / 错误 |
+| `onPhase` / `onChunk` | Diff 回调（`onChunk` 为别名）；**替换**回调；**`connect` resolve 后锁定** — 用 connect options |
+| `onLineIntercept` / `clearLineIntercepts` | 缓冲行拦截（§6.4）；**`connect` 后锁定**；优先 options 的 `lineIntercept` |
+| `onAnnotationSpan` / `clearAnnotationSpans` | 相位 Annotation Span（§6.5）；**`connect` 后锁定**；优先 options 的 `annotationSpan` |
+| `onDone` / `onError` | 终态 / 错误；**`connect` 后锁定** |
+| `handlersLocked` | 成功 `XaiopWs.connect` / `XaiopBrowserWs.connect` 后为 `true` |
 | `getCommittedSnapshot` / `getSnapshot` | 同 Stream：流中用 committed；终态前 `getSnapshot()` 为 `undefined` |
 | `done` | 对端关闭且 `finish` 后的终态 Promise |
 | `closed` | 套接字拆完（在 `done` 路径之后） |
@@ -725,8 +740,8 @@ encodePhaseObject(object, { final?, encodeOptions? }): string
 
 因此 **`onPhase` / `onDone` / `onError` 以及 `done` 的 settle 均可发生在 `await connect(...)` 返回之前**（接受端在 `connection` 里同步推送时尤其常见）。
 
-**必须：** 需要处理早帧时，把回调放进 **`connect` 的 options**。  
-**禁止依赖：** `await connect` 之后再 `client.onPhase(...)` 去接同步首包——可能已晚且**不回放**。  
+**必须：** 需要处理早帧时，把回调放进 **`connect` 的 options**（`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`）。成功 `connect` 之后连接进入 **handler 锁定**：再调 `onPhase` / `onLineIntercept` / … 会抛 `TypeError`（listen-accept 侧不锁，仍可晚注册）。  
+**禁止依赖：** `await connect` 之后再挂回调去接同步首包——可能已晚且**不回放**。  
 若业务要「等 connect 返回再处理」：应用层自行排队；不要要求 SDK 延后投递。
 
 完整表与测试引用：[notes/ws-session.zh-CN.md](notes/ws-session.zh-CN.md) §5。
@@ -738,7 +753,7 @@ encodePhaseObject(object, { final?, encodeOptions? }): string
 | API | 相位 | 说明 |
 | --- | --- | --- |
 | `XaiopStream` | **有** | `onChunk` = 相位 Diff；传输：`fetch` / SSE / **原生** `WebSocket` / RAW（无 `ws` / `node:stream`）；可 `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan` |
-| `XaiopBrowserWs.connect` | **有** | `onPhase` / `onChunk`；可选 `pushJson` / `pushObject` / `pushWire`；可 `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan`；**无** `listen` / hub / `pushTypeConsistency`（推送在 Node 服务端） |
+| `XaiopBrowserWs.connect` | **有** | `onPhase` / `onChunk`；可选 `pushJson` / `pushObject` / `pushWire` / `pushWireLn`；可 `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan`；**无** `listen` / hub / `pushTypeConsistency`（推送在 Node 服务端）；`connect` 后 handler 锁定 |
 | `XaiopBrowserWs.encodePhaseJson` / `encodePhaseObject` | — | 同 Node 相位编码辅助 |
 | `xaiop/core` | 无网络 | 可本地 `DotCheckpointEngine`，需自行喂文本 |
 
@@ -772,8 +787,10 @@ console.log(await client.done);
 
 | `conflict` | 行为 |
 | --- | --- |
-| `overwrite`（默认） | 采用 overlay |
+| `overwrite`（默认） | **在冲突键上**采用 overlay |
 | `keep` | 保留基底；非冲突键仍并入 |
+
+**不是 Diff 应用器：** `mergeJson` / `mergeToJson` **不会删除** overlay 中缺失的键。例如 `mergeJson({ cart: { a: 1, b: 2 } }, { cart: { a: 1 } })` 仍保留 `b`。`onChunk` / `onPhase` 的相位 Diff 是**子树替换**（或累积 commit）语义——本地应用 Diff 请按路径替换（或直接取 `getCommittedSnapshot()`）；**不要**把 Diff 灌进 `mergeJson`。见 [notes/streaming-parse.zh-CN.md](notes/streaming-parse.zh-CN.md)（Commit vs chunk）。
 
 常量：`MERGE_CONFLICT.OVERWRITE` / `KEEP`。
 

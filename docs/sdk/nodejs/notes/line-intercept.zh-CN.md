@@ -40,7 +40,7 @@
 
 3. `view` 为**固定模板**最小分类（`LINE_KIND`），**不是**类型系统 / `typeCheck`。
 4. 链上有拦截器时，Diff 的 owned-parse 使用**生效行**拼线（与缓冲原文可能不一致）。
-5. 仅 `streamProcessing: true`（默认）的行扫描路径生效；`streamProcessing: false` 整缓冲一次 parse **不**跑拦截。
+5. 仅 `streamProcessing: true`（裸 `DotCheckpointEngine` 默认开，与 `XaiopStream` / WS 相同）的行扫描路径生效；`streamProcessing: false` 整缓冲一次 parse **不**跑拦截。
 6. `jumpTo` 重建时若仍有拦截器，对保留前缀**重新跑链**。
 7. 是否关闭相位看**拦截后的文本**：跳过 `.` → 相不关；把普通行改成 `.` → 提前关相。
 

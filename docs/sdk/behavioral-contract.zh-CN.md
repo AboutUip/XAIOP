@@ -107,9 +107,10 @@ Content 类型遵循 `PROT-CONTENT`（`:` 后空格强制字符串；int → flo
 4. **数组文档根** 以 `-` 开头，**不**插入对象式顶层 `.` 相位（数组根上忽略用于分相的 `dotPolicy`）。
 5. 紧挨 `.` 或 EOF 前的尾 `<` 可省略（与 reset / 结束冗余）。
 6. 拒绝键：空 / 空白 / `:`、尾 `-`、字符 `>` `<` `=` `!`。
-7. 稀疏数组 `undefined` 洞 → 错误；对象 `null` 在 `omit` 下丢键；**数组 null 仍编码**（除非 `nullPolicy: "error"`）。
+7. 拒绝含 CR/LF、或以 **U+0020 SPACE 开头**的字符串值（强制 string 标记不算载荷——拒绝而非静默剥离）。
+8. 稀疏数组 `undefined` 洞 → 错误；对象 `null` 在 `omit` 下丢键；**数组 null 仍编码**（除非 `nullPolicy: "error"`）。
 
-完整指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md)。
+完整指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) · [nodejs/notes/encode-attention.zh-CN.md](nodejs/notes/encode-attention.zh-CN.md)。
 
 ---
 
@@ -119,10 +120,11 @@ Content 类型遵循 `PROT-CONTENT`（`:` 后空格强制字符串；int → flo
 | --- | --- |
 | 角色 | 发送前 / 接收后的离线合并 — **不是** WS / `.` Diff 传输 |
 | 操作数序 | 基底 **JSON** + overlay **XAIOP**（或经 `injectJson` / `mergeJson` 的 JSON） |
-| `conflict` | `overwrite`（**默认**）或 `keep` — **仅冲突键**；普通对象深合并；数组/标量在该键上整体冲突 |
+| `conflict` | `overwrite`（**默认**）或 `keep` — **仅冲突键**；普通对象深合并；数组/标量在该键上整体冲突；**overlay 缺键不是删除** |
 | 返回 | `mergeToJson` → JSON；`mergeToXaiop` → 线文（默认 encode `dotPolicy: "none"`） |
 | Engine 注入 | `injectXaiop` / `injectJson` 按 `dataId` 写回 store；`as: "json"\|"xaiop"` 选返回形态 |
 | 片段 | 已存 `XaiopFragment` 先物化再合并 |
+| vs 流式 Diff | **不要**用 `mergeJson` 应用 `onChunk` Diff — Diff 是子树替换 / commit 面；merge 是离线深合并 |
 
 指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md)。
 
@@ -202,7 +204,7 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 - [ ] 默认严格；兼容可选；encode 始终严格  
 - [ ] 八项兼容修复（或文档化子集）与同类 rewrite / pop-and-retry / locate 重试  
 - [ ] Fragment vs 完整根 vs 空 `{}`；流式物化策略已说明  
-- [ ] Encode 默认 + 数组根无顶层 `.` + 尾 `\n` + 键危害  
+- [ ] Encode 默认 + 数组根无顶层 `.` + 尾 `\n` + 键危害 + 拒绝前导 U+0020 字符串  
 - [ ] 合并/注入：冲突键 `overwrite`/`keep`；inject 写回 store；非流式  
 - [ ] Diff = `.` 相位；默认 **窗口合并**（`mergeChunkWindow`）；逐步模式下空 → `null`；commit vs chunk；后续相注入 leading `.`  
 - [ ] 异步摄入可选（`pushAsync` / `asyncParse`）— 合并扫描，非空 Promise 壳  

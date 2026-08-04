@@ -18,6 +18,7 @@ import { scheduleImmediate } from "./schedule.js";
  * - `emitDiff: false` skips Diff parse when callers only need Commit/final.
  * - `mergeChunkWindow` (default true): batch all complete `.` in the current
  *   buffer window into one feed + one Commit + one onChunk (not per true net chunk).
+ * - `streamProcessing` (default true): mid-stream `.` phase scan (same as Stream / WS).
  * - `pushAsync` / `finishAsync`: coalesce drains on setImmediate (yield + fewer scans).
  */
 
@@ -35,7 +36,8 @@ import { applyAnnotationSpans } from "./annotation-span.js";
  *
  * @typedef {object} CheckpointHooks
  * @property {false|boolean|object} compat
- * @property {boolean} streamProcessing
+ * @property {boolean} [streamProcessing] Mid-stream `.` phases (default true; same as XaiopStream / WS)
+ * @property {boolean} [symbolKeys] Decode U+001F label escapes (default false; pair with encode `symbolKeys`)
  * @property {(diff: unknown, meta?: { typeCheckEscapePaths?: string[] }) => void} onChunk
  * @property {boolean} [emitDiff]
  * @property {boolean} [mergeChunkWindow]
@@ -51,6 +53,8 @@ export class DotCheckpointEngine {
   /** @param {CheckpointHooks} hooks */
   constructor(hooks) {
     this._hooks = hooks;
+    /** @type {boolean} */
+    this._streamProcessing = hooks.streamProcessing !== false;
     /** @type {boolean} */
     this._emitDiff = hooks.emitDiff !== false;
     /** @type {boolean} */
@@ -266,6 +270,11 @@ export class DotCheckpointEngine {
     return this._committedAt;
   }
 
+  /** Whether mid-stream `.` phase scanning is on (default true). */
+  get streamProcessing() {
+    return this._streamProcessing;
+  }
+
   /** Whether buffer-window `.` batching is on (default true). */
   get mergeChunkWindow() {
     return this._mergeChunkWindow;
@@ -317,7 +326,10 @@ export class DotCheckpointEngine {
     } else {
       this._buffer = this._buffer.slice(0, Math.min(end, this._buffer.length));
     }
-    this._live = new LiveXaiopParser(this._hooks.compat);
+    this._live = new LiveXaiopParser({
+      compat: this._hooks.compat,
+      symbolKeys: this._hooks.symbolKeys === true,
+    });
     if (this._buffer.length > 0) {
       if (this._lineInterceptors.length > 0) {
         let at = 0;
@@ -347,8 +359,13 @@ export class DotCheckpointEngine {
 
   /**
    * Materialized parse of buffer[0..committedAt).
-   * Only advances when a `.` phase completes or tail is flushed at finish —
-   * never from mid-phase partial wire.
+   * Advances when a `.` phase completes or the unfinished tail is flushed at
+   * `finish()` — never from mid-phase partial wire.
+   *
+   * After a phase commit the value may be **live-backed** until first read:
+   * this getter materializes (and caches) then. Use `committedAt > 0` to test
+   * whether a commit exists; do not treat a pre-read internal cache hole as
+   * "no commit". Prefer this getter over guessing Diff/`onChunk` payloads.
    */
   get committedSnapshot() {
     if (this._commitFromLive && this._live) {
@@ -372,7 +389,7 @@ export class DotCheckpointEngine {
     if (!chunk) return;
     this._buffer += chunk;
     this._resolveAsyncDrainEarly();
-    if (this._hooks.streamProcessing) this._scanDots(false);
+    if (this._streamProcessing) this._scanDots(false);
   }
 
   /**
@@ -391,7 +408,7 @@ export class DotCheckpointEngine {
     }
     if (!chunk) return Promise.resolve();
     this._buffer += chunk;
-    if (!this._hooks.streamProcessing) return Promise.resolve();
+    if (!this._streamProcessing) return Promise.resolve();
     return this._scheduleAsyncDrain();
   }
 
@@ -428,7 +445,7 @@ export class DotCheckpointEngine {
   _finishBody() {
     this._closed = true;
 
-    if (!this._hooks.streamProcessing) {
+    if (!this._streamProcessing) {
       const value = this._parseOwned(this._buffer);
       this._storeCommit(this._buffer.length, value, false);
       this._emitChunk(value);
@@ -467,7 +484,7 @@ export class DotCheckpointEngine {
           return;
         }
         try {
-          if (!this._closed && this._hooks.streamProcessing) {
+          if (!this._closed && this._streamProcessing) {
             this._scanDots(false);
           }
           resolve();
@@ -882,7 +899,10 @@ export class DotCheckpointEngine {
 
   _ensureLive() {
     if (!this._live) {
-      this._live = new LiveXaiopParser(this._hooks.compat);
+      this._live = new LiveXaiopParser({
+      compat: this._hooks.compat,
+      symbolKeys: this._hooks.symbolKeys === true,
+    });
     }
   }
 
@@ -898,10 +918,16 @@ export class DotCheckpointEngine {
   /** @param {string[]} lines */
   _feedLiveLines(lines) {
     if (!this._live) {
-      this._live = new LiveXaiopParser(this._hooks.compat);
+      this._live = new LiveXaiopParser({
+      compat: this._hooks.compat,
+      symbolKeys: this._hooks.symbolKeys === true,
+    });
     }
+    // Invalidate cached commit; live tree is ahead until `_storeCommit`.
+    // Keep `_commitFromLive` true so peeks/getters still materialize from live
+    // between feed and store (false + undefined would look like "no commit").
     this._committedSnapshot = undefined;
-    this._commitFromLive = false;
+    this._commitFromLive = true;
     for (let i = 0; i < lines.length; i++) {
       this._live.feedLine(lines[i]);
     }
@@ -964,7 +990,12 @@ export class DotCheckpointEngine {
    */
   _parseOwned(text) {
     if (text.length === 0) return null;
-    return materializeOwned(parseSync(text, this._hooks.compat));
+    return materializeOwned(
+      parseSync(text, {
+        compat: this._hooks.compat,
+        symbolKeys: this._hooks.symbolKeys === true,
+      }),
+    );
   }
 }
 

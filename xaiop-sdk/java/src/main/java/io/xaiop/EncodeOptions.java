@@ -74,6 +74,7 @@ public final class EncodeOptions {
   private final NullPolicy nullPolicy;
   private final UndefinedPolicy undefinedPolicy;
   private final Predicate<PhaseContext> shouldPhase;
+  private final boolean symbolKeys;
 
   private EncodeOptions(Builder b) {
     this.root = b.root;
@@ -87,6 +88,7 @@ public final class EncodeOptions {
     this.nullPolicy = b.nullPolicy;
     this.undefinedPolicy = b.undefinedPolicy;
     this.shouldPhase = b.shouldPhase;
+    this.symbolKeys = b.symbolKeys;
   }
 
   /** All-defaults options (shared instance). */
@@ -150,6 +152,11 @@ public final class EncodeOptions {
     return shouldPhase;
   }
 
+  /** U+001F label escape dialect for operator-head keys (default {@code false}). */
+  public boolean symbolKeys() {
+    return symbolKeys;
+  }
+
   /** Mutable builder; unset fields keep the Node defaults. */
   public static final class Builder {
     private Root root = Root.AUTO;
@@ -163,6 +170,7 @@ public final class EncodeOptions {
     private NullPolicy nullPolicy = NullPolicy.ENCODE;
     private UndefinedPolicy undefinedPolicy = UndefinedPolicy.OMIT;
     private Predicate<PhaseContext> shouldPhase;
+    private boolean symbolKeys;
 
     private Builder() {}
 
@@ -232,6 +240,12 @@ public final class EncodeOptions {
     /** Required by {@link DotPolicy#CUSTOM}; called per top-level key. */
     public Builder shouldPhase(Predicate<PhaseContext> value) {
       this.shouldPhase = value;
+      return this;
+    }
+
+    /** Escape operator-head keys with U+001F on the wire (default {@code false}). */
+    public Builder symbolKeys(boolean value) {
+      this.symbolKeys = value;
       return this;
     }
 

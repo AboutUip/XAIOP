@@ -198,7 +198,7 @@ Do **not** confuse three kinds of `null`:
 ### 3.1 `parseSync` / `parseAsync`
 
 ```ts
-parseSync(source, compat?): unknown | XaiopFragment
+parseSync(source, compatOrOptions?): unknown | XaiopFragment
 parseAsync(source, compat?): Promise<unknown | XaiopFragment>
 ```
 
@@ -243,15 +243,17 @@ cursorRestoreLines(): string[]     // `>` / `>name-` chain for cover restore; at
 | Method | Notes |
 | --- | --- |
 | `feedLine` | Complete logical line (no trailing LF/CRLF) |
-| `feedText` | Split with the same rules as `parseSync` |
+| `feedText` | Split like `parseSync` — **no half-line buffer across calls**; a trailing segment without LF is a full line. For arbitrary network chunks use `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | Current document (further feeds mutate in place) |
 | `cursorRestoreLines` | Unavailable while broadcast is active; anonymous / array-element frames on stack → syntax error |
 
 ```js
 const live = new LiveXaiopParser();
+// OK: complete lines (trailing incomplete segment without LF is still one line)
 live.feedText(">\n>a\nx:1\n.\n>b\ny:2\n");
 live.cursorRestoreLines(); // → [">b"]
 live.value();              // → { a: { x: 1 }, b: { y: 2 } }
+// NOT for TCP/WS byte slices: feedText(">me") then feedText("ta\n") ≠ feedText(">meta\n")
 ```
 
 ### 3.3 `XaiopFragment`
@@ -283,6 +285,7 @@ Free functions / `XaiopEngine` static / instance produce the same wire for the s
 **Guarantees:** for accepted values, `parseSync(encodeSync(value, opt))` deep-equals `value`; wire ends with exactly one `\n`.  
 **Not guaranteed:** byte-identical `encode(parse(handwritten wire))`.
 
+**Rejected string values (throw `XaiopEncodeError`):** containing CR/LF; **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable.
 ```js
 import { encodeSync, DOT_POLICY } from "xaiop";
 
@@ -306,6 +309,7 @@ encodeSync(obj, { dotPolicy: ["meta", "items[0]"] }); // path cuts
 | `nullPolicy` | `"encode"` | `"encode"` typed null; `"omit"` drop object null keys (arrays still encode); `"error"` throw on null |
 | `undefinedPolicy` | `"omit"` | `"omit"` \| `"error"` |
 | `shouldPhase` | — | Required when `dotPolicy: "custom"` |
+| `symbolKeys` | `false` | Opt-in U+001F label-escape dialect so keys may begin with `#` `@` `>` `<` `=` `!` `&` or U+001F; **both encode and parse must enable**; see [label-escape](../../protocol/notes/label-escape.md) |
 
 Path-array overload is **mutually exclusive** with `phaseEvery` / `maxPhases` / `shouldPhase`; requires `style: "reset"`; array index must be the **final** path segment. Helpers: `parseJsonPath` / `formatJsonPath`.
 
@@ -317,9 +321,10 @@ These keys throw `XaiopEncodeError` (no silent reshape):
 | --- | --- |
 | Empty / whitespace / contains `:` | Illegal Label name |
 | Ends with `-` | Conflicts with `>name-` array enter |
-| Contains `>` `<` `=` `!` **`&`** | Cursor / locate / delete operator ambiguity |
+| Contains `>` `<` `=` `!` **`&`** (in the key body) | Cursor / locate / delete operator ambiguity |
+| **Begins with** `#` `@` `>` `<` `=` `!` `&` or **U+001F** | Line-class / reserved escape introducer — unless `symbolKeys: true` |
 
-Constant: `DOT_POLICY`.
+Constants: `DOT_POLICY` · `LABEL_ESCAPE_INTRODUCER` (`"\u001f"`).
 
 ---
 
@@ -521,9 +526,9 @@ Low-level `.`-phase parser (used inside `XaiopStream` / WS; usable directly).
 
 ```js
 const eng = new DotCheckpointEngine({
-  streamProcessing: true,
-  mergeChunkWindow: true,
-  emitDiff: true,
+  streamProcessing: true,   // default
+  mergeChunkWindow: true,   // default
+  emitDiff: true,           // default
   cover: false,
   historySnapshot: false,
   historyRealtime: false,
@@ -542,6 +547,13 @@ eng.onLineIntercept(fn); // see §6.4
 eng.onAnnotationSpan(fn); // see §6.5
 ```
 
+| Option | Default | Notes |
+| --- | --- | --- |
+| `streamProcessing` | `true` | Mid-stream `.` phases + line-scan path (intercept / Span); same default as `XaiopStream` / WS. Bare `new DotCheckpointEngine({...})` without the flag is **on**. |
+| `mergeChunkWindow` | `true` | Batch complete `.` in the buffer window → one Diff |
+| `emitDiff` | `true` | Set `false` when only Commit / final snapshot is needed |
+| `cover` | `false` | Cover-mode Diff for `&` |
+
 | Method | Notes |
 | --- | --- |
 | `push` / `pushAsync` | Sync ingest / `setImmediate`-coalesced scan |
@@ -549,6 +561,7 @@ eng.onAnnotationSpan(fn); // see §6.5
 | `jumpTo(index)` | Requires `historyRealtime`; discards nodes after the index |
 | `onLineIntercept` / `clearLineIntercepts` | After complete line split, before parse; see §6.4 |
 | `onAnnotationSpan` / `clearAnnotationSpans` | Phase `#` span; see §6.5 |
+| `streamProcessing` / `mergeChunkWindow` | Read-only getters for the resolved defaults |
 
 ### 6.3 `ParseHistory` / Snapshot helpers
 
@@ -683,13 +696,15 @@ await hub.close();
 | --- | --- |
 | `pushJson(key, value, { final? })` | One key per phase; non-final ensures trailing `.\n`; not OPEN → `false` |
 | `pushObject(object, { final? })` | Multiple keys in one phase; same |
-| `pushWire(text)` | Raw wire text; non-string → `TypeError`; not OPEN → `false` |
+| `pushWire(text)` | Raw wire **as-is** (no auto `\n`); consecutive frames must already be line-safe or peer may glue; not OPEN → `false` |
+| `pushWireLn(text)` | Like `pushWire`, but appends `\n` when `text` does not already end with LF |
 | `pushTypeConsistency(engine\|registry\|snapshot)` | Push registered type schema (control frame); prerequisites in §5.5 |
 | `typeCheck` | Read-only; whether client type checking is on for this connection |
-| `onPhase` / `onChunk` | Diff callback (`onChunk` alias); **replaces** callback; no replay |
-| `onLineIntercept` / `clearLineIntercepts` | Buffer-line intercept (§6.4); layered apart from `onPhase` |
-| `onAnnotationSpan` / `clearAnnotationSpans` | Phase Annotation Span (§6.5); **before typeCheck**; processed region escapes type check |
-| `onDone` / `onError` | Final / error |
+| `onPhase` / `onChunk` | Diff callback (`onChunk` alias); **replaces** callback; **locked after `connect` resolves** — use connect options |
+| `onLineIntercept` / `clearLineIntercepts` | Buffer-line intercept (§6.4); **locked after `connect`**; prefer `lineIntercept` in connect options |
+| `onAnnotationSpan` / `clearAnnotationSpans` | Phase Annotation Span (§6.5); **locked after `connect`**; prefer `annotationSpan` in options |
+| `onDone` / `onError` | Final / error; **locked after `connect`** |
+| `handlersLocked` | `true` after successful `XaiopWs.connect` / `XaiopBrowserWs.connect` |
 | `getCommittedSnapshot` / `getSnapshot` | Same as Stream: committed mid-stream; `getSnapshot()` is `undefined` until final |
 | `done` | Promise of final Snapshot after peer close + `finish` |
 | `closed` | Socket teardown finished (after the `done` path) |
@@ -725,8 +740,9 @@ Internal `connect` order: **create socket → immediately construct `XaiopWsConn
 
 Therefore **`onPhase` / `onDone` / `onError` and settlement of `done` may all happen before `await connect(...)` returns** (especially when the accept side pushes synchronously in `connection`).
 
-**Required:** to handle early frames, put callbacks in **`connect` options**.  
-**Do not rely on:** registering `client.onPhase(...)` only after `await connect` for sync first frames — it can be too late and there is **no replay**.  
+**Required:** put **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`** in **`connect` options**.  
+After `await connect(...)` returns, mutators (`onPhase`, `onLineIntercept`, `onAnnotationSpan`, `onDone`, `onError`, and their `clear*`) **throw** (`handlersLocked`) — there is **no replay** of early frames.  
+Listen-accept connections stay unlocked so a producer/consumer can still attach in `hub.onConnection` if needed.  
 If the app needs “process only after connect returns”: queue in the application layer; do not ask the SDK to defer delivery.
 
 Full table and test reference: [notes/ws-session.md](notes/ws-session.md) §5.
@@ -738,7 +754,7 @@ Import from **`xaiop/browser`** (not the default `"xaiop"`). Shares Node’s `Do
 | API | Phases | Notes |
 | --- | --- | --- |
 | `XaiopStream` | **Yes** | `onChunk` = phase Diff; transports: `fetch` / SSE / **native** `WebSocket` / RAW (no `ws` / `node:stream`); optional `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan` |
-| `XaiopBrowserWs.connect` | **Yes** | `onPhase` / `onChunk`; optional `pushJson` / `pushObject` / `pushWire`; optional `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan`; **no** `listen` / hub / `pushTypeConsistency` (push from Node server) |
+| `XaiopBrowserWs.connect` | **Yes** | `onPhase` / `onChunk`; optional `pushJson` / `pushObject` / `pushWire` / `pushWireLn`; optional `typeCheck` / `typeSchema` / `lineIntercept` / `annotationSpan`; **no** `listen` / hub / `pushTypeConsistency` (push from Node server); handlers locked after connect |
 | `XaiopBrowserWs.encodePhaseJson` / `encodePhaseObject` | — | Same phase encode helpers as Node |
 | `xaiop/core` | No network | Local `DotCheckpointEngine` only; you feed text yourself |
 
@@ -772,8 +788,10 @@ Recommended skeleton combo: Node listen (producer) + browser consume. Practice: 
 
 | `conflict` | Behavior |
 | --- | --- |
-| `overwrite` (default) | Take overlay |
+| `overwrite` (default) | Take overlay **at conflicting keys** |
 | `keep` | Keep base; non-conflicting keys still merge in |
+
+**Not a Diff applicator:** `mergeJson` / `mergeToJson` **do not delete** keys that are absent from the overlay. Example: `mergeJson({ cart: { a: 1, b: 2 } }, { cart: { a: 1 } })` keeps `b`. Phase Diffs from `onChunk` / `onPhase` are **subtree replacement** (or cumulative commit) surfaces — to apply a Diff locally, replace by path (or take `getCommittedSnapshot()`); **do not** pipe Diffs into `mergeJson`. See [notes/streaming-parse.md](notes/streaming-parse.md) (Commit vs chunk).
 
 Constants: `MERGE_CONFLICT.OVERWRITE` / `KEEP`.
 

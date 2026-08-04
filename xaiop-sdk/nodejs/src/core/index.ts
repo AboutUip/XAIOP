@@ -37,6 +37,12 @@ export {
   XaiopFragment,
   XaiopSyntaxError,
 } from "./parse.js";
+export {
+  LABEL_ESCAPE_INTRODUCER,
+  decodeWireLabel,
+  encodeWireLabel,
+  keyNeedsSymbolEscape,
+} from "./label-escape.js";
 export { materializeOwned, materializeSnapshot } from "./materialize.js";
 export {
   ALL_STREAM_MODES,

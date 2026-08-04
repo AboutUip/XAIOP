@@ -94,6 +94,25 @@ class CheckpointRobustTest {
   }
 
   @Test
+  void committedSnapshotReadableAfterDotBeforeFinish() {
+    List<Object> atChunk = new ArrayList<>();
+    DotCheckpointEngine[] box = new DotCheckpointEngine[1];
+    box[0] =
+        DotCheckpointEngine.Options.of(d -> atChunk.add(box[0].committedSnapshot()))
+            .mergeChunkWindow(false)
+            .build();
+    box[0].push(">\na:1\n.\n");
+    assertTrue(box[0].committedAt() > 0);
+    assertEquals(map("a", 1), box[0].committedSnapshot());
+    assertEquals(map("a", 1), atChunk.get(0));
+    box[0].push(">b\nc:2\n.\n");
+    assertEquals(map("a", 1, "b", map("c", 2)), box[0].committedSnapshot());
+    assertEquals(map("a", 1, "b", map("c", 2)), atChunk.get(1));
+    box[0].finish();
+    assertEquals(map("a", 1, "b", map("c", 2)), box[0].committedSnapshot());
+  }
+
+  @Test
   void finishSnapshotAliasesTheLastCommitWhenTheBufferIsFullyCommitted() {
     String wire = ">\n>a\nx:1\n.\n";
     DotCheckpointEngine engine = DotCheckpointEngine.Options.of(chunk -> {}).build();

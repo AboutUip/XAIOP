@@ -76,6 +76,8 @@ export class XaiopStream {
     this._cover = options.cover === true;
     /** Client type freeze / schema check (strict only). */
     this._typeCheck = !!options.typeCheck && !this._compatibilityMode;
+    /** U+001F label escape dialect. */
+    this._symbolKeys = options.symbolKeys === true;
     this._compat = new CompatPolicy();
     /** @type {TypeFreezeSession|null} */
     this._typeSession = this._typeCheck ? new TypeFreezeSession() : null;
@@ -655,6 +657,7 @@ export class XaiopStream {
     this._engine = new DotCheckpointEngine({
       streamProcessing: this._streamProcessing,
       compat: this._compatibilityMode ? this._compat.snapshot() : false,
+      symbolKeys: this._symbolKeys,
       emitDiff: this._wantsPhaseDiff(),
       mergeChunkWindow: this._mergeChunkWindow,
       historySnapshot: this._historySnapshot,

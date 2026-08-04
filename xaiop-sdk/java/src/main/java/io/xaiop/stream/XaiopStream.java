@@ -28,6 +28,7 @@ public final class XaiopStream implements AutoCloseable {
   private boolean compatibilityMode;
   private boolean mergeChunkWindow = true;
   private boolean asyncParse;
+  private boolean symbolKeys;
   private CompatPolicy compat = new CompatPolicy();
   private Set<StreamMode> modes = StreamMode.callbackOnly();
 
@@ -72,6 +73,7 @@ public final class XaiopStream implements AutoCloseable {
       this.compatibilityMode = options.compatibilityMode;
       this.mergeChunkWindow = options.mergeChunkWindow;
       this.asyncParse = options.asyncParse;
+      this.symbolKeys = options.symbolKeys;
       if (options.compat != null) this.compat = options.compat;
       if (options.modes != null) this.modes = StreamMode.normalize(options.modes);
     }
@@ -252,6 +254,7 @@ public final class XaiopStream implements AutoCloseable {
           DotCheckpointEngine.Options.of(this::deliverChunk)
               .streamProcessing(streamProcessing)
               .mergeChunkWindow(mergeChunkWindow)
+              .symbolKeys(symbolKeys)
               .emitDiff(wantsPhaseDiff());
       if (compatibilityMode) {
         engineOpts.compat(compat);
@@ -535,6 +538,7 @@ public final class XaiopStream implements AutoCloseable {
     public boolean compatibilityMode;
     public boolean mergeChunkWindow = true;
     public boolean asyncParse;
+    public boolean symbolKeys;
     public CompatPolicy compat;
     public Iterable<StreamMode> modes;
 
@@ -559,6 +563,12 @@ public final class XaiopStream implements AutoCloseable {
 
     public Options asyncParse(boolean v) {
       asyncParse = v;
+      return this;
+    }
+
+    /** U+001F label escape dialect (pair with encode {@code symbolKeys}). */
+    public Options symbolKeys(boolean v) {
+      symbolKeys = v;
       return this;
     }
 

@@ -46,8 +46,8 @@ No JSON Patch. Accumulation is **protocol later-wins** on the consumer.
 2. Use **committed Snapshot** for progressive UI; **final Snapshot** at close.  
 3. Same key later overwrites earlier (later-wins).  
 4. Connection close is the usual end-of-stream signal.  
-5. **Early-frame timing (`connect`):** producers often push synchronously in `connection`. Consumers **MUST** put `onPhase` / `onDone` in connect options (Node: `XaiopWs.connect`; browser: `XaiopBrowserWs.connect`); do **not** assume “first phase only after `await connect` returns”.  
-6. **Browser:** import from `xaiop/browser`; **phase Diffs are supported** (`onPhase` / `XaiopStream.onChunk`). **No** `listen` — keep the server on Node. See [../sdk/nodejs/API.md](../sdk/nodejs/API.md) §7.6.
+5. **Early-frame timing (`connect`):** producers often push synchronously in `connection`. Consumers **MUST** put `onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan` in connect options (Node: `XaiopWs.connect`; browser: `XaiopBrowserWs.connect`). After `connect` resolves, those mutators **throw** (`handlersLocked`); do **not** assume “first phase only after `await connect` returns”.
+6. **Browser:** import from `xaiop/browser`; **phase Diffs are supported** (`onPhase` / `XaiopStream.onChunk`). **No** `listen` — keep the server on Node. Use `pushWire` (raw) or `pushWireLn` (ensure trailing `\n`) when sending raw wire. See [../sdk/nodejs/API.md](../sdk/nodejs/API.md) §7.6.
 
 ---
 

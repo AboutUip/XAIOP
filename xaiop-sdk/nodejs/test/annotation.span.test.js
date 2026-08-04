@@ -885,7 +885,7 @@ skip:9
     }
   });
 
-  test("WS: onAnnotationSpan on connection after connect", async () => {
+  test("WS: onAnnotationSpan after connect is locked; use connect options", async () => {
     const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
     try {
       /** @type {import("../dist/index.js").XaiopWsConnection|null} */
@@ -895,9 +895,10 @@ skip:9
       });
       const client = await XaiopWs.connect(hub.url(), {
         mergeChunkWindow: false,
+        annotationSpan: () => ({ late: true }),
       });
-      client.onAnnotationSpan(() => ({ late: true }));
-      // wait for serverConn
+      assert.equal(client.handlersLocked, true);
+      assert.throws(() => client.onAnnotationSpan(() => ({ x: 1 })), /locked/);
       for (let i = 0; i < 50 && !serverConn; i++) {
         await new Promise((r) => setTimeout(r, 5));
       }

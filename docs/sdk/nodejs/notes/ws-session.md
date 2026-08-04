@@ -22,7 +22,7 @@ One package, two faces on the **same connection type**:
 
 | Face | API | Typical use |
 | --- | --- | --- |
-| Accept / push | `XaiopWs.listen` → `pushJson` / `pushObject` / `pushWire` → `end` | Skeleton producer |
+| Accept / push | `XaiopWs.listen` → `pushJson` / `pushObject` / `pushWire` / `pushWireLn` → `end` | Skeleton producer |
 | Connect / consume | `XaiopWs.connect` → `onPhase` / `getCommittedSnapshot` / `done` | Consumer |
 
 Dependency: Node `ws` (no polyfill required on Node ≥ 18).  
@@ -61,7 +61,8 @@ Attach to an existing HTTP server: `XaiopWs.listen({ server, path: "/xaiop" })`.
 | --- | --- |
 | `pushJson(key, value, { final? })` | `encodeSync({[key]:value}, {dotPolicy:"none"})`; if not `final`, ensure trailing `\n` then append `.\n` |
 | `pushObject(obj, { final? })` | Same for a plain object (multi-key one phase) |
-| `pushWire(text)` | Raw XAIOP text |
+| `pushWire(text)` | Raw XAIOP text **as-is** (no auto newline between frames) |
+| `pushWireLn(text)` | Same, ensuring a trailing `\n` when missing |
 | `encodePhaseJson` / `encodePhaseObject` | Encode without sending (discard after send) |
 
 `final: true` omits the phase-separator `.` (last module). Non-final phases always end with `.\n` so the peer can emit mid-stream Diffs.
@@ -89,7 +90,7 @@ Hardened encode rules apply (rejected keys still throw `XaiopEncodeError` — no
 | `asyncParse` | `false` | Coalesced `pushAsync` ingest (`setImmediate`) |
 | `compatibilityMode` | `false` | Opt-in compat parse |
 
-Pass `onPhase` / `onDone` in **`connect` options** if the peer may push synchronously in `connection` — listeners are attached before `open` completes.
+Pass **`onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan`** in **`connect` options** if the peer may push synchronously in `connection` — listeners are attached before `open` completes. After `connect` resolves, those mutators **throw** (`handlersLocked`); there is no replay.
 
 ---
 
@@ -98,7 +99,7 @@ Pass `onPhase` / `onDone` in **`connect` options** if the peer may push synchron
 | Concern | Official behavior |
 | --- | --- |
 | Connect handshake | `handshakeTimeoutMs` default **15000**; wraps `ws` open wait |
-| Attach order | `XaiopWsConnection` binds message handlers **before** waiting for `open` (sync push on accept must not race) |
+| Attach order | `XaiopWsConnection` binds message handlers **before** waiting for `open` (sync push on accept must not race); **`connect` then `lockHandlers()`** so late registration cannot silently miss frames |
 | Binary frames | Streaming UTF-8 `TextDecoder` across chunks; flush decoder on peer close before `finish()` |
 | `push*` when closed / not OPEN | Returns **`false`** (no throw). Encode errors throw **before** `send` |
 | `end({ code?, reason? })` | Wait until `bufferedAmount === 0` or **2s** elapsed, then `close(code ?? 1000, reason ?? "")` |

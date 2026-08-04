@@ -46,8 +46,8 @@ WebSocket（长连接）
 2. 渐进 UI 用 **committed Snapshot**；关连接后用 **final Snapshot**。  
 3. 同键后写覆盖先写（later-wins）。  
 4. 连接关闭即通常的流结束信号。  
-5. **早帧时序（`connect`）：** 生产端常在 `connection` 里同步推送。消费端 **必须** 把 `onPhase` / `onDone` 放进 connect options（Node：`XaiopWs.connect`；浏览器：`XaiopBrowserWs.connect`）；**不要**假设「`await connect` 返回后才第一次收到相位」。  
-6. **浏览器：** 从 `xaiop/browser` 导入；**支持相位 Diff**（`onPhase` / `XaiopStream.onChunk`）。**无** `listen` — 服务端仍用 Node。见 [../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md) §7.6。
+5. **早帧时序（`connect`）：** 生产端常在 `connection` 里同步推送。消费端 **必须** 把 `onPhase` / `onChunk` / `onDone` / `onError` / `lineIntercept` / `annotationSpan` 放进 connect options（Node：`XaiopWs.connect`；浏览器：`XaiopBrowserWs.connect`）。`connect` resolve 后这些 mutator **抛错**（`handlersLocked`）；**不要**假设「`await connect` 返回后才第一次收到相位」。
+6. **浏览器：** 从 `xaiop/browser` 导入；**支持相位 Diff**（`onPhase` / `XaiopStream.onChunk`）。**无** `listen` — 服务端仍用 Node。发原始线文用 `pushWire`（原样）或 `pushWireLn`（保证尾 `\n`）。见 [../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md) §7.6。
 
 ---
 

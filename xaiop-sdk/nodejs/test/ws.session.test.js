@@ -368,6 +368,52 @@ test("ws: pushWire TypeError for non-string", async () => {
   });
 });
 
+test("ws: pushWireLn appends LF when missing; leaves existing LF", async () => {
+  await withLoopback(async ({ server, client }) => {
+    assert.throws(() => server.pushWireLn(/** @type {any} */ (1)), /string/);
+    // Missing trailing LF → append; already-terminated frame → unchanged.
+    assert.equal(server.pushWireLn(">\na:1\n."), true);
+    assert.equal(server.pushWireLn(">b\nc:2\n"), true);
+    await server.end();
+    assert.deepEqual(await client.done, { a: 1, b: { c: 2 } });
+  });
+});
+
+test("ws: connect locks handlers; listen-accept stays mutable", async () => {
+  const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
+  try {
+    /** @type {import("../dist/index.js").XaiopWsConnection|null} */
+    let server = null;
+    const serverReady = new Promise((resolve) => {
+      hub.onConnection((conn) => {
+        server = conn;
+        resolve(conn);
+      });
+    });
+    const client = await XaiopWs.connect(hub.url(), {
+      onPhase: () => {},
+    });
+    await serverReady;
+    assert.ok(server);
+    assert.equal(client.handlersLocked, true);
+    assert.equal(server.handlersLocked, false);
+    assert.throws(() => client.onPhase(() => {}), /locked/);
+    assert.throws(() => client.onDone(() => {}), /locked/);
+    assert.throws(() => client.onError(() => {}), /locked/);
+    assert.throws(() => client.onLineIntercept(() => {}), /locked/);
+    assert.throws(() => client.clearLineIntercepts(), /locked/);
+    assert.throws(() => client.onAnnotationSpan(() => {}), /locked/);
+    assert.throws(() => client.clearAnnotationSpans(), /locked/);
+    // Accept side may still register after accept.
+    server.onPhase(() => {});
+    server.pushJson("ok", 1, { final: true });
+    await server.end();
+    assert.deepEqual(await client.done, { ok: 1 });
+  } finally {
+    await hub.close();
+  }
+});
+
 test("ws: connect rejects empty url", async () => {
   await assert.rejects(() => XaiopWs.connect(""), /url/);
 });

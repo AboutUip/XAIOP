@@ -49,7 +49,7 @@ Wire `#…`: parsers ignore; no tree change. Annotation Span is an SDK product t
 
 5. Multiple handlers: **registration order**; **first non-`undefined` wins** (`null` counts); later handlers skipped.
 6. Capture ends at: leave with `<` / `<name`, relocate `=` / `@` / `!`, or phase `.`.
-7. Current phase only. Like line intercept: only `streamProcessing: true` (default) line-scan / phase-close paths; `streamProcessing: false` whole-buffer parse does **not** run Span.
+7. Current phase only. Like line intercept: only `streamProcessing: true` (default on bare `DotCheckpointEngine`, same as `XaiopStream` / WS) line-scan / phase-close paths; `streamProcessing: false` whole-buffer parse does **not** run Span.
 
 ---
 

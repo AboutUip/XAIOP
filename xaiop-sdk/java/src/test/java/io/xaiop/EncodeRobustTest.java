@@ -118,6 +118,21 @@ class EncodeRobustTest {
   }
 
   @Test
+  void leadingSpaceInStringValuesIsRejected() {
+    XaiopEncodeError err = encodeError(() -> Encode.encode(map("s", "  spaced")));
+    assertTrue(err.getMessage().contains("U+0020 SPACE"), err.getMessage());
+    assertEquals("$.s", err.getPath());
+    assertTrue(encodeError(() -> Encode.encode(map("s", " "))).getMessage().contains("U+0020"));
+    assertTrue(encodeError(() -> Encode.encode(map("s", "   42"))).getMessage().contains("U+0020"));
+    assertTrue(
+        encodeError(() -> Encode.encode(list("  x"))).getMessage().contains("U+0020"),
+        "array elements are checked too");
+    assertEquals(map("s", "\tspaced"), Parse.parse(Encode.encode(map("s", "\tspaced"))));
+    assertEquals(map("s", "spaced  "), Parse.parse(Encode.encode(map("s", "spaced  "))));
+    assertEquals(map("s", ""), Parse.parse(Encode.encode(map("s", ""))));
+  }
+
+  @Test
   void invalidKeysAreRejected() {
     assertTrue(encodeError(() -> Encode.encode(map("", 1))).getMessage().contains("non-empty"));
     assertTrue(

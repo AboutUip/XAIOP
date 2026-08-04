@@ -60,13 +60,16 @@ Transport text → DotCheckpointEngine.push
 
 **Default `mergeChunkWindow: true`:** collect every complete `.` currently in the buffer window, feed all phase lines into the live tree **once**, one Commit, **one** `onChunk`. Multi-phase Diff = materialized committed tree after the batch (not N phase-local Diffs). Network framing is not preserved as delivery units.
 
-**`mergeChunkWindow: false`:** stepwise — each `.` triggers its own Diff (legacy fine-grained surface):
+**`mergeChunkWindow: false`:** stepwise — each `.` triggers its own Diff (legacy fine-grained surface). The checkpoint **receive buffer** holds partial lines; the live Commit path then feeds **complete** phase lines (not raw network slices):
 
 ```text
-raw  = buffer[segmentStart .. endOfDotLine]
-live.feedText(raw)
+# DotCheckpointEngine (buffers across push chunks) — portable algorithm
+closedPhases = takeCompleteDotPhases(buffer)   # may span many push() calls
+feed complete phase lines into LiveXaiopParser   # feedLine / equivalent
 … emit onChunk(phaseDiff)
 ```
+
+`LiveXaiopParser.feedText` itself has **no** half-line buffer: it is for already line-oriented text. Arbitrary byte/chunk boundaries → `engine.push` / `XaiopStream`, not bare `feedText`.
 
 **Async ingest:** `pushAsync` / `finishAsync` append immediately and coalesce the scan on `setImmediate` (yields the event loop; multiple rapid `pushAsync` share one drain). Prefer with `mergeChunkWindow` for fewer, larger computes. Sync `push` / `finish` remain available.
 
@@ -96,10 +99,11 @@ Strip a leading `.` line and a trailing `.` line from `raw`, then `trim`. If the
 | Value | Source |
 | --- | --- |
 | Chunk / Diff | Parse of **that phase text only** (after inject), except `=`/`!`/`&` after a prior `.` → cumulative committed value |
-| `committedSnapshot` | Live tree after feeding all wire through last `.` / flushed tail (materialized clone) |
+| `committedSnapshot` | Live tree after feeding all wire through last `.` / flushed tail (materialized clone). After a phase, the getter **may materialize lazily** on first read (`committedAt` already advanced). |
 
 Do not implement Diff as `deepDiff(prevCommitted, newCommitted)` unless you document a different product surface — that is **not** the official Node behavior.
 
+**Applying phase Diffs to a local tree:** treat each non-`null` Diff as a **path-level subtree replacement** (or replace from Root when the Diff is a full object shaped like that phase). **Do not** feed Diffs into `mergeJson` / `mergeToJson` — those APIs **deep-merge** and **never delete missing keys**, so delete-shaped phases (`&`, cover tombstones, or a phase that omits prior siblings) will not remove data. Use `getCommittedSnapshot()` for the cumulative truth, or replace by key/path yourself.
 ### Materialize
 
 `XaiopFragment` → clone of `entries` (plain object). Complete documents clone as-is. Stream JSON surfaces never expose the fragment class.
@@ -112,8 +116,8 @@ Do not implement Diff as `deepDiff(prevCommitted, newCommitted)` unless you docu
 | --- | --- | --- |
 | `onChunk` / event `chunk` / async iterator | Each completed `.` phase + EOF tail | Materialized parse of **that phase only** (or `null` if empty) |
 | `onDone` / promise / `getSnapshot()` after complete | After `finish()` | Materialized parse of **entire buffer** (later-wins applied) |
-| `getCommittedSnapshot()` | After each `.` / EOF flush | Cumulative parse of committed prefix — **safe mid-stream** |
-| `DotCheckpointEngine.committedSnapshot` | Each `.` or EOF flush | Same underlying value as above |
+| `getCommittedSnapshot()` | After each `.` / EOF flush | Cumulative parse of committed prefix — **safe mid-stream** (lazy materialize on first read is OK) |
+| `DotCheckpointEngine.committedSnapshot` | Each `.` or EOF flush | Same underlying value as above; bare-engine readers: use the getter after `.` (`committedAt > 0`), not `getSnapshot()` |
 | Mid-stream `getSnapshot()` | During STREAMING | Typically **`undefined`** (unchanged; use `getCommittedSnapshot`) |
 
 ---
@@ -139,8 +143,9 @@ This is an **SDK policy**, documented here — not a silent protocol edit. See [
 2. **Merging chunks yourself:** object keys accumulate/overwrite; a phase that reopens `>name-` **appends** to that named array. Prefer `getCommittedSnapshot()` for cumulative JSON.  
 2b. **Locate / delete across phases:** `=` / `!` / `&` see the **whole tree so far** (向前跨相). Official Diff phases that contain `=` / `!` / `&` parse a **cumulative prefix**. `@` create-or-enter is 本相 and may stay phase-local.  
 2c. **Cover mode (`cover`, default off):** SDK-only Diff shaping for `&`. When on, consecutive `&` runs inject `.`, emit deepest-key `null` tombstone Diffs, then restore Cursor with a `>` chain before following lines. When off, Commit still applies `&` on the live tree; already-emitted Diffs are not rewritten.  
+2d. **`mergeJson` ≠ Diff apply:** deep-merge keeps keys missing from the overlay; do **not** pipe `onChunk` Diffs into `mergeJson` if you need deletes — replace by path or read `getCommittedSnapshot()`.  
 3. **Tolerate `null` chunks** (empty phases, e.g. consecutive `.`).  
-4. **Do not use mid-stream `getSnapshot()`** for UI progress — use `getCommittedSnapshot()`.  
+4. **Do not use mid-stream `getSnapshot()`** for UI progress — use `getCommittedSnapshot()` (bare `DotCheckpointEngine`: same via `committedSnapshot` after `.`; `committedAt > 0` means a commit exists even if materialize is lazy until first read).  
 5. **Compatibility mode** (default **off**): each phase parses with the same policy; `forcedRoot` looks at the **first line of that phase text** (later phases often start with synthetic `.`) — multi-phase + root-array shapes need explicit testing.  
 6. **Transport:** prefer complete lines per SSE/WS **text** message; RAW/WS **binary** now uses a streaming UTF-8 decoder across chunks (do not interleave string+binary mid-code-point).  
 7. **Errors:** mid-stream `XaiopSyntaxError` fails the stream; already emitted chunks are not rolled back.  
