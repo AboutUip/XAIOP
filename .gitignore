@@ -13,6 +13,8 @@ dev/*
 !dev/sdk-timing/**
 dev/sdk-timing/node_modules/
 dev/sdk-timing/last-report.json
+dev/sdk-timing/last-bench.json
+dev/sdk-timing/baseline-bench.json
 .cursor/
 .vscode/
 .idea/

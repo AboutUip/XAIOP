@@ -13,7 +13,8 @@ import { scheduleImmediate } from "./schedule.js";
  *
  * Performance (space/speed):
  * - One LiveXaiopParser for Commit (phase lines fed once, no prefix re-parse).
- * - First phase / `=`/`!`/`&`/`@`: Diff shares one materialize with Commit (no second parse).
+ * - First phase / `=`/`!`/`&`/`@`: one materialize for Diff; Commit stays live-backed
+ *   until read (avoids Diff≡Commit double clone).
  * - Later ordinary Diff: owned parseSync (no redundant clone of a fresh tree).
  * - `emitDiff: false` skips Diff parse when callers only need Commit/final; `onChunk` optional.
  * - `compactCommitted()` discards `buffer[0..committedAt)` while keeping the live tree (long sessions).
@@ -777,8 +778,8 @@ export class DotCheckpointEngine {
         this._emitChunk(this._history.getDiff(this._history.length - 1));
         return;
       }
-      const committed = this._peekCommit();
-      this._emitChunk(isolateDiff(committed, committed));
+      // Cumulative Diff for merged multi-`.` window — one clone only.
+      this._emitChunk(cloneJson(this._peekCommit()));
       return;
     }
 
@@ -816,9 +817,9 @@ export class DotCheckpointEngine {
     }
 
     // Multi-phase window: one Commit + one Diff = cumulative tree after batch.
-    const committed = materializeSnapshot(this._live.value());
-    this._storeCommit(lastEnd, committed, false);
-    this._emitChunk(isolateDiff(committed, committed));
+    // Commit stays live-backed; Diff is a single materialize (no second isolate clone).
+    this._storeCommit(lastEnd, undefined, true);
+    this._emitChunk(materializeSnapshot(this._live.value()));
   }
 
   /** @param {number} end exclusive end of the `.` line */
@@ -877,10 +878,15 @@ export class DotCheckpointEngine {
           committed = undefined;
           diff = null;
           fromLive = true;
+        } else if (isEmptyPhaseWire(raw)) {
+          committed = undefined;
+          diff = null;
+          fromLive = true;
         } else {
-          committed = materializeSnapshot(this._live.value());
-          diff = isolateDiff(committed, committed);
-          fromLive = false;
+          // One materialize for Diff; Commit stays live-backed.
+          committed = undefined;
+          diff = materializeSnapshot(this._live.value());
+          fromLive = true;
         }
       } else {
         ({ diff, committed, fromLive } = this._buildDiff(raw));
@@ -1011,11 +1017,10 @@ export class DotCheckpointEngine {
       this._emitChunk(null);
     } else if (!any && opts.isTail && lines.length > 0) {
       this._feedLiveLines(lines);
-      const committed = materializeSnapshot(this._live.value());
-      this._storeCommit(bufferEnd, committed, false);
+      this._storeCommit(bufferEnd, undefined, true);
       this._allocPhaseSeq();
       this._emitChunk(
-        this._emitDiff ? isolateDiff(committed, committed) : null,
+        this._emitDiff ? materializeSnapshot(this._live.value()) : null,
       );
     }
 
@@ -1039,13 +1044,11 @@ export class DotCheckpointEngine {
     let diff = null;
     if (this._emitDiff) {
       if (tombstone) {
-        const committed = materializeSnapshot(this._live.value());
         diff = cloneJson(tombstone);
-        this._storeCommit(bufferEnd, committed, false);
+        this._storeCommit(bufferEnd, undefined, true);
       } else if (opts.committedDiff) {
-        const committed = materializeSnapshot(this._live.value());
-        diff = isolateDiff(committed, committed);
-        this._storeCommit(bufferEnd, committed, false);
+        diff = materializeSnapshot(this._live.value());
+        this._storeCommit(bufferEnd, undefined, true);
       } else {
         const built = this._buildDiff(wire);
         diff = built.diff;
@@ -1090,18 +1093,16 @@ export class DotCheckpointEngine {
   _feedLiveLines(lines) {
     if (!this._live) {
       this._live = new LiveXaiopParser({
-      compat: this._hooks.compat,
-      symbolKeys: this._hooks.symbolKeys === true,
-    });
+        compat: this._hooks.compat,
+        symbolKeys: this._hooks.symbolKeys === true,
+      });
     }
     // Invalidate cached commit; live tree is ahead until `_storeCommit`.
     // Keep `_commitFromLive` true so peeks/getters still materialize from live
     // between feed and store (false + undefined would look like "no commit").
     this._committedSnapshot = undefined;
     this._commitFromLive = true;
-    for (let i = 0; i < lines.length; i++) {
-      this._live.feedLine(lines[i]);
-    }
+    this._live.feedLines(lines);
   }
 
   /**
@@ -1113,25 +1114,17 @@ export class DotCheckpointEngine {
       return { diff: null, committed: undefined, fromLive: true };
     }
 
-    // First phase: live tree IS the phase document — share one materialize.
-    if (!this._sawDot) {
-      const committed = materializeSnapshot(this._live.value());
+    // First phase / locate / fallback: Diff is a clone of the live Commit tree.
+    // Keep Commit live-backed (fromLive) so we pay one materialize for Diff,
+    // not materialize + isolateDiff second clone.
+    if (!this._sawDot || phaseNeedsPriorTree(raw)) {
+      if (isEmptyPhaseWire(raw)) {
+        return { diff: null, committed: undefined, fromLive: true };
+      }
       return {
-        diff: isolateDiff(normalizeEmptyPhase(raw, committed), committed),
-        committed,
-        fromLive: false,
-      };
-    }
-
-    // `=` / `!` / `&` / `@` see the cumulative tree (向前跨相).
-    // Protocol MAY keep `@` Diff phase-local; Node product Diff uses cumulative
-    // so create-vs-enter (esp. into a prior-phase array) matches live Commit.
-    if (phaseNeedsPriorTree(raw)) {
-      const committed = materializeSnapshot(this._live.value());
-      return {
-        diff: isolateDiff(normalizeEmptyPhase(raw, committed), committed),
-        committed,
-        fromLive: false,
+        diff: materializeSnapshot(this._live.value()),
+        committed: undefined,
+        fromLive: true,
       };
     }
 
@@ -1146,11 +1139,13 @@ export class DotCheckpointEngine {
     } catch {
       // Commit already applied; never abort the stream solely because Diff
       // isolation failed — fall back to cumulative committed as Diff.
-      const committed = materializeSnapshot(this._live.value());
+      if (isEmptyPhaseWire(raw)) {
+        return { diff: null, committed: undefined, fromLive: true };
+      }
       return {
-        diff: isolateDiff(normalizeEmptyPhase(raw, committed), committed),
-        committed,
-        fromLive: false,
+        diff: materializeSnapshot(this._live.value()),
+        committed: undefined,
+        fromLive: true,
       };
     }
   }
@@ -1208,6 +1203,8 @@ export class DotCheckpointEngine {
 }
 
 /**
+ * When Diff and Commit would be the same tree, return an isolated clone.
+ * Prefer calling sites that materialize once and keep Commit live-backed.
  * @param {unknown} diff
  * @param {unknown} committed
  */
@@ -1319,15 +1316,58 @@ function phaseNeedsPriorTree(raw) {
 }
 
 /**
+ * True when phase wire is only `.` / blank framing (empty Diff → null).
+ * Equivalent to:
+ *   raw.replace(/^\.\r?\n?/, "").replace(/\r?\n?\.\r?\n?$/, "").trim() === ""
+ * @param {string} raw
+ */
+function isEmptyPhaseWire(raw) {
+  let start = 0;
+  let end = raw.length;
+  // /^\.\r?\n?/
+  if (start < end && raw.charCodeAt(start) === 46) {
+    start++;
+    if (start < end && raw.charCodeAt(start) === 13) start++;
+    if (start < end && raw.charCodeAt(start) === 10) start++;
+  }
+  // /\r?\n?\.\r?\n?$/ — try match from end
+  if (end > start) {
+    let e = end;
+    if (e > start && raw.charCodeAt(e - 1) === 10) e--;
+    if (e > start && raw.charCodeAt(e - 1) === 13) e--;
+    if (e > start && raw.charCodeAt(e - 1) === 46) {
+      e--;
+      if (e > start && raw.charCodeAt(e - 1) === 10) e--;
+      if (e > start && raw.charCodeAt(e - 1) === 13) e--;
+      end = e;
+    }
+  }
+  // trim
+  while (start < end) {
+    const c = raw.charCodeAt(start);
+    if (c === 32 || c === 9 || c === 10 || c === 13) {
+      start++;
+      continue;
+    }
+    break;
+  }
+  while (end > start) {
+    const c = raw.charCodeAt(end - 1);
+    if (c === 32 || c === 9 || c === 10 || c === 13) {
+      end--;
+      continue;
+    }
+    break;
+  }
+  return start >= end;
+}
+
+/**
  * @param {string} raw
  * @param {unknown} value
  */
 function normalizeEmptyPhase(raw, value) {
-  const body = raw
-    .replace(/^\.\r?\n?/, "")
-    .replace(/\r?\n?\.\r?\n?$/, "")
-    .trim();
-  return body.length === 0 ? null : value;
+  return isEmptyPhaseWire(raw) ? null : value;
 }
 
 /** @param {string} line */
@@ -1380,16 +1420,21 @@ function linesToWire(lines) {
 function readLine(text, from, atEof) {
   if (from >= text.length) return null;
   let i = from;
-  while (i < text.length) {
-    if (text[i] === "\n") {
-      let line = text.slice(from, i);
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      return { line, end: i + 1, consumedNewline: true };
+  const n = text.length;
+  while (i < n) {
+    if (text.charCodeAt(i) === 10) {
+      let end = i;
+      if (end > from && text.charCodeAt(end - 1) === 13) end--;
+      return {
+        line: text.slice(from, end),
+        end: i + 1,
+        consumedNewline: true,
+      };
     }
     i++;
   }
   if (!atEof) return null;
-  return { line: text.slice(from), end: text.length, consumedNewline: false };
+  return { line: text.slice(from), end: n, consumedNewline: false };
 }
 
 /** @param {string[]} paths */

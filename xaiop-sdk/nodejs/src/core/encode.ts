@@ -1127,24 +1127,33 @@ function typeName(v) {
  * @param {boolean} finalDot
  */
 function joinWire(lines, finalDot) {
-  const cleaned = collapseRedundantLeavesBeforePhase(lines);
-  if (finalDot) cleaned.push(".");
+  let cleaned = collapseRedundantLeavesBeforePhase(lines);
+  if (finalDot) {
+    if (cleaned === lines) cleaned = lines.slice();
+    cleaned.push(".");
+  }
+  if (cleaned.length === 0) return "";
   return cleaned.join("\n") + "\n";
 }
 
 /**
  * @param {string[]} lines
+ * @returns {string[]}
  */
 function collapseRedundantLeavesBeforePhase(lines) {
-  /** @type {string[]} */
-  const out = [];
+  let drop = 0;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
     const next = lines[i + 1];
-    if (line === "<" && (next === "." || next === undefined)) {
-      continue;
-    }
-    out.push(line);
+    if (lines[i] === "<" && (next === "." || next === undefined)) drop++;
+  }
+  if (drop === 0) return lines;
+  /** @type {string[]} */
+  const out = new Array(lines.length - drop);
+  let w = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const next = lines[i + 1];
+    if (lines[i] === "<" && (next === "." || next === undefined)) continue;
+    out[w++] = lines[i];
   }
   return out;
 }

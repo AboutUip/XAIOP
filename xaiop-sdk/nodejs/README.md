@@ -1,6 +1,6 @@
 # XAIOP Node.js SDK
 
-Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.15.0** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.
+Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.15.1** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.
 **Docs:** **[API](../../docs/sdk/nodejs/API.md)** · [Notes](../../docs/sdk/nodejs/notes/) · [Node catalog](../../docs/sdk/behavioral-contract.md)  
 **Practice:** [streaming transport](../../docs/practice/streaming-transport.md) · [skeleton stream](../../docs/practice/skeleton-stream.md) · [keyed modeling](../../docs/practice/keyed-state-modeling.md) · [sealed LLM archive](../../docs/archive/practice-llm-emit-2026-08-04/)  
 **Protocol (wire only):** [../../docs/protocol/](../../docs/protocol/) · [Separation](../../docs/SEPARATION.md)
@@ -68,9 +68,9 @@ See **[docs/sdk/nodejs/API.md](../../docs/sdk/nodejs/API.md)** for the full surf
 
 ```bash
 npm run pack
-# → dist/xaiop-0.15.0.tgz
+# → dist/xaiop-0.15.1.tgz
 ```
 
 ```bash
-npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.15.0.tgz
+npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.15.1.tgz
 ```

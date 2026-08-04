@@ -15,7 +15,7 @@
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="游标 IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="流式相位" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
-  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.0-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
   <img alt="按行" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
 </p>
 

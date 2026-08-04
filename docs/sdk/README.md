@@ -9,7 +9,7 @@ Architecture: [../SEPARATION.md](../SEPARATION.md).
 
 | Stack | Status | Docs |
 | --- | --- | --- |
-| [Node.js](nodejs/) | **Primary / official focus** — `xaiop` **0.15.0** (TS) ↔ protocol **0.6.0**; buffer compact · `@` Diff · Diff isolation · Control Root `#!` / `meta.logSeq` / resume; entries `xaiop` · `xaiop/browser` · `xaiop/core` | **[API.md](nodejs/API.md)** (primary) · [notes/](nodejs/notes/) |
+| [Node.js](nodejs/) | **Primary / official focus** — `xaiop` **0.15.1** (TS) ↔ protocol **0.6.0**; buffer compact · `@` Diff · Diff isolation · Control Root `#!` / `meta.logSeq` / resume; entries `xaiop` · `xaiop/browser` · `xaiop/core` | **[API.md](nodejs/API.md)** (primary) · [notes/](nodejs/notes/) |
 | [Java](java/) | **Active** (`io.xaiop:xaiop` **0.5.0**: parse · encode · merge · checkpoint · stream consumer; protocol **0.4.0** subset) | [Guide](java/README.md) |
 | [Python](python/) | **Pending update** | Placeholder |
 

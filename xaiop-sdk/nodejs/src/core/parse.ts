@@ -124,6 +124,17 @@ export class LiveXaiopParser {
   }
 
   /**
+   * Bulk feed already-validated string lines (checkpoint hot path).
+   * @param {string[]} lines
+   * @returns {this}
+   */
+  feedLines(lines) {
+    const p = this._p;
+    for (let i = 0; i < lines.length; i++) p.feedLineFast(lines[i]);
+    return this;
+  }
+
+  /**
    * Feed every logical line in `text` (same splitting as `parseSync`).
    * **No half-line buffer across calls:** a trailing segment without LF/CRLF is
    * treated as a complete line. Arbitrary network chunks belong on
@@ -137,7 +148,7 @@ export class LiveXaiopParser {
     }
     if (!text) return this;
     for (const line of splitLines(text)) {
-      this._p.feedLine(line);
+      this._p.feedLineFast(line);
     }
     return this;
   }
@@ -219,6 +230,14 @@ class Parser {
     if (typeof line !== "string") {
       throw new TypeError("XAIOP live feedLine requires a string");
     }
+    this.feedLineFast(line);
+  }
+
+  /**
+   * Hot path: `line` must already be a string (no typeof check).
+   * @param {string} line
+   */
+  feedLineFast(line) {
     this._fed += 1;
     this.lineNo = this._fed;
     const logical = this._fed === 1 ? stripBom(line) : line;
@@ -253,9 +272,10 @@ class Parser {
   /** @returns {unknown|XaiopFragment} */
   result() {
     if (this.docKind === "fragment") {
-      return new XaiopFragment({
-        .../** @type {Record<string, unknown>} */ (this.fragmentEntries),
-      });
+      // Share entries object; materializeSnapshot / cloneJson own isolation.
+      return new XaiopFragment(
+        /** @type {Record<string, unknown>} */ (this.fragmentEntries),
+      );
     }
     if (this.root === undefined) {
       return {};

@@ -22,6 +22,8 @@ import {
   DotCheckpointEngine,
   encodeSync,
   parseSync,
+  PROTOCOL_VERSION,
+  SDK_VERSION,
   STREAM_MODES,
   TRANSPORT_KIND,
   XaiopStream,
@@ -432,6 +434,20 @@ function stageProfile(doc, wires, Doc) {
     }),
     bytesIn: wires.xaiopPhased.length,
   });
+  stages.push({
+    id: "XAIOP.checkpoint/emitDiffOff",
+    ...timeSync(() => {
+      const e = new DotCheckpointEngine({
+        compat: false,
+        streamProcessing: true,
+        emitDiff: false,
+      });
+      e.push(wires.xaiopPhased);
+      e.finish();
+      return e.committedSnapshot;
+    }),
+    bytesIn: wires.xaiopPhased.length,
+  });
 
   return stages;
 }
@@ -570,6 +586,12 @@ function analyze(report) {
   bullets.push(
     `XAIOP streamOn ${xOn.toFixed(3)} vs streamOff ${xOff.toFixed(3)} ms/op (×${(xOn / Math.max(xOff, 1e-9)).toFixed(1)}); residual ≈ per-phase Diff parse + optional clone.`,
   );
+  const xNoDiff = byId["XAIOP.checkpoint/emitDiffOff"]?.msPerOp;
+  if (xNoDiff != null) {
+    bullets.push(
+      `XAIOP emitDiffOff ${xNoDiff.toFixed(3)} vs streamOn ${xOn.toFixed(3)} ms/op (×${(xOn / Math.max(xNoDiff, 1e-9)).toFixed(1)}); Commit-only skips Diff parse (0.14.3+).`,
+    );
+  }
 
   const fj = byScheme.FullJSON;
   const nd = byScheme.NDJSON;
@@ -635,9 +657,12 @@ function fmt(n, d = 4) {
 
 function printHuman(report) {
   console.log("Cross-scheme timing: Full JSON / NDJSON / JSON Patch / Protobuf / XAIOP");
-  console.log("(Not LLM PERF-METRICS — local CPU. Fake network delay = 0.)\n");
+  console.log("(Not LLM PERF-METRICS — local CPU. Fake network delay = 0.)");
   console.log(
-    `Node ${process.version}  iters=${ITERS}  warmup=${WARMUP}${quick ? "  --quick" : ""}`,
+    "(XAIOP regression microbench: npm run bench — baseline vs same machine.)\n",
+  );
+  console.log(
+    `SDK ${report.sdk}  protocol ${report.protocol}  Node ${process.version}  iters=${ITERS}  warmup=${WARMUP}${quick ? "  --quick" : ""}`,
   );
   console.log(
     `fixture sections=${report.fixture.sections} itemsPer=${report.fixture.itemsPer}`,
@@ -739,6 +764,9 @@ async function main() {
     kind: "xaiop-cross-scheme-timing",
     schemes: ["FullJSON", "NDJSON", "JSONPatch", "Protobuf", "XAIOP"],
     not: "docs/performance.md PERF-METRICS",
+    sdk: SDK_VERSION,
+    protocol: PROTOCOL_VERSION,
+    harness: "0.2.0",
     node: process.version,
     iters: ITERS,
     warmup: WARMUP,

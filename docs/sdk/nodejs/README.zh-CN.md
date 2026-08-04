@@ -5,7 +5,7 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `xaiop` |
-| SDK | **0.15.0**（TypeScript） |
+| SDK | **0.15.1**（TypeScript） |
 | 协议包 | **0.6.0** Frozen（已封存） |
 | 运行时 | Node.js ≥ 18（默认入口）；浏览器 → `xaiop/browser` |
 | 代码 | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` → `dist/`） |

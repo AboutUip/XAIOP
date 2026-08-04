@@ -5,8 +5,8 @@
 三棵**耦合但隔离**的树的枢纽 — 见 **[SEPARATION.zh-CN.md](SEPARATION.zh-CN.md)**。  
 **XAIOP 是什么：** [overview/introduction.zh-CN.md](overview/introduction.zh-CN.md)。  
 **Frozen / 已封存** = 不可变协议包版本 — [meta/releases.zh-CN.md](meta/releases.zh-CN.md) · [meta/status-and-versioning.zh-CN.md](meta/status-and-versioning.zh-CN.md)（`META-VER`）。  
-**现行 tip：** Node.js `xaiop` **0.15.0** ↔ 协议 **0.6.0**（buffer compact · `@` Diff · Diff 隔离 · 控制根 `#!` / `meta.logSeq` / 续传）。
-**先前发行说明：** [meta/release-notes-2026-08-05-0.15.0.zh-CN.md](meta/release-notes-2026-08-05-0.15.0.zh-CN.md)（Node **0.15.0**）· [meta/release-notes-2026-08-05-0.14.3.zh-CN.md](meta/release-notes-2026-08-05-0.14.3.zh-CN.md)（Node **0.14.3**）· [meta/release-notes-2026-08-05-0.14.2.zh-CN.md](meta/release-notes-2026-08-05-0.14.2.zh-CN.md)（Node **0.14.2**）· [meta/release-notes-2026-08-05-0.14.1.zh-CN.md](meta/release-notes-2026-08-05-0.14.1.zh-CN.md)（Node **0.14.1**）· [meta/release-notes-2026-08-05.zh-CN.md](meta/release-notes-2026-08-05.zh-CN.md)（Node **0.14.0** 控制根）· [meta/release-notes-2026-08-04.zh-CN.md](meta/release-notes-2026-08-04.zh-CN.md)（Node **0.13.0** · Java **0.5.0** · Skill 不再作为产品提供；源码仍在 [`../skills/`](../skills/)）。
+**现行 tip：** Node.js `xaiop` **0.15.1** ↔ 协议 **0.6.0**（性能 · buffer compact · `@` Diff · Diff 隔离 · 控制根 `#!` / `meta.logSeq` / 续传）。
+**先前发行说明：** [meta/release-notes-2026-08-05-0.15.1.zh-CN.md](meta/release-notes-2026-08-05-0.15.1.zh-CN.md)（Node **0.15.1**）· [meta/release-notes-2026-08-05-0.15.0.zh-CN.md](meta/release-notes-2026-08-05-0.15.0.zh-CN.md)（Node **0.15.0**）· [meta/release-notes-2026-08-05-0.14.3.zh-CN.md](meta/release-notes-2026-08-05-0.14.3.zh-CN.md)（Node **0.14.3**）· [meta/release-notes-2026-08-05-0.14.2.zh-CN.md](meta/release-notes-2026-08-05-0.14.2.zh-CN.md)（Node **0.14.2**）· [meta/release-notes-2026-08-05-0.14.1.zh-CN.md](meta/release-notes-2026-08-05-0.14.1.zh-CN.md)（Node **0.14.1**）· [meta/release-notes-2026-08-05.zh-CN.md](meta/release-notes-2026-08-05.zh-CN.md)（Node **0.14.0** 控制根）· [meta/release-notes-2026-08-04.zh-CN.md](meta/release-notes-2026-08-04.zh-CN.md)（Node **0.13.0** · Java **0.5.0** · Skill 不再作为产品提供；源码仍在 [`../skills/`](../skills/)）。
 
 **在线浏览：** `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/)（[Docsify](https://docsify.js.org) 直接读本树，与 Lab 同端口）。侧栏：`python docs/archive/gen-sidebar.py`。
 
@@ -53,7 +53,7 @@ LLM 发射 / 评测口径已迁入目标封存：[archive/practice-llm-emit-2026
 
 | 技术栈 | 文档 | 代码 |
 | --- | --- | --- |
-| **Node.js** | **[sdk/nodejs/API.zh-CN.md](sdk/nodejs/API.zh-CN.md)**（主入口 · §6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根；Node ≥ 18；浏览器相位消费用 `xaiop/browser`） · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.15.0** ↔ 协议 **0.6.0** |
+| **Node.js** | **[sdk/nodejs/API.zh-CN.md](sdk/nodejs/API.zh-CN.md)**（主入口 · §6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根；Node ≥ 18；浏览器相位消费用 `xaiop/browser`） · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.15.1** ↔ 协议 **0.6.0** |
 | Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.5.0**（stream 消费端）· 协议 **0.4.0** 子集 |
 | Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — 待更新 |
 

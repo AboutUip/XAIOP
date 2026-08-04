@@ -15,7 +15,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="Cursor IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="Streaming" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
-  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.0-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
   <img alt="Line-oriented" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
 </p>
 

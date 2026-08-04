@@ -39,6 +39,7 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Implements protocol | Git tag (recommended) | Notes |
 | --- | --- | --- | --- |
+| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | Perf: single Diff materialize + faster `cloneJson`; still protocol **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted` (long-session wire discard); still protocol **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` cumulative Diff (D2); optional `onChunk` / `emitDiff:false`; still protocol **0.6.0** |
 | `0.14.2` | `0.6.0` | `sdk-nodejs-v0.14.2` | Diff isolation after `.` (D1); keyed-state modeling docs / NG6; still protocol **0.6.0** |
@@ -68,6 +69,7 @@ Other languages: declare their own sealed mapping in language READMEs. A languag
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-05 | [release-notes-2026-08-05-0.15.1.md](release-notes-2026-08-05-0.15.1.md) — Node `0.15.1` Diff/Commit perf (single materialize) |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.0.md](release-notes-2026-08-05-0.15.0.md) — Node `0.15.0` `bufferStats` / `compactCommitted` |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.3.md](release-notes-2026-08-05-0.14.3.md) — Node `0.14.3` `@` cumulative Diff (D2) / optional `onChunk` |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.2.md](release-notes-2026-08-05-0.14.2.md) — Node `0.14.2` Diff isolation (D1) / keyed modeling |

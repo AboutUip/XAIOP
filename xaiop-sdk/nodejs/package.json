@@ -1,6 +1,6 @@
 {
   "name": "xaiop",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "description": "XAIOP protocol SDK — Node.js primary; browser client via xaiop/browser (protocol v0.6.0 Frozen)",
   "type": "module",
   "main": "./dist/index.js",

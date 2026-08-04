@@ -13,8 +13,24 @@ import {
  * Also: `emitDiff: false` without `onChunk` must not throw.
  */
 describe("checkpoint Diff isolation (D1 + D2 + emitDiff)", () => {
-  test("SDK_VERSION is 0.15.0", () => {
-    assert.equal(SDK_VERSION, "0.15.0");
+  test("SDK_VERSION is 0.15.1", () => {
+    assert.equal(SDK_VERSION, "0.15.1");
+  });
+
+  test("onChunk Diff mutation does not touch committedSnapshot", () => {
+    const wire = ">\na:1\n.\n>\nb:2\n.\n";
+    /** @type {unknown[]} */
+    const chunks = [];
+    const eng = new DotCheckpointEngine({
+      mergeChunkWindow: false,
+      onChunk: (d) => chunks.push(d),
+    });
+    eng.push(wire);
+    eng.finish();
+    assert.equal(chunks.length, 2);
+    const first = /** @type {{ a: number }} */ (chunks[0]);
+    first.a = 999;
+    assert.deepEqual(eng.committedSnapshot, { a: 1, b: 2 });
   });
 
   // -------------------------------------------------------------------------

@@ -39,6 +39,7 @@
 
 | SDK | 实现的协议 | Git 标签（建议） | 说明 |
 | --- | --- | --- | --- |
+| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | 性能：Diff/Commit 去双克隆、更快 `cloneJson`；仍协议 **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted`（长会话丢弃已提交线文）；仍协议 **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` 累积 Diff（D2）；可选 `onChunk` / `emitDiff:false`；仍协议 **0.6.0** |
 | `0.14.2` | `0.6.0` | `sdk-nodejs-v0.14.2` | `.` 后 Diff 隔离（D1）；键控建模文档 / NG6；仍协议 **0.6.0** |
@@ -68,6 +69,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-05 | [release-notes-2026-08-05-0.15.1.zh-CN.md](release-notes-2026-08-05-0.15.1.zh-CN.md) — Node `0.15.1` Diff/Commit 性能（单次 materialize） |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.0.zh-CN.md](release-notes-2026-08-05-0.15.0.zh-CN.md) — Node `0.15.0` `bufferStats` / `compactCommitted` |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.3.zh-CN.md](release-notes-2026-08-05-0.14.3.zh-CN.md) — Node `0.14.3` `@` 累积 Diff（D2）/ 可选 `onChunk` |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.2.zh-CN.md](release-notes-2026-08-05-0.14.2.zh-CN.md) — Node `0.14.2` Diff 隔离（D1）/ 键控建模 |
