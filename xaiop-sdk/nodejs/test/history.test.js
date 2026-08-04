@@ -1,5 +1,5 @@
 /**
- * Parse history ?snapshot (read-only) + realtime (forward jump).
+ * Parse history ??snapshot (read-only) + realtime (forward jump).
  */
 
 import assert from "node:assert/strict";
@@ -251,7 +251,7 @@ describe("historySnapshot", () => {
     assert.deepEqual(h.getDiff(0), { a: 1 });
     assert.deepEqual(h.getAfter(1), { a: 1, b: 2 });
     assert.deepEqual(h.getAfter(2), { a: 1, b: 2, c: 3 });
-    // Window merge: one push ?one onChunk with cumulative tree
+    // Window merge: one push ??one onChunk with cumulative tree
     assert.equal(chunks.length, 1);
     assert.deepEqual(chunks[0], { a: 1, b: 2, c: 3 });
 
@@ -1361,8 +1361,8 @@ describe("history package surface", () => {
     assert.equal(Object.isFrozen(HISTORY_NODE_KIND), true);
   });
 
-  it("exports SDK_VERSION 0.14.1", () => {
-    assert.equal(SDK_VERSION, "0.14.1");
+  it("exports SDK_VERSION 0.15.0", () => {
+    assert.equal(SDK_VERSION, "0.15.0");
   });
 
   it("exports ParseHistory as a constructible class", () => {

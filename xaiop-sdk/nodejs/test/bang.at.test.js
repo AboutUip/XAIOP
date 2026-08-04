@@ -41,7 +41,7 @@ z:1
   });
 });
 
-test("@path creates missing segments (æœ¬ç›¸)", () => {
+test("@path creates missing segments (??)", () => {
   const v = parseSync(`>
 @a>b
 z:1
@@ -220,7 +220,7 @@ v:1
 
 test("broadcast < at Root on any cursor fails all", () => {
   // After !test, cursors are on test objects (depth>1). Pop once to parent, pop again ok,
-  // third pop from left/right parents hits root frame â†?illegal.
+  // third pop from left/right parents hits root frame ?illegal.
   assert.throws(
     () =>
       parseSync(`>
@@ -307,7 +307,7 @@ test("empty @ and ! paths error", () => {
 });
 
 test("!a>b prunes nested a>b under an outer match start", () => {
-  // Under `p`, match starts at child `a` â†?prune entire `p.a` (nested a>b not updated).
+  // Under `p`, match starts at child `a` ?prune entire `p.a` (nested a>b not updated).
   // Under `q`, separate match updated.
   const v = parseSync(`>
 >p
@@ -334,7 +334,7 @@ z:9
   });
 });
 
-test("stream: ! after . uses cumulative prefix (å‘å‰è·¨ç›¸)", async () => {
+test("stream: ! after . uses cumulative prefix (????)", async () => {
   const { STREAM_MODES, STREAM_STATUS, TRANSPORT_KIND, XaiopStream } =
     await import("../dist/index.js");
   const { chunksOf, waitStatus } = await import("./helpers/stream.js");
@@ -369,7 +369,7 @@ v:1
     right: { test: { y: 2, z: 9 } },
     only: { v: 1 },
   });
-  // Phase with ! uses cumulative prefix â†?onChunk sees full tree at that boundary
+  // Phase with ! uses cumulative prefix ?onChunk sees full tree at that boundary
   const bangChunk = chunks.find(
     (c) =>
       c &&
@@ -378,6 +378,54 @@ v:1
       c.right?.test?.z === 9,
   );
   assert.ok(bangChunk, "expected cumulative chunk after ! phase");
+});
+
+test("stream: @ into prior-phase array uses cumulative Diff (D2)", async () => {
+  const { STREAM_MODES, STREAM_STATUS, TRANSPORT_KIND, XaiopStream } =
+    await import("../dist/index.js");
+  const { chunksOf, waitStatus } = await import("./helpers/stream.js");
+  const stream = new XaiopStream("raw://local", {
+    modes: [STREAM_MODES.PROMISE, STREAM_MODES.CALLBACK],
+    mergeChunkWindow: false,
+  });
+  /** @type {unknown[]} */
+  const chunks = [];
+  stream.onChunk((d) => chunks.push(d));
+  const wire = `>
+>orders-
+.
+@orders
+>
+a:1
+<
+.
+@orders
+>
+a:1
+<
+>
+b:2
+<
+.
+`;
+  const done = await stream.send({
+    transport: TRANSPORT_KIND.RAW,
+    source: chunksOf(wire),
+  });
+  await waitStatus(stream, STREAM_STATUS.COMPLETED);
+  const expected = { orders: [{ a: 1 }, { a: 1 }, { b: 2 }] };
+  assert.deepEqual(done, expected);
+  assert.ok(chunks.length >= 3);
+  const mid = chunks.find(
+    (c) =>
+      c &&
+      typeof c === "object" &&
+      Array.isArray(c.orders) &&
+      c.orders.length === 1 &&
+      c.orders[0]?.a === 1,
+  );
+  assert.ok(mid, "expected array-shaped cumulative Diff after first @ phase");
+  assert.deepEqual(chunks[chunks.length - 1], expected);
 });
 
 test("streamProcessing off: full-buffer parse applies ! across prior . phases", async () => {

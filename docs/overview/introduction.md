@@ -7,7 +7,7 @@
 | Document ID | `OV-INTRO` |
 | Status | Draft |
 | Version | 0.3.0-draft |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-05 |
 | Normative | Mixed (scope and non-goals are normative; background is informative) |
 | Depends on | `META-CONV`, `META-VER`, `META-SEP` |
 | Informs | `OV-PRIN`, `REQ-FUNC`, `REQ-STREAM`, `CONF` |
@@ -21,6 +21,8 @@
 **One line:** the writer walks a cursor; the program holds the tree.
 
 It is **not** a service-to-service JSON bus. It is a bridge from *incremental construction* to *consumable structured snapshots*.
+
+**Scope radius (informative):** XAIOP first-classes **streaming cursor construction** and **keyed / named-path state evolution** on the wire (locate, broadcast, delete, phases). It is **not** a claim to be a universal evolution layer for every JSON shape — in particular, anonymous array elements have **no** addressable label for `=` / `!` / `&` (model with keyed maps or repeated named children). See practice [keyed-state-modeling.md](../practice/keyed-state-modeling.md).
 
 The historical expansion “eXtensible AI Output Protocol” is **legacy naming only**; it does not define scope, primary use case, or conformance. Normative identity is the wire described in sealed protocol packages (see `META-VER`). LLM emit, tooling `encode`, and session push are all **optional writer scenarios** (practice layer), not the wire definition.
 
@@ -114,8 +116,11 @@ The following are **explicitly out of scope** for XAIOP as a protocol:
 | NG3 | Conforming parsers **MUST NOT** be required to repair, infer, or guess Generator intentions when input is not well-formed per the protocol. |
 | NG4 | Content encoding is defined in `PROT-CONTENT` / `PROT-SYNTAX`. Structure rules are in `PROT-BOUND` / `PROT-HIER` / `PROT-SYNTAX`. |
 | NG5 | This specification tree **MUST NOT** define SDK APIs as protocol requirements. |
+| NG6 | XAIOP **MUST NOT** be positioned as a universal patch / evolution language for arbitrary JSON documents (including anonymous array elements without named path identity). |
 
 **Informative note on NG1:** Product stacks **MAY** push phases from programs (encode, WS sessions) into materializing consumers. That is progressive construction on the wire — not a claim to replace JSON as the service-to-service bus.
+
+**Informative note on NG6:** Evolution operators act on **named path fragments** and Cursor position. Modeling guidance: [../practice/keyed-state-modeling.md](../practice/keyed-state-modeling.md).
 
 ---
 

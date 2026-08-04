@@ -82,8 +82,25 @@ export class ParseHistory {
     return this._realtime;
   }
 
+  /** Whether per-node wire text is retained (for `jumpTo` rebuild). */
+  get retainWireEnabled() {
+    return this._retainWire;
+  }
+
   get length() {
     return this._nodes.length;
+  }
+
+  /**
+   * Drop all history nodes and range view (e.g. before `compactCommitted`).
+   * Modes (snapshot / realtime / retainWire) stay as constructed.
+   * @returns {this}
+   */
+  clear() {
+    this._nodes.length = 0;
+    this._liveCursor = -1;
+    this._rangeView = null;
+    return this;
   }
 
   /** Realtime head index (`-1` before any jump). */

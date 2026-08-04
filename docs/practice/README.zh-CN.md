@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `PRACTICE-INDEX` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | **否** |
 
 **建议使用场景** — 不是协议。网络分帧、会话推送属于本树；**不**重定义线格式。  
@@ -22,6 +22,7 @@ LLM 发射 / 评测口径已**目标封存**：[../archive/practice-llm-emit-202
 | --- | --- |
 | [streaming-transport.zh-CN.md](streaming-transport.zh-CN.md) | 经网络搬运线文 — 分帧、产品侧 Snapshot/Diff |
 | [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md) | WebSocket 固定键骨架/模块流 |
+| [keyed-state-modeling.zh-CN.md](keyed-state-modeling.zh-CN.md) | 键控映射 / 重复具名用于定位·广播·删除（非匿名行） |
 
 占位（指向封存）：[model-output.zh-CN.md](model-output.zh-CN.md)
 
@@ -42,6 +43,7 @@ SDK       →  语言 API
 | 线坑点 | [../protocol/notes/](../protocol/notes/) |
 | 字节流 → JSON | [streaming-transport.zh-CN.md](streaming-transport.zh-CN.md) |
 | 骨架 WS 推送 | [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md) |
+| 键控状态建模 | [keyed-state-modeling.zh-CN.md](keyed-state-modeling.zh-CN.md) |
 | Node.js API | [../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md)（§6.4 · §6.5） |
 | Java stream | [../sdk/java/README.zh-CN.md](../sdk/java/README.zh-CN.md)（`XaiopStream`） |
 | LLM 发射（封存） | [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |

@@ -14,7 +14,7 @@
 
 | 文档 | ID | 主题 |
 | --- | --- | --- |
-| [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) | `SDK-NODE-NOTE-STREAM` | XAIOP → JSON 流式（`XaiopStream` / `.` 相位；`mergeChunkWindow` / `pushAsync`） |
+| [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) | `SDK-NODE-NOTE-STREAM` | XAIOP → JSON 流式（`XaiopStream` / `.` 相位；buffer compact **0.15.0+**；`@` 累积 Diff **0.14.3+**；Diff 隔离 **0.14.2+**；`mergeChunkWindow` / `pushAsync`） |
 | [history.zh-CN.md](history.zh-CN.md) | `SDK-NODE-NOTE-HISTORY` | 可选解析历史 — 快照（只读）+ 实时（向前 `jumpTo`） |
 | [ws-session.zh-CN.md](ws-session.zh-CN.md) | `SDK-NODE-NOTE-WS` | WebSocket；**`connect`/`onPhase` 时序**（§5）；**浏览器相位**（§9）；**类型推送**（§10） |
 | [typecheck.zh-CN.md](typecheck.zh-CN.md) | `SDK-NODE-NOTE-TYPE` | 类型注册 / 客户端冻结 / WS `pushTypeConsistency` |

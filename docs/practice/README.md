@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PRACTICE-INDEX` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-05 |
 | Normative | **No** |
 
 **Recommended scenarios** — not the protocol. Network framing and session push live here; they **do not** redefine wire grammar.  
@@ -22,6 +22,7 @@ Grammar: [../protocol/](../protocol/) (cite a sealed package version). API: [../
 | --- | --- |
 | [streaming-transport.md](streaming-transport.md) | Carry wire over the network — framing, product Snapshot/Diff |
 | [skeleton-stream.md](skeleton-stream.md) | Fixed-key WebSocket skeleton / module streams |
+| [keyed-state-modeling.md](keyed-state-modeling.md) | Keyed maps / repeated names for locate·broadcast·delete (not anonymous rows) |
 
 Stub (points to archive): [model-output.md](model-output.md)
 
@@ -42,6 +43,7 @@ SDK       →  language APIs
 | Wire pitfalls | [../protocol/notes/](../protocol/notes/) |
 | Bytes → JSON | [streaming-transport.md](streaming-transport.md) |
 | Skeleton WS push | [skeleton-stream.md](skeleton-stream.md) |
+| Keyed state modeling | [keyed-state-modeling.md](keyed-state-modeling.md) |
 | Node.js API | [../sdk/nodejs/API.md](../sdk/nodejs/API.md) (§6.4 · §6.5) |
 | Java stream | [../sdk/java/README.md](../sdk/java/README.md) (`XaiopStream`) |
 | LLM emit (sealed) | [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |

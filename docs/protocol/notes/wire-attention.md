@@ -96,7 +96,7 @@ Normative: [../syntax.md](../syntax.md), [../content.md](../content.md), [../bou
 2. While broadcast is active, `!` / `@` / `=` are illegal until `.`; **`&path` is allowed** (relative to each Cursor).  
 3. Broadcast writes fan out; any Cursor failure fails the line (including `&` Cursor-chain conflicts).  
 4. `&` requires object document root (not array / fragment root); may delete a whole named array value; no element-index delete; Cursor-chain delete → syntax error.  
-5. Streaming Diff: phases with `=` / `!` / `&` **MUST** use cumulative prefix parse.
+5. Streaming Diff: phases with `=` / `!` / `&` **MUST** use cumulative prefix parse. (`@` **MAY** stay phase-local per Hierarchy; Node.js SDK **0.14.3+** uses cumulative Diff for `@` too — see [../../sdk/nodejs/notes/streaming-parse.md](../../sdk/nodejs/notes/streaming-parse.md).)
 
 Normative: [../hierarchy.md](../hierarchy.md) §6–§9.
 

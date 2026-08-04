@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-ADJUST` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-05 |
 | Normative | **No** |
 
 ---
@@ -34,6 +34,8 @@ Adjust the Node SDK **carefully**: prefer additive APIs and bugfixes that do not
 | `getSnapshot()` mid-stream | **Unchanged** | Still final-after-finish |
 | RAW/WS binary UTF-8 streaming decode | **Done** | Matches HTTP body path |
 | Empty phase → `null` chunk | **By design** | Consumers must tolerate |
+| `bufferStats` / `compactCommitted` | **Done** (additive, **0.15.0**) | Long-session receive-wire discard; history conflict throws by default |
+| `autoCompact` watermark | **Deferred** | Manual compact first |
 | Compat × multi-phase | **Open (low priority)** | Keep default off |
 | SSE auto-insert `\n` between events | **Deferred** | Prefer producer contract |
 | Block-level Diff mode | **Deferred** | Opt-in only if pursued |

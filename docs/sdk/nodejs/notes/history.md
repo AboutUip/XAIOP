@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-HISTORY` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-05 |
 | Normative | **No** — Node SDK behavior |
-| Code | `xaiop-sdk/nodejs/src/stream/history.js` · wired in `checkpoint.js` |
-| Package | `xaiop` **0.7.0+** |
+| Code | `xaiop-sdk/nodejs/src/core/history.ts` · wired in `checkpoint.ts` |
+| Package | `xaiop` **0.7.0+** (compact conflict rules **0.15.0+**) |
 
 Parent: [streaming-parse.md](streaming-parse.md) · [../API.md](../API.md) · Parity: [../../behavioral-contract.md](../../behavioral-contract.md)
 
@@ -40,6 +40,23 @@ History is keyed by **each physical `.`** (and EOF tail), even when `mergeChunkW
 | Both on | Full cost | Snapshot check → realtime truncate |
 
 Prefer leaving history off unless you need rewind/audit. `retainWireHistory: false` drops per-node wire (range re-parse falls back to `after`).
+
+---
+
+## 2.1 Conflict with `compactCommitted` (0.15.0+)
+
+Receive-buffer compact **invalidates** history nodes that store `bufferStart` / `bufferEnd` (and breaks `jumpTo` rebuild when wire was retained).
+
+| Situation | `compactCommitted()` |
+| --- | --- |
+| `historyRealtime` **and** `retainWireHistory` | **MUST** throw unless `{ dropHistory: true }` |
+| Any non-empty history (`length > 0`) | **MUST** throw unless `{ dropHistory: true }` |
+| `dropHistory: true` | Clears nodes via `ParseHistory.clear()`; snapshot/realtime **flags stay on** |
+| History on but `length === 0` | Compact allowed |
+
+Do **not** run hour-scale compact loops with realtime+retainWire unless you accept dropping jump capability each compact.
+
+See [streaming-parse.md](streaming-parse.md) § Receive buffer compact.
 
 ---
 

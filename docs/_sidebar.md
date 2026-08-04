@@ -20,6 +20,7 @@
 
 * **Practice**
   * [Index](/practice/README.md)
+  * [keyed state modeling](/practice/keyed-state-modeling.md)
   * [model output](/practice/model-output.md)
   * [skeleton stream](/practice/skeleton-stream.md)
   * [streaming transport](/practice/streaming-transport.md)

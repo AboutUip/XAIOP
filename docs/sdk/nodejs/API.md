@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.6.0 Frozen (sealed)  
-**SDK**: 0.14.1 (TypeScript)  
+**SDK**: 0.15.0 (TypeScript)  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
 **Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`)  
 **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
@@ -106,7 +106,7 @@ Primary methods are **async**, with matching **sync** variants (parse / encode /
 
 ## 2. Core concepts
 
-**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.14.0**).
+**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.15.0**).
 
 - Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 - Seal and release index: [../../meta/releases.md](../../meta/releases.md)
@@ -493,6 +493,7 @@ const final = await stream.send({ transport: TRANSPORT_KIND.HTTP });
 | --- | --- | --- |
 | `onChunk` / iterator | Phase / window boundary | Diff JSON; empty phase may be `null`; **second arg `meta`** may include `seq` / `seqs` (phase sequence, §7.7) and `typeCheckEscapePaths` |
 | `getCommittedSnapshot()` | After each commit | Cumulative later-wins through last `.` / EOF |
+| `bufferStats()` / `compactCommitted({ dropHistory? })` | Mid-stream (**0.15.0+**) | Receive-buffer sizes / discard committed wire (keep live tree) |
 | `getSnapshot()` / `onDone` | After finish | Full-buffer parse; empty → `{}` |
 | Mid-stream `getSnapshot()` | `streaming` | Usually `undefined` |
 
@@ -529,7 +530,7 @@ Low-level `.`-phase parser (used inside `XaiopStream` / WS; usable directly).
 const eng = new DotCheckpointEngine({
   streamProcessing: true,   // default
   mergeChunkWindow: true,   // default
-  emitDiff: true,           // default
+  emitDiff: true,           // default; false → Commit/final only
   cover: false,
   historySnapshot: false,
   historyRealtime: false,
@@ -537,9 +538,11 @@ const eng = new DotCheckpointEngine({
   compat: false,
   lineIntercept: undefined, // or handler / handler[]
   annotationSpan: undefined, // or handler / handler[]
-  onChunk: (diff) => {},
+  onChunk: (diff) => {},    // optional; omit → Diff delivery no-op
 });
 eng.push(chunk);
+eng.bufferStats();       // { length, committedAt, pendingBytes, openPhase }
+eng.compactCommitted();  // drop committed wire; keep live tree (0.15.0+)
 eng.finish();
 eng.snapshot;            // final
 eng.committedSnapshot;   // last commit
@@ -552,13 +555,15 @@ eng.onAnnotationSpan(fn); // see §6.5
 | --- | --- | --- |
 | `streamProcessing` | `true` | Mid-stream `.` phases + line-scan path (intercept / Span); same default as `XaiopStream` / WS. Bare `new DotCheckpointEngine({...})` without the flag is **on**. |
 | `mergeChunkWindow` | `true` | Batch complete `.` in the buffer window → one Diff |
-| `emitDiff` | `true` | Set `false` when only Commit / final snapshot is needed |
+| `emitDiff` | `true` | Set `false` when only Commit / final snapshot is needed; `onChunk` optional (omit → Diff no-op) |
 | `cover` | `false` | Cover-mode Diff for `&` |
 
 | Method | Notes |
 | --- | --- |
 | `push` / `pushAsync` | Sync ingest / `setImmediate`-coalesced scan |
 | `finish` / `finishAsync` | Flush tail |
+| `bufferStats()` | `{ length, committedAt, pendingBytes, openPhase }` (**0.15.0+**). `pendingBytes` **MUST** equal `length - committedAt`. Prefer over reading `buffer` for monitoring. |
+| `compactCommitted({ dropHistory? })` | Discard `buffer[0..committedAt)`; keep live tree (**0.15.0+**). **MUST** throw on closed engine; on `historyRealtime`+`retainWireHistory`; on non-empty history — unless `dropHistory: true`. Full contract: [notes/streaming-parse.md](notes/streaming-parse.md) § Receive buffer compact. |
 | `jumpTo(index)` | Requires `historyRealtime`; discards nodes after the index |
 | `onLineIntercept` / `clearLineIntercepts` | After complete line split, before parse; see §6.4 |
 | `onAnnotationSpan` / `clearAnnotationSpans` | Phase `#` span; see §6.5 |
@@ -889,7 +894,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.14.1"` |
+| `SDK_VERSION` | `"0.15.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

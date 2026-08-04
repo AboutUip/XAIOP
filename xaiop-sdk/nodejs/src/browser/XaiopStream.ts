@@ -262,6 +262,34 @@ export class XaiopStream {
     return cloneJson(this._committedSnapshot);
   }
 
+  /**
+   * Receive-buffer sizes (delegates to `DotCheckpointEngine.bufferStats`).
+   * @returns {{
+   *   length: number,
+   *   committedAt: number,
+   *   pendingBytes: number,
+   *   openPhase: boolean,
+   * }}
+   */
+  bufferStats() {
+    if (!this._engine) {
+      return { length: 0, committedAt: 0, pendingBytes: 0, openPhase: false };
+    }
+    return this._engine.bufferStats();
+  }
+
+  /**
+   * Discard committed receive-wire while keeping the live Commit tree.
+   * @param {{ dropHistory?: boolean }} [options]
+   * @returns {{ discardedBytes: number, length: number }}
+   */
+  compactCommitted(options = {}) {
+    if (!this._engine) {
+      throw new Error("XaiopStream.compactCommitted requires an active send/engine");
+    }
+    return this._engine.compactCommitted(options);
+  }
+
   get sessionId() {
     return this._control.sessionId;
   }

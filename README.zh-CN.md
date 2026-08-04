@@ -15,7 +15,7 @@
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="游标 IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="流式相位" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
-  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.14.1-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.0-22c55e?style=flat-square&labelColor=0b1220" />
   <img alt="按行" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
 </p>
 
@@ -37,7 +37,8 @@
 <p align="center">
   任意符合规范的 <strong>Generator</strong> 发出进入 / 回退 / 定位 / 重置 / 删除指令。<br/>
   程序物化为 JSON —— 含中途 <code>.</code> 相位。<br/>
-  <sub>不是服务间 JSON 总线。工具 · WS 会话 · encode 管线为<em>使用场景</em>，不是线定义。</sub>
+  <sub>不是服务间 JSON 总线 · 也不是通用 JSON 演化层（优先键控 / 具名路径 — <a href="docs/practice/keyed-state-modeling.zh-CN.md">键控建模</a>）。</sub><br/>
+  <sub>工具 · WS 会话 · encode 管线为<em>使用场景</em>，不是线定义。</sub>
 </p>
 
 ---
@@ -98,7 +99,7 @@ name:alice
 - **实验 UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / 直播流 / API 正文渲染
 - **目标封存** — [docs/archive/](docs/archive/)（LLM 发射 / 评测口径刻意不放进现行枢纽）
 
-Java SDK 已启用（`io.xaiop:xaiop` **0.5.0** — parse · encode · merge · checkpoint · **XaiopStream** HTTP/SSE/RAW；协议线仍 **0.4.0**；WS / cover / typeCheck 等后续）。Node.js `xaiop` **0.14.1** 实现协议 **0.6.0**。Python 仍待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
+Java SDK 已启用（`io.xaiop:xaiop` **0.5.0** — parse · encode · merge · checkpoint · **XaiopStream** HTTP/SSE/RAW；协议线仍 **0.4.0**；WS / cover / typeCheck 等后续）。Node.js `xaiop` **0.15.0** 实现协议 **0.6.0**。Python 仍待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
 
 **公告（2026-08-04）：** Skill **不再**以官方产品形态继续提供；源码仍可从 [`skills/`](skills/) 下载。完整说明：[docs/meta/release-notes-2026-08-04.zh-CN.md](docs/meta/release-notes-2026-08-04.zh-CN.md)。
 

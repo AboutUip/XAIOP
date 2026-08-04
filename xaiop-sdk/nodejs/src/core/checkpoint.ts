@@ -13,9 +13,10 @@ import { scheduleImmediate } from "./schedule.js";
  *
  * Performance (space/speed):
  * - One LiveXaiopParser for Commit (phase lines fed once, no prefix re-parse).
- * - First phase / `=`/`!`/`&`: Diff shares one materialize with Commit (no second parse).
+ * - First phase / `=`/`!`/`&`/`@`: Diff shares one materialize with Commit (no second parse).
  * - Later ordinary Diff: owned parseSync (no redundant clone of a fresh tree).
- * - `emitDiff: false` skips Diff parse when callers only need Commit/final.
+ * - `emitDiff: false` skips Diff parse when callers only need Commit/final; `onChunk` optional.
+ * - `compactCommitted()` discards `buffer[0..committedAt)` while keeping the live tree (long sessions).
  * - `mergeChunkWindow` (default true): batch all complete `.` in the current
  *   buffer window into one feed + one Commit + one onChunk (not per true net chunk).
  * - `streamProcessing` (default true): mid-stream `.` phase scan (same as Stream / WS).
@@ -38,7 +39,7 @@ import { applyAnnotationSpans } from "./annotation-span.js";
  * @property {false|boolean|object} compat
  * @property {boolean} [streamProcessing] Mid-stream `.` phases (default true; same as XaiopStream / WS)
  * @property {boolean} [symbolKeys] Decode U+001F label escapes (default false; pair with encode `symbolKeys`)
- * @property {(diff: unknown, meta?: { typeCheckEscapePaths?: string[], seq?: number, seqs?: number[] }) => void} onChunk
+ * @property {((diff: unknown, meta?: { typeCheckEscapePaths?: string[], seq?: number, seqs?: number[], logSeq?: number, logSeqs?: number[] }) => void)|undefined} [onChunk] Optional; omitted / non-function → Diff delivery no-ops (Commit still runs). Safe with `emitDiff: false`.
  * @property {boolean} [emitDiff]
  * @property {boolean} [mergeChunkWindow]
  * @property {boolean} [cover] Cover-mode Diff for `&` (default false)
@@ -287,6 +288,8 @@ export class DotCheckpointEngine {
     this._pendingSeqs = [];
     const logSeqs = this._pendingLogSeqs;
     this._pendingLogSeqs = [];
+    const cb = this._hooks.onChunk;
+    if (typeof cb !== "function") return;
     /** @type {{ typeCheckEscapePaths?: string[], seq?: number, seqs?: number[], logSeq?: number, logSeqs?: number[] }} */
     const meta = {};
     if (escapes && escapes.length > 0) {
@@ -301,9 +304,9 @@ export class DotCheckpointEngine {
       meta.logSeq = logSeqs[logSeqs.length - 1];
     }
     if (Object.keys(meta).length > 0) {
-      this._hooks.onChunk(diff, meta);
+      cb(diff, meta);
     } else {
-      this._hooks.onChunk(diff);
+      cb(diff);
     }
   }
 
@@ -344,6 +347,87 @@ export class DotCheckpointEngine {
 
   get committedAt() {
     return this._committedAt;
+  }
+
+  /**
+   * Receive-buffer sizes without reading the full wire string.
+   * @returns {{
+   *   length: number,
+   *   committedAt: number,
+   *   pendingBytes: number,
+   *   openPhase: boolean,
+   * }}
+   */
+  bufferStats() {
+    const length = this._buffer.length;
+    const committedAt = this._committedAt;
+    return {
+      length,
+      committedAt,
+      pendingBytes: Math.max(0, length - committedAt),
+      openPhase: this._segmentStart < length,
+    };
+  }
+
+  /**
+   * Discard committed wire `buffer[0 .. committedAt)` while keeping the live
+   * Commit tree and any uncommitted tail. Does **not** re-parse.
+   *
+   * Conflicts with parse history that still references buffer indices / retained
+   * wire (especially `historyRealtime` + `retainWireHistory`). Pass
+   * `{ dropHistory: true }` to clear history first, or disable those modes.
+   *
+   * @param {{ dropHistory?: boolean }} [options]
+   * @returns {{ discardedBytes: number, length: number }}
+   */
+  compactCommitted(options = {}) {
+    if (this._closed) {
+      throw new Error("compactCommitted: checkpoint engine is closed");
+    }
+    this._resolveAsyncDrainEarly();
+
+    const dropHistory = options.dropHistory === true;
+    if (this._history) {
+      if (
+        this._history.realtimeEnabled &&
+        this._history.retainWireEnabled &&
+        !dropHistory
+      ) {
+        throw new Error(
+          "compactCommitted conflicts with historyRealtime + retainWireHistory; pass dropHistory: true or disable retainWireHistory",
+        );
+      }
+      if (this._history.length > 0 && !dropHistory) {
+        throw new Error(
+          "compactCommitted invalidates history buffer indices; pass dropHistory: true",
+        );
+      }
+      if (dropHistory) {
+        this._history.clear();
+      }
+    }
+
+    const cut = this._committedAt | 0;
+    if (cut <= 0) {
+      return { discardedBytes: 0, length: this._buffer.length };
+    }
+    if (cut > this._buffer.length) {
+      // Defensive: treat as full compact of available wire.
+      const discardedBytes = this._buffer.length;
+      this._buffer = "";
+      this._committedAt = 0;
+      this._segmentStart = 0;
+      this._scanAt = 0;
+      this._phaseLines = [];
+      return { discardedBytes, length: 0 };
+    }
+
+    this._buffer = this._buffer.slice(cut);
+    this._committedAt = 0;
+    this._segmentStart = Math.max(0, this._segmentStart - cut);
+    this._scanAt = Math.max(0, this._scanAt - cut);
+    // Live tree + committedSnapshot / _commitFromLive unchanged.
+    return { discardedBytes: cut, length: this._buffer.length };
   }
 
   /** Whether mid-stream `.` phase scanning is on (default true). */
@@ -1039,7 +1123,9 @@ export class DotCheckpointEngine {
       };
     }
 
-    // `=` / `!` / `&` see the cumulative tree (向前跨相).
+    // `=` / `!` / `&` / `@` see the cumulative tree (向前跨相).
+    // Protocol MAY keep `@` Diff phase-local; Node product Diff uses cumulative
+    // so create-vs-enter (esp. into a prior-phase array) matches live Commit.
     if (phaseNeedsPriorTree(raw)) {
       const committed = materializeSnapshot(this._live.value());
       return {
@@ -1049,10 +1135,45 @@ export class DotCheckpointEngine {
       };
     }
 
-    // Later ordinary phase: phase-local Diff via owned parse (no extra clone).
-    const text = withLeadingDot(raw);
-    const diff = normalizeEmptyPhase(raw, this._parseOwned(text));
-    return { diff, committed: undefined, fromLive: true };
+    // Later ordinary phase: phase-local Diff. After a prior `.`, Cursor is at the
+    // live document Root — but a fresh parseSync of `.\n>name…` alone is a
+    // **fragment** (no bare `>` / `-` root). Prefix a synthetic object root when
+    // needed so Diff matches wire continuation semantics (D1 / framing split).
+    try {
+      const text = withLeadingDot(ensureDiffDocumentRoot(raw, this._liveRootKind()));
+      const diff = normalizeEmptyPhase(raw, this._parseOwned(text));
+      return { diff, committed: undefined, fromLive: true };
+    } catch {
+      // Commit already applied; never abort the stream solely because Diff
+      // isolation failed — fall back to cumulative committed as Diff.
+      const committed = materializeSnapshot(this._live.value());
+      return {
+        diff: isolateDiff(normalizeEmptyPhase(raw, committed), committed),
+        committed,
+        fromLive: false,
+      };
+    }
+  }
+
+  /**
+   * Live document root kind for Diff isolation (`object` default after a `.`).
+   * @returns {'object'|'array'|'fragment'|null}
+   */
+  _liveRootKind() {
+    if (!this._live) return null;
+    const inner = this._live._p;
+    if (inner && typeof inner.docKind === "string") {
+      if (inner.docKind === "array") return "array";
+      if (inner.docKind === "fragment") return "fragment";
+      if (inner.docKind === "object") return "object";
+    }
+    try {
+      const v = this._live.value();
+      if (Array.isArray(v)) return "array";
+    } catch {
+      /* ignore */
+    }
+    return "object";
   }
 
   /**
@@ -1104,6 +1225,66 @@ function withLeadingDot(raw) {
   return raw.startsWith("\n") ? `.${raw}` : `.\n${raw}`;
 }
 
+/**
+ * First substantive phase line (skip leading `.` lines / blanks).
+ * @param {string} raw
+ * @returns {string|null}
+ */
+function firstPhaseLine(raw) {
+  let i = 0;
+  const n = raw.length;
+  while (i < n) {
+    if (raw.charCodeAt(i) === 13) {
+      i++;
+      continue;
+    }
+    if (raw.charCodeAt(i) === 10) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < n) {
+      const ch = raw.charCodeAt(j);
+      if (ch === 10) break;
+      if (ch === 13) break;
+      j++;
+    }
+    let line = raw.slice(i, j);
+    if (line.endsWith("\r")) line = line.slice(0, -1);
+    if (line === "." || line === "") {
+      i = j + 1;
+      continue;
+    }
+    return line;
+  }
+  return null;
+}
+
+/**
+ * True when the phase already opens a document root (`>` or `-` alone).
+ * @param {string} raw
+ */
+function phaseHasBareDocumentRoot(raw) {
+  const line = firstPhaseLine(raw);
+  return line === ">" || line === "-";
+}
+
+/**
+ * After a prior `.`, phase-local Diff parse needs a document root. Named enter
+ * (`>rules-`) or Content at Root is legal on the live Cursor but illegal as a
+ * standalone fragment parse — prefix synthetic `>` for object documents.
+ * @param {string} raw
+ * @param {'object'|'array'|'fragment'|null|undefined} rootKind
+ */
+function ensureDiffDocumentRoot(raw, rootKind) {
+  if (phaseHasBareDocumentRoot(raw)) return raw;
+  // Array-root documents usually continue with bare `>` (new element) — already
+  // handled by phaseHasBareDocumentRoot. Named labels on array root are rare;
+  // leave raw unchanged (fallback catch uses committed Diff).
+  if (rootKind === "array") return raw;
+  return `>\n${raw}`;
+}
+
 /** @param {string} raw */
 function phaseNeedsPriorTree(raw) {
   let i = 0;
@@ -1118,8 +1299,8 @@ function phaseNeedsPriorTree(raw) {
       continue;
     }
     const c = raw.charCodeAt(i);
-    // `=` (61), `!` (33), `&` (38)
-    if (c === 61 || c === 33 || c === 38) return true;
+    // `=` (61), `!` (33), `&` (38), `@` (64) — create-vs-enter needs prior tree
+    if (c === 61 || c === 33 || c === 38 || c === 64) return true;
     while (i < n) {
       const ch = raw.charCodeAt(i);
       if (ch === 10) {

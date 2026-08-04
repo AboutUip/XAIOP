@@ -111,6 +111,10 @@ Editors **SHOULD** publish immutable GitHub Releases whose tags identify sealed 
 | Tag pattern | Points at |
 | --- | --- |
 | `protocol-v0.5.0` | Sealed protocol package `0.5.0` (docs + fixtures) |
+| `sdk-nodejs-v0.15.0` | Node.js SDK package `0.15.0` |
+| `sdk-nodejs-v0.14.3` | Node.js SDK package `0.14.3` |
+| `sdk-nodejs-v0.14.2` | Node.js SDK package `0.14.2` |
+| `sdk-nodejs-v0.14.1` | Node.js SDK package `0.14.1` |
 | `sdk-nodejs-v0.14.0` | Node.js SDK package `0.14.0` |
 | `sdk-nodejs-v0.13.0` | Node.js SDK package `0.13.0` |
 | `sdk-nodejs-v0.12.0` | Node.js SDK package `0.12.0` |

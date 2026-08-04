@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.6.0 Frozen（已封存）  
-**SDK 版本**: 0.14.1（TypeScript）
+**SDK 版本**: 0.15.0（TypeScript）
 **运行时**: 默认入口 **Node.js ≥ 18（ESM）**；浏览器用子路径（见 §0）  
 **代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）  
 **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -106,7 +106,7 @@ await client.done;
 
 ## 2. 核心概念
 
-**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.14.1**）。
+**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.15.0**）。
 
 - 完整文法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)
 - 封存与发行索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -493,6 +493,7 @@ const final = await stream.send({ transport: TRANSPORT_KIND.HTTP });
 | --- | --- | --- |
 | `onChunk` / 迭代器 | 相位 / 窗口边界 | Diff JSON；空相可为 `null`；**第二参 `meta`** 可含 `seq` / `seqs`（相位序号，§7.7）与 `typeCheckEscapePaths` |
 | `getCommittedSnapshot()` | 每次提交后 | 至最近 `.` / EOF 的累积 later-wins |
+| `bufferStats()` / `compactCommitted({ dropHistory? })` | 流中（**0.15.0+**） | 接收缓冲体量 / 丢弃已提交线文（保留 live 树） |
 | `getSnapshot()` / `onDone` | finish 后 | 全缓冲 parse；空 → `{}` |
 | 流中途 `getSnapshot()` | `streaming` | 通常 `undefined` |
 
@@ -529,7 +530,7 @@ Fragment 在上述表面物化为普通对象（`materializeSnapshot`）。
 const eng = new DotCheckpointEngine({
   streamProcessing: true,   // 默认
   mergeChunkWindow: true,   // 默认
-  emitDiff: true,           // 默认
+  emitDiff: true,           // 默认；false → 仅 Commit/终态
   cover: false,
   historySnapshot: false,
   historyRealtime: false,
@@ -537,9 +538,11 @@ const eng = new DotCheckpointEngine({
   compat: false,
   lineIntercept: undefined, // 或 handler / handler[]
   annotationSpan: undefined, // 或 handler / handler[]
-  onChunk: (diff) => {},
+  onChunk: (diff) => {},    // 可选；省略 → Diff 投递空操作
 });
 eng.push(chunk);
+eng.bufferStats();       // { length, committedAt, pendingBytes, openPhase }
+eng.compactCommitted();  // 丢弃已提交线文；保留 live 树（0.15.0+）
 eng.finish();
 eng.snapshot;            // 终态
 eng.committedSnapshot;   // 最近提交
@@ -552,13 +555,15 @@ eng.onAnnotationSpan(fn); // 见 §6.5
 | --- | --- | --- |
 | `streamProcessing` | `true` | 流中 `.` 相位 + 行扫描路径（拦截 / Span）；与 `XaiopStream` / WS 相同。裸 `new DotCheckpointEngine({...})` 不传该标志时为 **开**。 |
 | `mergeChunkWindow` | `true` | 缓冲窗口内完整 `.` 批算 → 一次 Diff |
-| `emitDiff` | `true` | 仅需 Commit / 终态时可设 `false` |
+| `emitDiff` | `true` | 仅需 Commit / 终态时可设 `false`；`onChunk` 可选（省略 → Diff 空操作） |
 | `cover` | `false` | `&` 的 cover 模式 Diff |
 
 | 方法 | 说明 |
 | --- | --- |
 | `push` / `pushAsync` | 同步摄入 / `setImmediate` 合并扫描 |
 | `finish` / `finishAsync` | 冲刷尾部 |
+| `bufferStats()` | `{ length, committedAt, pendingBytes, openPhase }`（**0.15.0+**）。`pendingBytes` **必须**等于 `length - committedAt`。监控请优先于此，勿热读 `buffer`。 |
+| `compactCommitted({ dropHistory? })` | 丢弃 `buffer[0..committedAt)`；保留 live 树（**0.15.0+**）。已关闭、`historyRealtime`+`retainWireHistory`、非空 history 时**必须**抛错——除非 `dropHistory: true`。完整契约：[notes/streaming-parse.zh-CN.md](notes/streaming-parse.zh-CN.md) § 接收缓冲 compact。 |
 | `jumpTo(index)` | 需 `historyRealtime`；丢弃定位点之后的节点 |
 | `onLineIntercept` / `clearLineIntercepts` | 完整行拆出后、解析前；见 §6.4 |
 | `onAnnotationSpan` / `clearAnnotationSpans` | 相位 `#` 跨度；见 §6.5 |
@@ -888,7 +893,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.14.1"` |
+| `SDK_VERSION` | `"0.15.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

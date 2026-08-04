@@ -6,10 +6,10 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-HISTORY` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-03 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | **否** — Node SDK 行为 |
-| 代码 | `xaiop-sdk/nodejs/src/stream/history.js` · 接线于 `checkpoint.js` |
-| 包 | `xaiop` **0.7.0+** |
+| 代码 | `xaiop-sdk/nodejs/src/core/history.ts` · 接线于 `checkpoint.ts` |
+| 包 | `xaiop` **0.7.0+**（与 compact 冲突规则 **0.15.0+**） |
 
 上级：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) · [../API.zh-CN.md](../API.zh-CN.md) · 对等：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)
 
@@ -40,6 +40,23 @@
 | 双开 | 全量成本 | 快照验算 → 实时裁剪 |
 
 不需要回溯/审计时请保持关闭。`retainWireHistory: false` 可不保留线文切片（区间重解析回退到 `after`）。
+
+---
+
+## 2.1 与 `compactCommitted` 的冲突（0.15.0+）
+
+接收缓冲 compact 会使存有 `bufferStart` / `bufferEnd` 的 history 节点**失效**（在保留 wire 时也会破坏 `jumpTo` 重建）。
+
+| 情形 | `compactCommitted()` |
+| --- | --- |
+| `historyRealtime` **且** `retainWireHistory` | **必须**抛错，除非 `{ dropHistory: true }` |
+| 任意非空 history（`length > 0`） | **必须**抛错，除非 `{ dropHistory: true }` |
+| `dropHistory: true` | 经 `ParseHistory.clear()` 清空节点；snapshot/realtime **开关仍开** |
+| 已开 history 但 `length === 0` | 允许 compact |
+
+不要在 realtime+retainWire 下做小时级每相 compact，除非接受每次 compact 丢掉跳跃能力。
+
+见 [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) § 接收缓冲 compact。
 
 ---
 

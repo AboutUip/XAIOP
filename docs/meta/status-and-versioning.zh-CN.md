@@ -111,6 +111,10 @@
 | 标签模式 | 指向 |
 | --- | --- |
 | `protocol-v0.5.0` | 已封存协议包 `0.5.0`（文档 + 样例） |
+| `sdk-nodejs-v0.15.0` | Node.js SDK 包 `0.15.0` |
+| `sdk-nodejs-v0.14.3` | Node.js SDK 包 `0.14.3` |
+| `sdk-nodejs-v0.14.2` | Node.js SDK 包 `0.14.2` |
+| `sdk-nodejs-v0.14.1` | Node.js SDK 包 `0.14.1` |
 | `sdk-nodejs-v0.14.0` | Node.js SDK 包 `0.14.0` |
 | `sdk-nodejs-v0.13.0` | Node.js SDK 包 `0.13.0` |
 | `sdk-nodejs-v0.12.0` | Node.js SDK 包 `0.12.0` |

@@ -264,6 +264,26 @@ export class XaiopBrowserWsConnection {
   }
 
   /**
+   * @returns {{
+   *   length: number,
+   *   committedAt: number,
+   *   pendingBytes: number,
+   *   openPhase: boolean,
+   * }}
+   */
+  bufferStats() {
+    return this._engine.bufferStats();
+  }
+
+  /**
+   * @param {{ dropHistory?: boolean }} [options]
+   * @returns {{ discardedBytes: number, length: number }}
+   */
+  compactCommitted(options = {}) {
+    return this._engine.compactCommitted(options);
+  }
+
+  /**
    * Called by `XaiopBrowserWs.connect` after handshake.
    * @returns {this}
    */

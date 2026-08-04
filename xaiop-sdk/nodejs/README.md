@@ -1,8 +1,8 @@
 # XAIOP Node.js SDK
 
-Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.14.1** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.
+Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.15.0** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.
 **Docs:** **[API](../../docs/sdk/nodejs/API.md)** · [Notes](../../docs/sdk/nodejs/notes/) · [Node catalog](../../docs/sdk/behavioral-contract.md)  
-**Practice:** [streaming transport](../../docs/practice/streaming-transport.md) · [skeleton stream](../../docs/practice/skeleton-stream.md) · [sealed LLM archive](../../docs/archive/practice-llm-emit-2026-08-04/)  
+**Practice:** [streaming transport](../../docs/practice/streaming-transport.md) · [skeleton stream](../../docs/practice/skeleton-stream.md) · [keyed modeling](../../docs/practice/keyed-state-modeling.md) · [sealed LLM archive](../../docs/archive/practice-llm-emit-2026-08-04/)  
 **Protocol (wire only):** [../../docs/protocol/](../../docs/protocol/) · [Separation](../../docs/SEPARATION.md)
 
 ```js
@@ -29,6 +29,9 @@ import { parseSync } from "xaiop/core";                    // isomorphic wire co
 | Line intercept (buffer rewrite/skip) | Implemented (`onLineIntercept` / `LINE_KIND`; SDK **0.12.0+**) |
 | Annotation Span (phase `#`) | Implemented (`onAnnotationSpan`; typeCheck escape; SDK **0.13.0+**) |
 | SDK Control Root (`#!`) | Implemented (demux · session / ack / resume / snapshot · `seq` stamp / `meta.logSeq` · `ResumeWireLog`; SDK **0.14.0+**, logSeq **0.14.1+**) |
+| Diff isolation after `.` | Implemented (synthetic object root for phase Diff; framing-split ≡ one-shot; SDK **0.14.2+**) |
+| `@` cumulative Diff | Implemented (same path as `=`/`!`/`&`; optional `onChunk`; SDK **0.14.3+**) |
+| Buffer compact | Implemented (`bufferStats` / `compactCommitted`; SDK **0.15.0+**) |
 | Fine-grained compat fix APIs (per correction, returns `boolean`) | Implemented |
 | `!path` / `@path` | Implemented (`!` broadcast + outer prune, cross-phase; `@` exact create-or-enter) |
 | Emit (`encode` / `uploadJson`, controllable `.`) | Implemented (SDK 0.3.0+) |
@@ -65,9 +68,9 @@ See **[docs/sdk/nodejs/API.md](../../docs/sdk/nodejs/API.md)** for the full surf
 
 ```bash
 npm run pack
-# → dist/xaiop-0.14.1.tgz
+# → dist/xaiop-0.15.0.tgz
 ```
 
 ```bash
-npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.14.1.tgz
+npm install /path/to/xaiop-sdk/nodejs/dist/xaiop-0.15.0.tgz
 ```

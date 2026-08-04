@@ -48,7 +48,7 @@ XAIOP **规范包**的有序修订历史。
 | 协议 notes | wire-attention — `#` |
 | `TERM-GLOSS` | 自定义注解传递 |
 | `META-VER` | 封存包版本 → `0.6.0` |
-| Node.js SDK | **0.11.0** — 忽略 `#` 行；`PROTOCOL_VERSION` → `0.6.0`。Tip **0.12.0** — 缓冲行拦截（`onLineIntercept`）。Tip **0.13.0** — Annotation Span（`onAnnotationSpan`；typeCheck 逃逸）。Tip **0.14.0** — 控制根 `#!` demux / session / seq / resume。Tip **0.14.1** — `#!xaiop/seq/v1` → `meta.logSeq`（仍协议 **0.6.0**） |
+| Node.js SDK | **0.11.0** — 忽略 `#` 行；`PROTOCOL_VERSION` → `0.6.0`。Tip **0.12.0** — 缓冲行拦截（`onLineIntercept`）。Tip **0.13.0** — Annotation Span（`onAnnotationSpan`；typeCheck 逃逸）。Tip **0.14.0** — 控制根 `#!` demux / session / seq / resume。Tip **0.14.1** — `#!xaiop/seq/v1` → `meta.logSeq`。Tip **0.14.2** — `.` 后 Diff 隔离（D1）。Tip **0.14.3** — `@` 累积 Diff（D2）；可选 `onChunk`。Tip **0.15.0** — `bufferStats` / `compactCommitted`（仍协议 **0.6.0**） |
 
 **兼容性：** 从不发射 `#` 行的写者仍合法。不忽略 `#…` 行的解析器 **不符合** 协议包 **0.6.0**。
 

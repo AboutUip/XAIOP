@@ -7,7 +7,7 @@
 | 文档 ID | `OV-INTRO` |
 | 状态 | Draft |
 | 版本 | 0.3.0-draft |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-05 |
 | 规范性 | 混合（范围与非目标为规范性；背景为信息性） |
 | 依赖 | `META-CONV`, `META-VER`, `META-SEP` |
 | 影响 | `OV-PRIN`, `REQ-FUNC`, `REQ-STREAM`, `CONF` |
@@ -21,6 +21,8 @@
 **一句话：** 写者走游标；程序持有树。
 
 它**不是**服务间 JSON 总线，而是从*增量构造*走到*可消费结构化快照*的桥。
+
+**范围半径（信息性）：** XAIOP 把**流式游标构造**与线文上的**键控 / 具名路径状态演化**（定位、广播、删除、相位）做成一等能力。它**不是**「任意 JSON 形状的通用演化层」——尤其匿名数组元素**没有**可供 `=` / `!` / `&` 寻址的 label（请用键控映射或重复具名子节点建模）。见实践 [keyed-state-modeling.zh-CN.md](../practice/keyed-state-modeling.zh-CN.md)。
 
 历史全称 “eXtensible AI Output Protocol” **仅作遗留命名**；不定义范围、主用例或符合性。规范性身份是已封存协议包所描述的线格式（见 `META-VER`）。LLM、工具 `encode`、会话推送均为**可选写者场景**（实践层），不是线定义。
 
@@ -114,8 +116,11 @@ LLM 发射指引与结构化输出评测口径已**目标封存**，不属于现
 | NG3 | 符合规范的解析器在输入按协议并非良构时，**禁止**被要求修复、推断或猜测生成器意图。 |
 | NG4 | 正文编码见 `PROT-CONTENT` / `PROT-SYNTAX`。结构规则见 `PROT-BOUND` / `PROT-HIER` / `PROT-SYNTAX`。 |
 | NG5 | 本规范树**禁止**将 SDK API 定义为协议要求。 |
+| NG6 | XAIOP **禁止**被定位为任意 JSON 文档的通用补丁 / 演化语言（含无具名路径身份的匿名数组元素）。 |
 
 **关于 NG1 的信息性说明：** 产品栈**可以**由程序推送相位（encode、WS 会话）给物化消费端。那是线上的渐进构造——不主张用 XAIOP 替代服务间 JSON 总线。
+
+**关于 NG6 的信息性说明：** 演化算子作用于**具名路径片段**与 Cursor 位置。建模指南：[../practice/keyed-state-modeling.zh-CN.md](../practice/keyed-state-modeling.zh-CN.md)。
 
 ---
 

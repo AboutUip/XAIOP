@@ -1,5 +1,5 @@
 /**
- * Annotation Span (Â§6.5) â€?breadth + depth coverage.
+ * Annotation Span (?6.5) ??breadth + depth coverage.
  * Product rule: Span runs before typeCheck; handled same-level region escapes.
  */
 import assert from "node:assert/strict";
@@ -63,10 +63,10 @@ function schema(map) {
 }
 
 // ===========================================================================
-describe("annotation span â€?versions + exports", () => {
+describe("annotation span ??versions + exports", () => {
   test("SDK / protocol", () => {
     assert.equal(PROTOCOL_VERSION, "0.6.0");
-    assert.equal(SDK_VERSION, "0.14.1");
+    assert.equal(SDK_VERSION, "0.15.0");
   });
 
   test("helpers exported", () => {
@@ -77,7 +77,7 @@ describe("annotation span â€?versions + exports", () => {
 });
 
 // ===========================================================================
-describe("annotation span â€?pathEscapesTypeCheck / encodeAsSiblingLines", () => {
+describe("annotation span ??pathEscapesTypeCheck / encodeAsSiblingLines", () => {
   test("exact, descendant, bracket, escape-all", () => {
     assert.equal(pathEscapesTypeCheck("flex", ["flex"]), true);
     assert.equal(pathEscapesTypeCheck("flex.x", ["flex"]), true);
@@ -87,25 +87,25 @@ describe("annotation span â€?pathEscapesTypeCheck / encodeAsSiblingLines", () =>
     assert.equal(pathEscapesTypeCheck("anything", [""]), true);
   });
 
-  test("encodeAsSiblingLines â€?object strips outer >", () => {
+  test("encodeAsSiblingLines ??object strips outer >", () => {
     const lines = encodeAsSiblingLines({ a: 1, b: { c: 2 } });
     assert.ok(!lines.includes(">"));
     assert.ok(lines.some((l) => l.startsWith("a:")));
   });
 
-  test("encodeAsSiblingLines â€?array root", () => {
+  test("encodeAsSiblingLines ??array root", () => {
     const lines = encodeAsSiblingLines([1, 2]);
     assert.ok(lines[0] === "-" || lines.some((l) => l === "-" || l.startsWith("-")));
   });
 
-  test("encodeAsSiblingLines â€?rejects scalar", () => {
+  test("encodeAsSiblingLines ??rejects scalar", () => {
     assert.throws(() => encodeAsSiblingLines(1), TypeError);
   });
 });
 
 // ===========================================================================
-describe("annotation span â€?applyAnnotationSpans core", () => {
-  test("no handlers â†?identity, empty escapes", () => {
+describe("annotation span ??applyAnnotationSpans core", () => {
+  test("no handlers ??identity, empty escapes", () => {
     const lines = [">", "a:1", "#x", "b:2", "."];
     const out = applyAnnotationSpans(lines, []);
     assert.deepEqual(out.lines, lines);
@@ -221,7 +221,7 @@ describe("annotation span â€?applyAnnotationSpans core", () => {
     assert.ok(!escapePaths.includes("a"));
   });
 
-  test("capture stops at relocate = / @ / ! â€?second # can run", () => {
+  test("capture stops at relocate = / @ / ! ??second # can run", () => {
     const anns = [];
     const { lines } = applyAnnotationSpans(
       [">", "#one", "b:1", "@c", "c:2", "#two", "d:3", "."],
@@ -291,7 +291,7 @@ describe("annotation span â€?applyAnnotationSpans core", () => {
       [">", "#drop", "x:1", "y:2", "."],
       [() => null],
     );
-    // After drop, nothing left â€?but if we had post-capture lines...
+    // After drop, nothing left ??but if we had post-capture lines...
     // Use relocate-separated trailing content:
     const { lines: L2 } = applyAnnotationSpans(
       [">", "#drop", "x:1", "=z", "z:9", "."],
@@ -301,7 +301,7 @@ describe("annotation span â€?applyAnnotationSpans core", () => {
     assert.ok(L2.some((l) => l.startsWith("z:") || l === "z:9"));
   });
 
-  test("nested remount under parent path â†?escapePaths prefixed", () => {
+  test("nested remount under parent path ??escapePaths prefixed", () => {
     const { escapePaths } = applyAnnotationSpans(
       [">", ">p", "#t", "k:1", "<", "."],
       [() => ({ k: "str" })],
@@ -394,7 +394,7 @@ flex:1
     assert.ok(records[0].meta?.typeCheckEscapePaths?.includes("flex"));
   });
 
-  test("null drop â†?no escape meta (or empty)", () => {
+  test("null drop ??no escape meta (or empty)", () => {
     const { engine, records } = eng();
     engine.onAnnotationSpan(() => null);
     engine.push(`>
@@ -537,7 +537,7 @@ a:1
 });
 
 // ===========================================================================
-describe("annotation span â€?typeCheck escape semantics", () => {
+describe("annotation span ??typeCheck escape semantics", () => {
   test("before-# keys still freeze; span keys escape (remount)", () => {
     const session = new TypeFreezeSession({ schema: schema({ keep: TYPE.INT, flex: TYPE.INT }) });
     /** @type {string[]} */
@@ -626,8 +626,8 @@ flex:2
 });
 
 // ===========================================================================
-describe("annotation span Ã— line intercept combinations", () => {
-  test("lineIntercept skips # â†?span never sees it", () => {
+describe("annotation span ? line intercept combinations", () => {
+  test("lineIntercept skips # ??span never sees it", () => {
     let spanCalls = 0;
     const { engine, records } = eng();
     engine.onLineIntercept(({ view }) =>
@@ -686,7 +686,7 @@ a:1
 });
 
 // ===========================================================================
-describe("annotation span â€?XaiopStream RAW", () => {
+describe("annotation span ??XaiopStream RAW", () => {
   test("stream option annotationSpan remount", async () => {
     const source = `>
 a:1
@@ -763,7 +763,7 @@ a:1
 });
 
 // ===========================================================================
-describe("annotation span â€?WS surfaces + hard combos", () => {
+describe("annotation span ??WS surfaces + hard combos", () => {
   test("connect annotationSpan remount + typeCheck", async () => {
     const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
     try {
@@ -838,7 +838,7 @@ ok:oops
       const client = await XaiopWs.connect(hub.url(), {
         typeCheck: true,
         typeSchema: schema({ ok: TYPE.INT }),
-        annotationSpan: () => undefined, // registered but no # â†?no escape
+        annotationSpan: () => undefined, // registered but no # ??no escape
       });
       let err = null;
       try {
@@ -971,7 +971,7 @@ c:0
 });
 
 // ===========================================================================
-describe("annotation span â€?nested / array / empty / stress", () => {
+describe("annotation span ??nested / array / empty / stress", () => {
   test("deep nest remount", () => {
     const { engine, records } = eng();
     engine.onAnnotationSpan((_a, view) => {
@@ -1144,10 +1144,10 @@ a:1
 });
 
 // ===========================================================================
-// å‘ï¼šåè®®ã€Œè‡ªå®šä¹‰æ³¨è§£ä¼ é€’ã€? Ã— SDK Annotation Spanï¼ˆåº”ç”¨å±‚è‡ªå®šä¹‰å°åè®®ï¼?
-// åè®®ï¼? æ— æ ‘å‰¯ä½œç”¨ï¼›Spanï¼šå¯æ¶ˆè´¹åŒä¸€è¡Œå¹¶æ”¹æ ‘ / é€ƒé€?typeCheck
+// ?????????????? ? SDK Annotation Span????????????
+// ???? ??????Span?????????? / ???typeCheck
 // ===========================================================================
-describe("pitfalls â€?custom annotation protocol (#) Ã— Annotation Span", () => {
+describe("pitfalls ??custom annotation protocol (#) ? Annotation Span", () => {
   /**
    * Mini custom protocol over # lines:
    *   #xaiop/v1 <op> [json]
@@ -1173,7 +1173,7 @@ describe("pitfalls â€?custom annotation protocol (#) Ã— Annotation Span", () => 
     return undefined;
   }
 
-  test("PIT: same wire â€?protocol ignore vs Span remount diverge", () => {
+  test("PIT: same wire ??protocol ignore vs Span remount diverge", () => {
     const wire = `>
 #xaiop/v1 set {"secret":99}
 visible:1
@@ -1182,7 +1182,7 @@ visible:1
     const plain = eng();
     plain.engine.push(wire);
     plain.engine.finish();
-    // no Span â†?# ignored; "visible" + no secret key from annotation text
+    // no Span ??# ignored; "visible" + no secret key from annotation text
     assert.equal(plain.records[0].diff.visible, 1);
     assert.equal(plain.records[0].diff.secret, undefined);
 
@@ -1231,7 +1231,7 @@ flex:2
 .
 `);
     engine.finish();
-    // ignore â†?keep wire, but flex still escaped
+    // ignore ??keep wire, but flex still escaped
     assert.ok(escapes.includes("flex"));
     assert.doesNotThrow(() =>
       session.observeTree({ keep: 1, flex: "str" }, { escapePaths: escapes }),
@@ -1242,7 +1242,7 @@ flex:2
     );
   });
 
-  test("PIT: Content value with # is NOT custom annotation â€?Span never fires", () => {
+  test("PIT: Content value with # is NOT custom annotation ??Span never fires", () => {
     let calls = 0;
     const { engine, records } = eng();
     engine.onAnnotationSpan(() => {
@@ -1267,7 +1267,7 @@ note:#not-a-line
       spanCalls += 1;
       return { x: 1 };
     });
-    // Space + # + payload containing ':' â†?Content key, NOT custom annotation, Span silent
+    // Space + # + payload containing ':' ??Content key, NOT custom annotation, Span silent
     engine.push(`>
  #xaiop/v1 set {"x":1}
 .
@@ -1278,7 +1278,7 @@ note:#not-a-line
     const keys = Object.keys(records[0].diff);
     assert.ok(keys.some((k) => k.includes("#") || k.trimStart().startsWith("#")));
 
-    // Without ':' â†?bare/illegal under parseSync (protocol)
+    // Without ':' ??bare/illegal under parseSync (protocol)
     assert.throws(() => parseSync(`>\n #bare\n`));
   });
   test("custom proto: patch merges capture JSON; set replaces", () => {
@@ -1390,7 +1390,7 @@ text:hi
     assert.equal(records[0].diff.v, 42);
   });
 
-  test("PIT: # after . is first line of next phase â€?swallows later # in that phase", () => {
+  test("PIT: # after . is first line of next phase ??swallows later # in that phase", () => {
     const anns = [];
     const { engine, records } = eng();
     engine.onAnnotationSpan((ann) => {
@@ -1408,7 +1408,7 @@ b:2
 .
 `);
     engine.finish();
-    // Second phase starts with framing # â†?only that Span runs; tag p2 is captured, not invoked
+    // Second phase starts with framing # ??only that Span runs; tag p2 is captured, not invoked
     assert.deepEqual(anns, [
       "xaiop/v1 tag p1",
       "between-phases-becomes-next-phase-head",
@@ -1446,7 +1446,7 @@ text:hello
       await hub.close();
     }
   });
-  test("WS PIT: custom # header before fields + drop â†?empty commit keys", async () => {
+  test("WS PIT: custom # header before fields + drop ??empty commit keys", async () => {
     const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
     try {
       hub.onConnection(async (conn) => {

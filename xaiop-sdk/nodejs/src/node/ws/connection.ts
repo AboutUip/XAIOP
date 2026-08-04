@@ -258,6 +258,26 @@ export class XaiopWsConnection {
   }
 
   /**
+   * @returns {{
+   *   length: number,
+   *   committedAt: number,
+   *   pendingBytes: number,
+   *   openPhase: boolean,
+   * }}
+   */
+  bufferStats() {
+    return this._engine.bufferStats();
+  }
+
+  /**
+   * @param {{ dropHistory?: boolean }} [options]
+   * @returns {{ discardedBytes: number, length: number }}
+   */
+  compactCommitted(options = {}) {
+    return this._engine.compactCommitted(options);
+  }
+
+  /**
    * Called by `XaiopWs.connect` after handshake so late `onPhase` /
    * `onLineIntercept` / … cannot miss early frames silently.
    * Listen-accept connections stay unlocked (attach in `onConnection` if needed).

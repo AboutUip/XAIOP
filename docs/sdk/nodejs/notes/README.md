@@ -14,7 +14,7 @@ Protocol notes: [../../../protocol/notes/](../../../protocol/notes/) · Separati
 
 | Note | ID | Topic |
 | --- | --- | --- |
-| [streaming-parse.md](streaming-parse.md) | `SDK-NODE-NOTE-STREAM` | XAIOP → JSON streaming (`XaiopStream` / `.` phases; `mergeChunkWindow` / `pushAsync`) |
+| [streaming-parse.md](streaming-parse.md) | `SDK-NODE-NOTE-STREAM` | XAIOP → JSON streaming (`XaiopStream` / `.` phases; buffer compact **0.15.0+**; `@` cumulative Diff **0.14.3+**; Diff isolation **0.14.2+**; `mergeChunkWindow` / `pushAsync`) |
 | [history.md](history.md) | `SDK-NODE-NOTE-HISTORY` | Opt-in parse history — snapshot (read-only) + realtime (forward `jumpTo`) |
 | [ws-session.md](ws-session.md) | `SDK-NODE-NOTE-WS` | WebSocket; **`connect`/`onPhase` ordering** (§5); **browser phases** (§9); **type push** (§10) |
 | [typecheck.md](typecheck.md) | `SDK-NODE-NOTE-TYPE` | Type registry / client freeze / WS `pushTypeConsistency` |
