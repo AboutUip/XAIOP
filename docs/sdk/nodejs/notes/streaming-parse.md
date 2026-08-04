@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-STREAM` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** — Node SDK behavior |
 | Code | `xaiop-sdk/nodejs/src/stream/` |
-| Package | `xaiop` **0.7.0+** (protocol wire **0.4.0**) |
+| Package | `xaiop` **0.7.0+** (protocol wire **0.5.0**) |
 
 **Protocol baseline (read first):**  
 [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md) ·  
@@ -36,14 +36,14 @@ Transport text → DotCheckpointEngine.push
   → scan complete "." lines
   → feed phase wire into LiveXaiopParser (once; keeps cumulative tree)
   → materialize live tree → committedSnapshot
-  → Diff = phase-local parse (or shared committed for `=`/`!` after a prior `.`)
+  → Diff = phase-local parse (or shared committed for `=`/`!`/`&` after a prior `.`)
   → onChunk(diff)
   → finish(): flush tail; reuse last commit when buffer fully covered
 ```
 
 | Layer | Path |
 | --- | --- |
-| Client | `src/stream/XaiopStream.js` · API guide [../stream.md](../stream.md) |
+| Client | `src/stream/XaiopStream.js` · API [../API.md](../API.md) |
 | Checkpoint | `src/stream/checkpoint.js` |
 | Live parse | `LiveXaiopParser` in `src/parse.js` |
 | Materialize | `src/stream/materialize.js` |
@@ -95,7 +95,7 @@ Strip a leading `.` line and a trailing `.` line from `raw`, then `trim`. If the
 
 | Value | Source |
 | --- | --- |
-| Chunk / Diff | Parse of **that phase text only** (after inject), except `=`/`!` after a prior `.` → cumulative committed value |
+| Chunk / Diff | Parse of **that phase text only** (after inject), except `=`/`!`/`&` after a prior `.` → cumulative committed value |
 | `committedSnapshot` | Live tree after feeding all wire through last `.` / flushed tail (materialized clone) |
 
 Do not implement Diff as `deepDiff(prevCommitted, newCommitted)` unless you document a different product surface — that is **not** the official Node behavior.
@@ -137,13 +137,14 @@ This is an **SDK policy**, documented here — not a silent protocol edit. See [
 
 1. **Treat `onChunk` as phase JSON**, not JSON Patch and not cumulative Snapshot.  
 2. **Merging chunks yourself:** object keys accumulate/overwrite; a phase that reopens `>name-` **appends** to that named array. Prefer `getCommittedSnapshot()` for cumulative JSON.  
-2b. **Locate across phases:** `=` / `!` see the **whole tree so far** (向前跨相). Official Diff phases that contain `=` / `!` parse a **cumulative prefix**. `@` create-or-enter is 本相 and may stay phase-local.  
+2b. **Locate / delete across phases:** `=` / `!` / `&` see the **whole tree so far** (向前跨相). Official Diff phases that contain `=` / `!` / `&` parse a **cumulative prefix**. `@` create-or-enter is 本相 and may stay phase-local.  
+2c. **Cover mode (`cover`, default off):** SDK-only Diff shaping for `&`. When on, consecutive `&` runs inject `.`, emit deepest-key `null` tombstone Diffs, then restore Cursor with a `>` chain before following lines. When off, Commit still applies `&` on the live tree; already-emitted Diffs are not rewritten.  
 3. **Tolerate `null` chunks** (empty phases, e.g. consecutive `.`).  
 4. **Do not use mid-stream `getSnapshot()`** for UI progress — use `getCommittedSnapshot()`.  
 5. **Compatibility mode** (default **off**): each phase parses with the same policy; `forcedRoot` looks at the **first line of that phase text** (later phases often start with synthetic `.`) — multi-phase + root-array shapes need explicit testing.  
 6. **Transport:** prefer complete lines per SSE/WS **text** message; RAW/WS **binary** now uses a streaming UTF-8 decoder across chunks (do not interleave string+binary mid-code-point).  
 7. **Errors:** mid-stream `XaiopSyntaxError` fails the stream; already emitted chunks are not rolled back.  
-8. **Cost:** each `.` feeds the phase into a live parser; first phase and `=`/`!` Diff share one materialize with Commit; later ordinary Diff uses an owned phase parse (no extra clone). Full-tree materialize is lazy until committed is read. `emitDiff: false` (also auto when `XaiopStream` has no Diff consumer) skips Diff parses. `cloneJson` uses JSON round-trip. Do **not** re-`parseSync` the growing prefix on every `.`.  
+8. **Cost:** each `.` feeds the phase into a live parser; first phase and `=`/`!`/`&` Diff share one materialize with Commit; later ordinary Diff uses an owned phase parse (no extra clone). Full-tree materialize is lazy until committed is read. `emitDiff: false` (also auto when `XaiopStream` has no Diff consumer) skips Diff parses. `cloneJson` uses JSON round-trip. Do **not** re-`parseSync` the growing prefix on every `.`.  
 9. **Lone CR** without LF: checkpoint `.` detection is weaker than full `parseSync` normalization — prefer LF/CRLF.
 
 Wire rules that still apply: [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md) (especially named-array re-enter / append after `.`).
@@ -168,7 +169,7 @@ Wire rules that still apply: [../../../protocol/notes/wire-attention.md](../../.
 - [ ] Complete document: leading `>` / `-`.  
 - [ ] LF or CRLF line endings.
 
-Encode alignment: [../encode.md](../encode.md) · [encode-attention.md](encode-attention.md).
+Encode alignment: [../API.md](../API.md) · [encode-attention.md](encode-attention.md).
 
 ---
 
@@ -185,6 +186,6 @@ Encode alignment: [../encode.md](../encode.md) · [encode-attention.md](encode-a
 ## Related
 
 - Protocol streaming note: [../../../protocol/notes/streaming-attention.md](../../../protocol/notes/streaming-attention.md)  
-- API guide: [../stream.md](../stream.md) · [../README.md](../README.md)  
+- API: [../API.md](../API.md) · [../README.md](../README.md)  
 - Parity contract: [../../behavioral-contract.md](../../behavioral-contract.md)  
 - Separation: [../../../SEPARATION.md](../../../SEPARATION.md)

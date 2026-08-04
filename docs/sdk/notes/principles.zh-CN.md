@@ -43,4 +43,4 @@
 
 实践：[../../practice/](../../practice/)。  
 分栈：[../nodejs/notes/](../nodejs/notes/)。  
-第三方对等清单：[../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)。
+第三方对等清单：[../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（**Node 产品目录**；非跨语言强制）。

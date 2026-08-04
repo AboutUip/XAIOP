@@ -14,7 +14,7 @@ import {
   encode,
   encodeSync,
   parseSync,
-} from "../src/index.js";
+} from "../dist/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureJson = path.resolve(
@@ -22,7 +22,7 @@ const fixtureJson = path.resolve(
   "../../../docs/examples/complex.expected.json",
 );
 
-/** @param {unknown} value @param {import("../src/index.js").EncodeOptions} [opt] */
+/** @param {unknown} value @param {import("../dist/index.js").EncodeOptions} [opt] */
 function roundTrip(value, opt) {
   const wire = encodeSync(value, opt);
   return parseSync(wire);
@@ -34,7 +34,7 @@ function countDotLines(wire) {
 }
 
 test("protocol version unchanged by encode feature", () => {
-  assert.equal(PROTOCOL_VERSION, "0.4.0");
+  assert.equal(PROTOCOL_VERSION, "0.6.0");
 });
 
 test("static + free encodeSync / encode agree", async () => {
@@ -502,7 +502,7 @@ test("dotPolicy path array: missing / mutex / mid-element reject", () => {
 });
 
 test("parseJsonPath / formatJsonPath", async () => {
-  const { parseJsonPath, formatJsonPath } = await import("../src/index.js");
+  const { parseJsonPath, formatJsonPath } = await import("../dist/index.js");
   assert.deepEqual(parseJsonPath("data.childs[2].name"), [
     "data",
     "childs",

@@ -1,6 +1,9 @@
 # =============================================================================
 # XAIOP — repository .gitignore
-# Covers protocol docs, xaiop-sdk (nodejs / java / python), demos, views (Vue).
+# Layout: docs/ (Docsify) · site/ (optional docs CLI) · views/ (lab) ·
+#         xaiop-sdk/{nodejs,java,python} · skills/ (source-only, tracked) ·
+#         demos/ · resources/
+# Intentionally TRACKED (do not ignore): docs/vendor/, skills/, docs/themes/
 # =============================================================================
 
 # --- Local / workspace (do not publish) --------------------------------------
@@ -64,7 +67,7 @@ temp/
 *.rej
 
 # --- Node.js / npm / yarn / pnpm / bun ---------------------------------------
-# (xaiop-sdk/nodejs, demos/nodejs, views, …)
+# (xaiop-sdk/nodejs, demos/nodejs, views, site, …)
 # Lockfiles (package-lock.json) are tracked — do not add them here.
 node_modules/
 jspm_packages/
@@ -80,13 +83,15 @@ jspm_packages/
 .bun/
 bower_components/
 
-# Build & pack outputs
+# Build & pack outputs (Node SDK → dist/xaiop-*.tgz; Vite / TS emit)
 dist/
 build/
 out/
 .output/
 *.tgz
 *.tsbuildinfo
+*.js.map
+*.d.ts.map
 
 # Test / coverage / caches
 coverage/
@@ -113,13 +118,21 @@ cypress/screenshots/
 .wrangler/
 storybook-static/
 
-# --- Vue / Vite (views/) -----------------------------------------------------
+# --- Vue / Vite lab (views/) -------------------------------------------------
 views/dist/
 views/node_modules/
 views/.vite/
 *.local
 
+# --- Optional docs CLI (site/) — preferred preview is views → /docs/ ----------
+site/node_modules/
+site/.vitepress/
+site/dist/
+site/.cache/
+site/*.local
+
 # --- Java / Maven / Gradle (xaiop-sdk/java) ----------------------------------
+# Pack output: xaiop-sdk/java/target/xaiop-*.jar (local only)
 target/
 **/target/
 .gradle/
@@ -130,6 +143,8 @@ target/
 *.nar
 hs_err_pid*
 replay_pid*
+*.dump
+*.dumpstream
 .mtj.tmp/
 .classpath
 .project
@@ -186,6 +201,8 @@ python-version.txt
 /*.tar
 /*.tar.gz
 /*.tgz
+/xaiop-*.tgz
+/xaiop-*.jar
 
 # --- Misc tooling ------------------------------------------------------------
 *.pid

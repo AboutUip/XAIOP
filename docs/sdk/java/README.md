@@ -4,14 +4,15 @@
 
 | Field | Value |
 | --- | --- |
-| Artifact | `io.xaiop:xaiop` **0.4.0** (JAR) |
+| Artifact | `io.xaiop:xaiop` **0.5.0** (JAR) |
 | Protocol | v0.4.0 Frozen (`Xaiop.PROTOCOL_VERSION`) |
+| SDK version constant | `Xaiop.SDK_VERSION` = `0.5.0` |
 | Runtime | Java 17+ |
 | Code | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-The artifact version currently equals the protocol version. That is a coincidence of timing, not a
-rule: the Node package is at `xaiop` **0.7.0** while its `PROTOCOL_VERSION` is also `0.4.0`. Pin the
-artifact version; read `Xaiop.PROTOCOL_VERSION` when you need the wire version.
+This repository’s **SDK focus is Node.js** (`xaiop` **0.13.0** ↔ protocol **0.6.0**); this Java
+package implements a **0.4.0** wire subset plus a Node-aligned **stream consumer** (HTTP / SSE / RAW). Pin the artifact version; read
+`Xaiop.PROTOCOL_VERSION` when you need the wire version.
 
 **Isolation:** Protocol = wire only · Practice = model & streaming transport · This package = APIs — [../../SEPARATION.md](../../SEPARATION.md).  
 **Parity:** [../behavioral-contract.md](../behavioral-contract.md) (protocol conformant ≠ this SDK).  
@@ -21,7 +22,7 @@ artifact version; read `Xaiop.PROTOCOL_VERSION` when you need the wire version.
 
 ## Status
 
-**Active** — parse · encode · merge · checkpoint.
+**Active** — parse · encode · merge · checkpoint · **stream (consumer)**.
 
 | Area | State |
 | --- | --- |
@@ -30,14 +31,15 @@ artifact version; read `Xaiop.PROTOCOL_VERSION` when you need the wire version.
 | `Encode` (all `dotPolicy` modes incl. path arrays) | Done |
 | `Merge` / inject (`overwrite` / `keep`) | Done |
 | `DotCheckpointEngine` (`.` phase Diff, window batching) | Done |
-| `XaiopStream` (HTTP / SSE / RAW consumer) | **Not yet** |
+| `XaiopStream` (HTTP / SSE / RAW consumer) | **Done** (0.5.0) |
 | `XaiopWs` / hub / connection, phase-push helpers | **Not yet** |
+| cover Diff · typeCheck · line intercept · Annotation Span | **Not yet** |
 
 ### How parity is verified
 
 The Java unit suite ports the Node reference suite's scenarios for parse, `@` / `!` / `=`
-addressing, the eight compatibility fixes, the encode option matrix, merge / inject and checkpoint
-phasing, plus a seeded random JSON corpus and a chunked replay of
+addressing, the eight compatibility fixes, the encode option matrix, merge / inject, checkpoint
+phasing, and **stream** (`StreamTest` · `StreamConsistencyTest` · `StreamHttpTest`: phase Diff, window merge, asyncParse, busy/abort, promise/events, UTF-8 splits, HTTP/SSE smoke, one-shot identity), plus a seeded random JSON corpus and a chunked replay of
 [../../examples/complex.xaiop](../../examples/complex.xaiop). Float tokens follow the ECMAScript
 `Number::toString` surface exactly — the shortest decimal that round-trips, on any JDK — so encode
 output for the shared fixtures is byte-for-byte what Node emits.
@@ -74,12 +76,13 @@ The port keeps observable semantics, not JavaScript shapes.
 <dependency>
   <groupId>io.xaiop</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.4.0</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 
 ```java
 import io.xaiop.*;
+import io.xaiop.stream.*;
 
 Object json = Xaiop.parse(">\n>meta\nname:demo\n");   // LinkedHashMap tree
 String wire = Xaiop.encode(json);                      // one `.` phase per top-level key
@@ -110,6 +113,38 @@ String cut = Encode.encode(value, EncodeOptions.builder()
     .dotPolicyPaths(List.of("meta", "items[2]"))                            // phase after each path
     .build());
 ```
+
+### Streaming consumer (`XaiopStream`)
+
+Aligns with Node `XaiopStream` as a **consumer**: status machine
+`idle → connecting → streaming → completing → completed` (plus `aborted` / `error`); defaults
+`mergeChunkWindow=true`, `streamProcessing=true`.
+
+```java
+XaiopStream stream = Xaiop.stream("https://example.com/feed.xaiop");
+stream.onChunk(diff -> { /* phase Diff; empty phase → null */ });
+stream.onDone(snapshot -> { /* full-buffer Snapshot */ });
+stream.onError(err -> { /* ... */ });
+stream.send(new XaiopStream.SendOptions().transport(TransportKind.HTTP));
+
+// Tests / local: RAW chunks
+stream.sendRaw(List.of(">\na:1\n.\n", ">b\nc:2\n.\n"));
+
+// Promise mode
+XaiopStream once = new XaiopStream("raw://x",
+    XaiopStream.Options.defaults().modes(StreamMode.PROMISE));
+Object jsonDone = once.send(new XaiopStream.SendOptions()
+    .transport(TransportKind.RAW)
+    .source(List.of(">\nz:9\n.\n"))).get();
+```
+
+| Transport | Notes |
+| --- | --- |
+| `HTTP` | `java.net.http.HttpClient` streaming body (default) |
+| `SSE` | `Accept: text/event-stream`; multi-line `data:` joined with `\n`; trailing newline appended so phases do not glue |
+| `RAW` | `Iterable` of `CharSequence`/`byte[]`, or `InputStream` (UTF-8 across reads) |
+
+**Not included:** WebSocket consume / listen·hub, `cover`, typeCheck, line intercept, Annotation Span.
 
 | Option | Default | Notes |
 | --- | --- | --- |
@@ -214,5 +249,6 @@ All of these are unchecked, so call sites mirror the JavaScript throw-anywhere b
 ```bash
 cd xaiop-sdk/java
 mvn test                  # 221 tests
-mvn -DskipTests package   # target/xaiop-0.4.0.jar
+mvn -DskipTests package   # target/xaiop-0.5.0.jar
+mvn test                  # includes StreamTest / StreamConsistencyTest / StreamHttpTest
 ```

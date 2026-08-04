@@ -6,13 +6,13 @@
 | --- | --- |
 | Document ID | `SDK-BEHAVE` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
-| Normative | **No** — SDK parity checklist (not protocol conformance) |
-| Reference implementation | Node.js `xaiop` **0.7.0+** (`xaiop-sdk/nodejs/`) |
-| Protocol wire | Frozen **v0.4.0** |
+| Last updated | 2026-08-04 |
+| Normative | **No** — SDK product catalog (not protocol conformance) |
+| Reference implementation (primary) | Node.js `xaiop` **0.13.0** (`xaiop-sdk/nodejs/`) |
+| Protocol wire | Frozen **v0.6.0** |
 
 **Isolation:** Protocol = **cursor IR** wire only · Practice = writers & transport · This page = **what an SDK must match for official parity** — [../SEPARATION.md](../SEPARATION.md).  
-**Stance:** protocol IR ≠ LLM-only product — [../overview/positioning.md](../overview/positioning.md).  
+**Stance:** protocol IR ≠ product marketing surface — [../overview/introduction.md](../overview/introduction.md).  
 **Conformance:** Protocol levels (`CONF`) do **not** certify SDK APIs ([../conformance/conformance.md](../conformance/conformance.md) §7). **Protocol-conformant ≠ official-SDK-equivalent.**
 
 ---
@@ -26,8 +26,9 @@ Authority for wire grammar remains Frozen protocol docs. This contract documents
 | Need | Document |
 | --- | --- |
 | Wire grammar / Content typing | [../protocol/](../protocol/) |
-| Model emit / network framing | [../practice/](../practice/) |
-| Node API surface | [nodejs/README.md](nodejs/README.md) · [nodejs/stream.md](nodejs/stream.md) · [nodejs/encode.md](nodejs/encode.md) · [nodejs/merge.md](nodejs/merge.md) |
+| Live practice (transport / sessions) | [../practice/](../practice/) |
+| LLM emit (sealed) | [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |
+| Node API surface | [nodejs/API.md](nodejs/API.md) · [nodejs/README.md](nodejs/README.md) · [nodejs/notes/](nodejs/notes/) |
 | Phase Diff algorithm detail | [nodejs/notes/streaming-parse.md](nodejs/notes/streaming-parse.md) |
 | WS session detail | [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) |
 
@@ -108,7 +109,7 @@ Additional locked rules:
 6. Reject keys: empty / whitespace / `:`, trailing `-`, characters `>` `<` = `!`.
 7. Sparse array `undefined` holes → error; object `null` under `omit` drops keys; **array null still encodes** unless `nullPolicy: "error"`.
 
-Full guide: [nodejs/encode.md](nodejs/encode.md).
+Full guide: [nodejs/API.md](nodejs/API.md) §4 · [nodejs/notes/encode-attention.md](nodejs/notes/encode-attention.md).
 
 ---
 
@@ -123,7 +124,7 @@ Full guide: [nodejs/encode.md](nodejs/encode.md).
 | Engine inject | `injectXaiop` / `injectJson` mutate store by `dataId`; `as: "json"\|"xaiop"` selects return shape |
 | Fragments | Stored `XaiopFragment` is materialized before merge |
 
-Guide: [nodejs/merge.md](nodejs/merge.md).
+Guide: [nodejs/API.md](nodejs/API.md) §8.
 
 ---
 
@@ -173,7 +174,9 @@ Parity-minded ports **SHOULD** expose equivalents of:
 | Event listeners | Errors in listeners are isolated (do not fail the stream) |
 | Transport | Default `http`; SSE joins multi-`data:` with `\n`; binary uses streaming UTF-8 decoder; empty text not forwarded; timeout aborts |
 
-API: [nodejs/stream.md](nodejs/stream.md).
+API: [nodejs/API.md](nodejs/API.md) §6 · [nodejs/notes/streaming-parse.md](nodejs/notes/streaming-parse.md).
+
+**Java (`io.xaiop:xaiop` 0.5.0):** implements this consumer surface for **HTTP / SSE / RAW** (status machine, modes, `mergeChunkWindow`, listener isolation, UTF-8 decoder, SSE join). Gaps vs Node: **no WebSocket**, no `cover` Diff, no line intercept / Annotation Span, wire remains protocol **0.4.0**. Guide: [java/README.md](java/README.md).
 
 ---
 

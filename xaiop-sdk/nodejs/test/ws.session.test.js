@@ -12,7 +12,7 @@ import {
   XaiopEncodeError,
   XaiopStream,
   XaiopWs,
-} from "../src/index.js";
+} from "../dist/index.js";
 import { waitStatus } from "./helpers/stream.js";
 
 /**
@@ -20,8 +20,8 @@ import { waitStatus } from "./helpers/stream.js";
  * server push in `connection`), then optional clientReady gate before push.
  *
  * @param {(ctx: {
- *   server: import("../src/index.js").XaiopWsConnection,
- *   client: import("../src/index.js").XaiopWsConnection,
+ *   server: import("../dist/index.js").XaiopWsConnection,
+ *   client: import("../dist/index.js").XaiopWsConnection,
  *   phases: unknown[],
  *   committed: unknown[],
  * }) => void|Promise<void>} run
@@ -38,7 +38,7 @@ async function withLoopback(run, opts = {}) {
   /** @type {unknown[]} */
   const committed = [];
 
-  /** @type {import("../src/index.js").XaiopWsConnection|null} */
+  /** @type {import("../dist/index.js").XaiopWsConnection|null} */
   let serverConn = null;
   const serverReady = new Promise((resolve) => {
     hub.onConnection((conn) => {
@@ -48,7 +48,7 @@ async function withLoopback(run, opts = {}) {
   });
 
   try {
-    /** @type {import("../src/index.js").XaiopWsConnection} */
+    /** @type {import("../dist/index.js").XaiopWsConnection} */
     let client;
     client = await XaiopWs.connect(hub.url(), {
       ...opts,

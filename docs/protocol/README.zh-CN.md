@@ -1,25 +1,26 @@
-﻿# 协议文档 — XAIOP v0.4.0（已冻结）
+﻿# 协议文档 — XAIOP 协议包 v0.6.0（已封存）
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 | 字段 | 值 |
 | --- | --- |
 | 文档 ID | `PROT-INDEX` |
-| 状态 | **Frozen（已冻结）** |
-| 版本 | 0.4.0 |
-| 最近更新 | 2026-08-03 |
+| 状态 | **Frozen（已封存）** |
+| 版本 | 0.6.0 |
+| 最近更新 | 2026-08-04 |
 | 规范性 | 信息性（索引） |
 
 ---
 
-## 冻结声明
+## 封存声明
 
-本包为 **已封存的 XAIOP 协议 v0.4.0**。  
-仅规范性文法与语义 — 结构层、内容层、流式有效性。
+本目录描述 **已封存的 XAIOP 协议包 v0.6.0**：流式、按行、游标构造的线文法与语义。
+
+**「已封存」** 表示该版本号下的规范性文本不可变；不等于「永远等于仓库尖端」。见 [../meta/status-and-versioning.zh-CN.md](../meta/status-and-versioning.zh-CN.md) · [../meta/releases.zh-CN.md](../meta/releases.zh-CN.md)。
 
 **样例：** [../examples/complex.xaiop](../examples/complex.xaiop) → [../examples/complex.expected.json](../examples/complex.expected.json)
 
-**隔离：** 协议只谈线格式。模型输出与网络流式 → [../practice/](../practice/)。API → [../sdk/](../sdk/)。见 [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。
+**隔离：** 协议只谈线格式。建议使用场景（含可选 LLM 发射、传输）→ [../practice/](../practice/)。语言 API → [../sdk/](../sdk/)。见 [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。
 
 ---
 
@@ -35,7 +36,8 @@
 
 **核心对：** `>` 创建/再进入匿名对象 · `<` 仅上浮一层（Root 非法）· 禁止裸 Label。  
 **根开启符：** `>` / `-` → 完整匿名根文档；省略 → **根片段** `"a":{}` — **不等于** `{"a":{}}`。  
-**数组单行 `k:v`：** 数组层完整单属性元素。
+**数组单行 `k:v`：** 数组层完整单属性元素。  
+**`#…`：** **自定义注解传递**（独立单行；协议不解释 `#` 后内容；无树副作用）。
 
 ---
 

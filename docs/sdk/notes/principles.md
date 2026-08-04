@@ -43,4 +43,4 @@ Product framing: [../../practice/streaming-transport.md](../../practice/streamin
 
 Practice (model · transport): [../../practice/](../../practice/).  
 Stack-specific: [../nodejs/notes/](../nodejs/notes/).  
-Third-party parity checklist: [../behavioral-contract.md](../behavioral-contract.md).
+Third-party parity checklist: [../behavioral-contract.md](../behavioral-contract.md) (**Node product catalog**; not a cross-language mandate).

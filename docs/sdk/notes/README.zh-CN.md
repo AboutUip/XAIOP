@@ -15,7 +15,7 @@ SDK notes 描述**运行时选择**。引用协议 notes，不重定义线文法
 
 | 层 | 路径 |
 | --- | --- |
-| 第三方对等契约 | [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |
+| 第三方对等契约 | [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（**Node 产品目录**；非跨语言强制） |
 | 跨栈原则 | [principles.zh-CN.md](principles.zh-CN.md) |
 | Node.js notes | [../nodejs/notes/](../nodejs/notes/) |
 | 协议线格式 notes | [../../protocol/notes/](../../protocol/notes/) |

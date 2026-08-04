@@ -13,7 +13,7 @@ import {
   STREAM_STATUS,
   TRANSPORT_KIND,
   XaiopStream,
-} from "../src/index.js";
+} from "../dist/index.js";
 import { chunksOf, waitStatus } from "./helpers/stream.js";
 
 test("checkpoint: mutating onChunk Diff does not corrupt committed (! phase)", () => {

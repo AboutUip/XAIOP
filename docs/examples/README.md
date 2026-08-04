@@ -9,6 +9,6 @@ Covers: anonymous root `>`, named objects, `<` pop, named/anonymous arrays, fill
 
 **Encode round-trip:** Node SDK tests assert  
 `parseSync(encodeSync(expectedJson, policy)) === expectedJson`  
-for `none` / `perTopLevelKey` / `perNKeys` (and the stability suite also does `parse(fixture) → encode → parse`). Guide: [../sdk/nodejs/encode.md](../sdk/nodejs/encode.md).
+for `none` / `perTopLevelKey` / `perNKeys` (and the stability suite also does `parse(fixture) → encode → parse`). Guide: [../sdk/nodejs/API.md](../sdk/nodejs/API.md).
 
 Authoritative grammar: [../protocol/syntax.md](../protocol/syntax.md).

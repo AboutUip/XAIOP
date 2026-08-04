@@ -8,7 +8,7 @@ import {
   mergeToJson,
   mergeToXaiop,
   parseSync,
-} from "../src/index.js";
+} from "../dist/index.js";
 
 test("mergeJson: non-conflicting keys union", () => {
   assert.deepEqual(mergeJson({ a: 1 }, { b: 2 }), { a: 1, b: 2 });

@@ -8,7 +8,7 @@
 | Status | Informative |
 | Last updated | 2026-08-03 |
 | Normative | **No** |
-| Full guide | [../encode.md](../encode.md) |
+| Full guide | [../API.md](../API.md) |
 
 Protocol wire rules remain Frozen **0.3.0**. Encode is an **SDK** feature (`xaiop` **0.6.0+**).
 
@@ -47,7 +47,7 @@ Rejected to prevent silent shape corruption:
 Default `dotPolicy: perTopLevelKey` aligns with Node stream Diff checkpoints (`.` phases).  
 `dotPolicy: string[]` cuts after listed JSON paths (`a.b[2]`); mutually exclusive with frequency options; index must be final.
 
-**Production:** deliberately place `.` via encode options — keep large contiguous fields in one phase; cut only at separable subunits so progressive delivery stays smooth. See [encode.md](../encode.md) §5 “Production streaming”.
+**Production:** deliberately place `.` via encode options — keep large contiguous fields in one phase; cut only at separable subunits so progressive delivery stays smooth. See [API.md](../API.md) Encode section.
 
 See [streaming-parse.md](streaming-parse.md). Wire later-wins / named-array re-enter append: [../../../protocol/notes/wire-attention.md](../../../protocol/notes/wire-attention.md).
 
@@ -55,6 +55,6 @@ See [streaming-parse.md](streaming-parse.md). Wire later-wins / named-array re-e
 
 ## 4. Related
 
-- Guide: [../encode.md](../encode.md)  
+- Guide: [../API.md](../API.md)  
 - Tests: `encode.test.js`, `encode.stability.test.js`  
 - Bench methodology ≠ encode ban: [../../../performance.md](../../../performance.md) §2

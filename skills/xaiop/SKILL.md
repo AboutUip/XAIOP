@@ -1,15 +1,22 @@
 ---
 name: xaiop
 description: >-
-  Generate and interpret XAIOP (eXtensible AI Output Protocol) v0.4.0 Frozen —
-  line-oriented cursor construction. Use when producing XAIOP, converting
-  JSON↔XAIOP, or when the user attaches this skill / mentions XAIOP, .xaiop,
-  or structured cursor-IR output.
+  Teach sealed XAIOP protocol wire v0.5.0 (Frozen) — streaming, line-oriented
+  cursor construction. Project name XAIOP; “eXtensible AI Output Protocol” is
+  legacy naming only, not the definition. LLM emit is an optional Generator
+  scenario. Use when producing XAIOP, converting JSON↔XAIOP, or when the user
+  attaches this skill / mentions XAIOP, .xaiop, or structured cursor-IR output.
 ---
 
-# XAIOP v0.4.0 Frozen — Generator Skill (Protocol Digest)
+> **Notice (2026-08-04):** This Skill is **no longer provided** as an official product.
+> Source remains in the repository for download only — see [../README.md](../README.md)
+> and [../../docs/meta/release-notes-2026-08-04.md](../../docs/meta/release-notes-2026-08-04.md).
 
-This document is the **working protocol summary** for emitters (LLM writers are one Generator class).  
+# XAIOP v0.5.0 Frozen — Generator Skill (Protocol Digest)
+
+This document teaches the **sealed protocol wire** (project name **XAIOP**; pin **protocol 0.5.0**).  
+The historical expansion “eXtensible AI Output Protocol” is **legacy naming only**.  
+LLM emit is an **optional** Generator scenario — not the wire definition.  
 Emit **valid XAIOP only**. Prefer this Skill over inventing JSON-like habits.
 
 **Non-negotiables**
@@ -298,7 +305,7 @@ Use `>` … `<` when the element needs **0, 2+, or nested** fields.
 
 ---
 
-## 8. Cursor operators `.` `=` `!`
+## 8. Cursor operators `.` `=` `@` `!` `&`
 
 ### 8.1 `.` — reset to Root
 
@@ -342,14 +349,15 @@ Rules:
 
 After `=siblings` (array), write the next element with `>` / `:v` / one-line `k:v`.
 
-### 8.3 `=` / `@` / `!` — locate
+### 8.3 `=` / `@` / `!` / `&` — locate and delete
 
 - `@path` — exact path from Root; **create** missing object segments (本相); single Cursor.  
 - `!path` — all complete path-fragment matches on **tree so far** (向前跨相, outer prune); **broadcast** until `.`.  
 - `=path` — fuzzy locate on **tree so far** (向前跨相); first match; no create.  
+- `&path` — **delete** deepest key (path form like `@`, segments via `>`). Single Cursor: absolute from Root; **do not** move Cursor; missing = no-op. Object document root only. May delete a whole named array value; no element index. Cursor-chain delete → syntax error. Allowed under broadcast (relative to each Cursor). Later write recreates.
 
-While broadcasting, do not emit another `!` / `@` / `=` — emit `.` first.  
-Prefer `@` to open/create a Root path; `=` to return to an existing node; `!` for multi-site updates.
+While broadcasting, do not emit another `!` / `@` / `=` — emit `.` first. **`&path` is allowed** during broadcast.  
+Prefer `@` to open/create a Root path; `=` to return to an existing node; `!` for multi-site updates; `&` to remove a key.
 
 ### 8.4 `=` vs `:` vs `>` (memorize)
 
@@ -398,6 +406,7 @@ Use this table when two habits collide:
 | Glue Content onto `<` / `>` | `<id:1` · `>key:value` | separate lines: `<` or `>` · then `key:value` |
 | Trailing junk after long array | `>tagger…` / tool prose / JSON dump | stop on last real element; then `.` or EOF |
 | Quoted names as lines | `"江辞"` alone | `:江辞` (array scalar) or `name:江辞` |
+| Want to remove a key | `delete a` / omit | `&a` (object root; Cursor stays) |
 | Emit this Skill’s checklist | `Leading \`>\` present? Yes.` | **payload only** — never self-audit text |
 | YAML / pseudo block | `=meta` + indented children | `>meta` + flat `key:value` lines |
 

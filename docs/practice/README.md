@@ -1,4 +1,4 @@
-# Practice — what you can do with XAIOP
+# Practice — recommended scenarios
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
@@ -6,38 +6,42 @@
 | --- | --- |
 | Document ID | `PRACTICE-INDEX` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** |
 
-**Not protocol.** This tree describes **practical use** of the Frozen **cursor IR** wire: how writers emit it (models, tools), how applications stream and session-push it. Grammar stays in [../protocol/](../protocol/). Runtime APIs stay in [../sdk/](../sdk/). Stance: [../overview/positioning.md](../overview/positioning.md).
+**Recommended scenarios** — not the protocol. Network framing and session push live here; they **do not** redefine wire grammar.  
+LLM emit / metrics recipes are **target-sealed**: [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/).
 
-Architecture: [../SEPARATION.md](../SEPARATION.md)
+Grammar: [../protocol/](../protocol/) (cite a sealed package version). API: [../sdk/nodejs/API.md](../sdk/nodejs/API.md). What XAIOP is: [../overview/introduction.md](../overview/introduction.md). Architecture: [../SEPARATION.md](../SEPARATION.md).
 
 ---
 
-## Guides
+## Guides (live)
 
 | Guide | Topic |
 | --- | --- |
-| [model-output.md](model-output.md) | LLM / Generator emit — Skills, phases, common mistakes |
-| [streaming-transport.md](streaming-transport.md) | Streaming data over the network — framing, Snapshot/Diff in practice |
-| [skeleton-stream.md](skeleton-stream.md) | Fixed-key skeleton/module delivery over WebSocket (push-and-discard) |
+| [streaming-transport.md](streaming-transport.md) | Carry wire over the network — framing, product Snapshot/Diff |
+| [skeleton-stream.md](skeleton-stream.md) | Fixed-key WebSocket skeleton / module streams |
+
+Stub (points to archive): [model-output.md](model-output.md)
 
 ---
 
 ## Quick map
 
 ```text
-Protocol  →  what the text means (cursor IR)
-Practice  →  writer recipes · streaming transport (this tree)
-SDK       →  materialize / encode / client APIs in a language
+protocol  →  wire meaning (cursor IR)
+practice  →  recommended scenarios (this tree · live)
+archive   →  LLM emit seals (not the primary path)
+SDK       →  language APIs
 ```
 
 | Need | Go to |
 | --- | --- |
 | Line grammar | [../protocol/syntax.md](../protocol/syntax.md) |
-| Wire pitfalls (protocol checklist) | [../protocol/notes/](../protocol/notes/) |
-| Teach a writer (model) | [model-output.md](model-output.md) · [../../skills/](../../skills/) |
-| Stream bytes → JSON | [streaming-transport.md](streaming-transport.md) |
+| Wire pitfalls | [../protocol/notes/](../protocol/notes/) |
+| Bytes → JSON | [streaming-transport.md](streaming-transport.md) |
 | Skeleton WS push | [skeleton-stream.md](skeleton-stream.md) |
-| Node.js APIs | [../sdk/nodejs/](../sdk/nodejs/) |
+| Node.js API | [../sdk/nodejs/API.md](../sdk/nodejs/API.md) (§6.4 · §6.5) |
+| Java stream | [../sdk/java/README.md](../sdk/java/README.md) (`XaiopStream`) |
+| LLM emit (sealed) | [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |

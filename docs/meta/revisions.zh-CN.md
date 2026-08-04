@@ -6,8 +6,8 @@
 | --- | --- |
 | 文档 ID | `META-REV` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.4.0 |
-| 最近更新 | 2026-08-03 |
+| 版本 | 0.6.0 |
+| 最近更新 | 2026-08-04 |
 | 规范性 | 信息性（历史） |
 | 依赖 | `META-VER` |
 
@@ -21,6 +21,40 @@ XAIOP **规范包**的有序修订历史。
 ---
 
 ## 2. 包历史
+
+### 0.6.0 — 2026-08-04（Frozen）
+
+**类型：** 加法性规范变更（Hierarchy / Syntax — 自定义注解传递）。
+
+**摘要：** 新增独立 `#…` 行，用于 **自定义注解传递**（官方名称；不是「注释」原语）。行必须以 `#` 开头；位置不限；协议不解释 `#` 之后内容；对 Cursor / 树 / Block / 广播无副作用。Content 值内的 `#` 仍是 Content。行首空白则不是本原语。
+
+| 范围 | 变更 |
+| --- | --- |
+| `PROT-HIER` §11（其后章节顺延） | 定义 `#` 自定义注解传递 |
+| `PROT-SYNTAX` §3 | 表：`#…` |
+| 协议 notes | wire-attention — `#` |
+| `TERM-GLOSS` | 自定义注解传递 |
+| `META-VER` | 封存包版本 → `0.6.0` |
+| Node.js SDK | **0.11.0** — 忽略 `#` 行；`PROTOCOL_VERSION` → `0.6.0`。 现行 tip **0.13.0** — Annotation Span（`onAnnotationSpan`；typeCheck 逃逸）。曾 tip **0.12.0** — 缓冲行拦截（`onLineIntercept`） |
+
+**兼容性：** 从不发射 `#` 行的写者仍合法。不忽略 `#…` 行的解析器 **不符合** 协议包 **0.6.0**。
+
+### 0.5.0 — 2026-08-04（Frozen）
+
+**类型：** 加法性 / 破坏性规范变更（Hierarchy — 删除）。
+
+**摘要：** 新增 **`&path`** 删除（语法同 `@`；段用 `>`；禁止裸 `&`）。单光标：自 Root **绝对**；删最深键；**不**移动 Cursor。缺失目标 = 静默无操作。仅 **object** 文档根（数组根 / 片段根非法；不得删文档根）。可删整个具名数组值；**无**元素下标删除。删到 Cursor 链上节点 → 语法错误。广播（`!`）：**允许** `&`，路径相对各 Cursor；该 Cursor 上缺失 = 无操作；任一链冲突则整行失败。`.` 仍只重置 Cursor / 退出广播。同址再写 = 创建。
+
+| 范围 | 变更 |
+| --- | --- |
+| `PROT-HIER` §8–§9（及相关） | 定义 `&`；澄清 `.` 与 `&` |
+| `PROT-SYNTAX` §3 | 表：`&path` |
+| 协议 notes | wire-attention / streaming-attention — `&` |
+| `TERM-GLOSS` | 删除等相关术语 |
+| `META-VER` | 封存包版本 → `0.5.0` |
+| Node.js SDK | **0.8.0** — 解析 `&`；可选 `cover` Diff（仅 SDK）；**0.9.0** — TypeScript；`xaiop` / `xaiop/browser` / `xaiop/core`（浏览器相位消费）；**0.10.0** — 类型注册/冻结检查；WS 类型一致性推送 |
+
+**兼容性：** 从未发射 `&` 的写者仍合法。未实现 `&` 的解析器 **不符合** 协议包 **0.5.0**。cover 式 Diff 整形 **不属于** 线文法。
 
 ### 0.4.0 — 2026-08-03（Frozen）
 
@@ -116,7 +150,7 @@ XAIOP **规范包**的有序修订历史。
 | Encode | `encode` / `encodeSync`（静态、实例、自由函数）— JSON → 严格 XAIOP |
 | Engine | `uploadJson` / `uploadJsonSync` |
 | 选项 | 通过 `dotPolicy` / `phaseEvery` / `maxPhases` / `shouldPhase` 控制 `.` |
-| 文档 | [sdk/nodejs/encode.zh-CN.md](../sdk/nodejs/encode.zh-CN.md) |
+| 文档 | [sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md) 编码章节（历史条目；原 `encode.md` 已合并） |
 | 测试 | `encode.test.js` + `encode.stability.test.js` |
 
 ---

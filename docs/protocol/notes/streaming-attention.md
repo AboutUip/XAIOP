@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-NOTE-STREAM` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** — checklist over `PROT-STREAM` / `PROT-BOUND` |
 | Depends on | `PROT-STREAM`, `PROT-BOUND`, `PROT-HIER`, `REQ-STREAM` |
 
@@ -53,13 +53,17 @@ Concrete API names are implementation details.
 
 ---
 
-## 5. Interaction with `.` and later-wins
+## 5. Interaction with `.`, later-wins, and `&`
 
 | Fact | Implication for streaming readers |
 | --- | --- |
-| `.` resets Cursor only | Prior JSON keys remain until overwritten |
+| `.` resets Cursor only | Prior JSON keys remain until overwritten or deleted |
 | Later-wins | Snapshot after a later Block may drop earlier same-key **object Content** |
 | `>name-` reopen | Array is **re-entered**; elements **append** — Diff/Snapshot accumulate |
+| `&path` delete | Key removed from the **cumulative** tree; later write to same address creates again |
+| Phases with `=` / `!` / `&` | Per-`.` Diff **MUST** parse a **cumulative prefix** so operators see prior phases |
+
+**SDK-only cover mode (not wire grammar):** default **off**. When enabled for streaming Diff, consecutive `&` runs may inject `.`, emit a deepest-key `null` tombstone Diff, then restore with a `>` chain. Canonical Commit still applies `&` on the live tree. Protocol parsers need not implement cover.
 
 Wire details: [wire-attention.md](wire-attention.md).
 
@@ -71,6 +75,7 @@ Wire details: [wire-attention.md](wire-attention.md).
 - [ ] Do not put line endings inside Content values.  
 - [ ] If Consumers need mid-stream JSON, ensure Blocks (and any agreed checkpoint) actually complete.
 - [ ] After `.`, re-address from Root; reopen `>name-` when append across phases is intended.
+- [ ] Prefer `&path` only on object-root documents; remember missing targets are silent no-ops.
 
 ---
 
@@ -80,6 +85,7 @@ Wire details: [wire-attention.md](wire-attention.md).
 - [ ] Distinguish incomplete trailing Content (still open Block) from completed Blocks.  
 - [ ] If exposing Snapshot/Diff, define Diff = completed Block (or document a deliberate narrower policy in practice/SDK docs).
 - [ ] Apply later-wins for object keys; treat `>name-` reopen as array append when merging successive views.
+- [ ] For phases with `=` / `!` / `&`, use cumulative-prefix parse when producing Diff.
 
 ---
 

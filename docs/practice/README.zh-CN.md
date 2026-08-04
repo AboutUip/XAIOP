@@ -1,4 +1,4 @@
-# 实践 — 协议实际可做什么
+# 实践 — 建议使用场景
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
@@ -6,23 +6,24 @@
 | --- | --- |
 | 文档 ID | `PRACTICE-INDEX` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-03 |
+| 最近更新 | 2026-08-04 |
 | 规范性 | **否** |
 
-**不是协议。** 本树描述 Frozen **游标 IR** 线格式的**实际用法**：写者如何发射（模型、工具）、应用如何流式与会话推送。文法见 [../protocol/](../protocol/)；运行时 API 见 [../sdk/](../sdk/)。立场：[../overview/positioning.zh-CN.md](../overview/positioning.zh-CN.md)。
+**建议使用场景** — 不是协议。网络分帧、会话推送属于本树；**不**重定义线格式。  
+LLM 发射 / 评测口径已**目标封存**：[../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/)。
 
-架构：[../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)
-
+文法：[../protocol/](../protocol/)（请引用已封存包版本）。API：[../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md)。XAIOP 是什么：[../overview/introduction.zh-CN.md](../overview/introduction.zh-CN.md)。架构：[../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。
 
 ---
 
-## 指南
+## 指南（现行）
 
 | 指南 | 主题 |
 | --- | --- |
-| [model-output.zh-CN.md](model-output.zh-CN.md) | LLM / 生成端输出 — Skill、相位、常见错误 |
-| [streaming-transport.zh-CN.md](streaming-transport.zh-CN.md) | 网上流式传数据 — 分帧、实践中的 Snapshot/Diff |
-| [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md) | WebSocket 固定键骨架/模块流（推完即丢） |
+| [streaming-transport.zh-CN.md](streaming-transport.zh-CN.md) | 经网络搬运线文 — 分帧、产品侧 Snapshot/Diff |
+| [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md) | WebSocket 固定键骨架/模块流 |
+
+占位（指向封存）：[model-output.zh-CN.md](model-output.zh-CN.md)
 
 ---
 
@@ -30,15 +31,17 @@
 
 ```text
 协议      →  文本含义（游标 IR）
-实践      →  写者配方 · 流式传输（本树）
-SDK       →  某语言的物化 / encode / 客户端 API
+实践      →  建议使用场景（本树 · 现行）
+封存      →  LLM 发射等目标快照（非主路径）
+SDK       →  语言 API
 ```
 
 | 需求 | 去向 |
 | --- | --- |
 | 行文法 | [../protocol/syntax.zh-CN.md](../protocol/syntax.zh-CN.md) |
-| 线格式清单 | [../protocol/notes/](../protocol/notes/) |
-| 教写者（模型） | [model-output.zh-CN.md](model-output.zh-CN.md) · [../../skills/](../../skills/) |
+| 线坑点 | [../protocol/notes/](../protocol/notes/) |
 | 字节流 → JSON | [streaming-transport.zh-CN.md](streaming-transport.zh-CN.md) |
 | 骨架 WS 推送 | [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md) |
-| Node.js API | [../sdk/nodejs/](../sdk/nodejs/) |
+| Node.js API | [../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md)（§6.4 · §6.5） |
+| Java stream | [../sdk/java/README.zh-CN.md](../sdk/java/README.zh-CN.md)（`XaiopStream`） |
+| LLM 发射（封存） | [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |

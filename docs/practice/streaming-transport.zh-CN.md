@@ -6,13 +6,14 @@
 | --- | --- |
 | 文档 ID | `PRACTICE-STREAM` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-03 |
+| 最近更新 | 2026-08-04 |
 | 规范性 | **否** |
 
+**建议场景**：经真实网络搬运已封存线文 — 不是协议。  
 **协议**规定流式*文本*何时有效，以及 Block 级 Snapshot/Diff（[../protocol/streaming.zh-CN.md](../protocol/streaming.zh-CN.md)）。  
-**本文**写如何经真实传输通道搬运这些文本，以及产品侧常见踩坑。
+**本文**写分帧 / 传输实践与产品侧常见踩坑。
 
-具体运行时 API：Node `XaiopStream`（[../sdk/nodejs/stream.zh-CN.md](../sdk/nodejs/stream.zh-CN.md) · [../sdk/nodejs/notes/streaming-parse.zh-CN.md](../sdk/nodejs/notes/streaming-parse.zh-CN.md)）· 骨架 WS 会话 `XaiopWs`（[../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md) · 实践 [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md)）· 第三方对等（[../sdk/behavioral-contract.zh-CN.md](../sdk/behavioral-contract.zh-CN.md)）。
+运行时 API：Node — **[../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md)**（`XaiopStream` · `XaiopWs`）；浏览器相位消费 — `xaiop/browser`（`XaiopStream` · `XaiopBrowserWs`，见 API §7.6）；Java 消费端 — **[../sdk/java/README.zh-CN.md](../sdk/java/README.zh-CN.md)**（`XaiopStream` · HTTP / SSE / RAW；无 WS）· 深潜 [../sdk/nodejs/notes/streaming-parse.zh-CN.md](../sdk/nodejs/notes/streaming-parse.zh-CN.md) · [../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md) · 实践 [skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md)。
 
 ---
 
@@ -56,7 +57,7 @@
 | 需求 | 做法 |
 | --- | --- |
 | 严格按 Block 更新 UI | 用按 Block Diff 的实现，或密 Label、不单靠 `.` |
-| 按段落更新 | 与消费端约定 `.` 为 Diff 界；Skill 按此组织（[model-output.zh-CN.md](model-output.zh-CN.md)） |
+| 按段落更新 | 与消费端约定 `.` 为 Diff 界；Skill 按此组织（[封存 model-output](../archive/practice-llm-emit-2026-08-04/model-output.zh-CN.md)） |
 | 只要终态 JSON | 可关中途处理；仍可流式收字节 |
 
 ---
@@ -64,8 +65,9 @@
 ## 5. 相关
 
 - 协议：[../protocol/streaming.zh-CN.md](../protocol/streaming.zh-CN.md)  
-- 模型输出：[model-output.zh-CN.md](model-output.zh-CN.md)  
+- 模型输出：[封存 model-output](../archive/practice-llm-emit-2026-08-04/model-output.zh-CN.md)  
 - 骨架 WS：[skeleton-stream.zh-CN.md](skeleton-stream.zh-CN.md)  
-- Node 流客户端：[../sdk/nodejs/notes/streaming-parse.zh-CN.md](../sdk/nodejs/notes/streaming-parse.zh-CN.md)  
-- Node WS 会话：[../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md)  
+- Node 流客户端：[../sdk/nodejs/notes/streaming-parse.zh-CN.md](../sdk/nodejs/notes/streaming-parse.zh-CN.md)
+- Java 流消费端：[../sdk/java/README.zh-CN.md](../sdk/java/README.zh-CN.md)（`XaiopStream`）
+- Node / 浏览器 WS：[../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md)（§9 浏览器相位）
 - 隔离：[../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)

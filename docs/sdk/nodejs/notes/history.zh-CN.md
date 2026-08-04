@@ -11,7 +11,7 @@
 | 代码 | `xaiop-sdk/nodejs/src/stream/history.js` · 接线于 `checkpoint.js` |
 | 包 | `xaiop` **0.7.0+** |
 
-上级：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) · [../stream.zh-CN.md](../stream.zh-CN.md) · 对等：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)
+上级：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md) · [../API.zh-CN.md](../API.zh-CN.md) · 对等：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)
 
 ---
 

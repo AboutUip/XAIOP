@@ -11,7 +11,7 @@ import {
   TRANSPORT_KIND,
   encodeSync,
   parseSync,
-} from "../src/index.js";
+} from "../dist/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureXaiop = path.resolve(
@@ -23,7 +23,7 @@ const fixtureJson = path.resolve(
   "../../../docs/examples/complex.expected.json",
 );
 
-/** @param {unknown} value @param {import("../src/index.js").EncodeOptions} [opt] */
+/** @param {unknown} value @param {import("../dist/index.js").EncodeOptions} [opt] */
 function rt(value, opt) {
   return parseSync(encodeSync(value, opt));
 }

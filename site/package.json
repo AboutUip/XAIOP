@@ -1,0 +1,13 @@
+{
+  "name": "xaiop-docs-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "docsify serve ../docs --port 5174",
+    "sidebar": "python ../docs/archive/gen-sidebar.py",
+    "hint": "node -e \"console.log('Prefer: cd ../views && npm run dev → http://127.0.0.1:5173/docs/')\""
+  },
+  "devDependencies": {
+    "docsify-cli": "^4.4.4"
+  }
+}

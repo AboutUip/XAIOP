@@ -6,11 +6,11 @@
 | --- | --- |
 | Document ID | `PRACTICE-SKELETON-WS` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** |
 
-**Not protocol.** Long-lived delivery of fixed keys (skeleton + modules) over one WebSocket: encode each completed piece, push, discard.  
-Runtime API: Node `XaiopWs` — [../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md).
+**Recommended scenario** — not protocol. Long-lived delivery of fixed keys (skeleton + modules) over one WebSocket: encode each completed piece, push, discard.  
+Runtime: Node producer `XaiopWs` · browser consumer `xaiop/browser` — **[../sdk/nodejs/API.md](../sdk/nodejs/API.md)** §7 / §7.6 · deep-dive [../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md).
 
 ---
 
@@ -45,19 +45,21 @@ No JSON Patch. Accumulation is **protocol later-wins** on the consumer.
 1. Treat each phase Diff as **that phase’s JSON**, not a patch.  
 2. Use **committed Snapshot** for progressive UI; **final Snapshot** at close.  
 3. Same key later overwrites earlier (later-wins).  
-4. Connection close is the usual end-of-stream signal.
+4. Connection close is the usual end-of-stream signal.  
+5. **Early-frame timing (`connect`):** producers often push synchronously in `connection`. Consumers **MUST** put `onPhase` / `onDone` in connect options (Node: `XaiopWs.connect`; browser: `XaiopBrowserWs.connect`); do **not** assume “first phase only after `await connect` returns”.  
+6. **Browser:** import from `xaiop/browser`; **phase Diffs are supported** (`onPhase` / `XaiopStream.onChunk`). **No** `listen` — keep the server on Node. See [../sdk/nodejs/API.md](../sdk/nodejs/API.md) §7.6.
 
 ---
 
 ## 4. Why WebSocket-only for this path
 
-Skeleton / module long sessions need bidirectional-capable, frame-oriented delivery. HTTP/SSE remain useful elsewhere; **this practice path is WS-primary**. One SDK package covers listen/push and connect/consume — not separate client/server packages.
+Skeleton / module long sessions need bidirectional-capable, frame-oriented delivery. HTTP/SSE remain useful elsewhere; **this practice path is WS-primary**. Node owns listen/push; browsers use `xaiop/browser` for connect/consume (**phase Diffs supported**).
 
 ---
 
 ## 5. Related
 
 - Transport framing: [streaming-transport.md](streaming-transport.md)  
-- Model emit: [model-output.md](model-output.md)  
+- Model emit: [archive model-output](../archive/practice-llm-emit-2026-08-04/model-output.md)  
 - Node WS API: [../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md)  
 - Separation: [../SEPARATION.md](../SEPARATION.md)

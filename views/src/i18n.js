@@ -40,6 +40,7 @@ const messages = {
     "nav.protocol": "Protocol",
     "nav.api": "API Reference",
     "nav.try": "Try it",
+    "nav.fullDocs": "Docs",
     "nav.primary": "Primary",
     "theme.system": "Theme: System",
     "theme.light": "Theme: Light",
@@ -62,7 +63,7 @@ const messages = {
     "home.exploreOps": "Explore operators →",
     "home.sdkTitle": "SDK",
     "home.sdkBody":
-      "Node.js is the reference implementation; Java / Python are placeholders. Searchable, grouped API catalog.",
+      "Node.js is the reference implementation; Java / Python are placeholders. API page renders the live docs/sdk/nodejs/API.md.",
     "home.openApi": "Open API reference →",
     "home.tryTitle": "Try it",
     "home.tryBody":
@@ -79,12 +80,19 @@ const messages = {
 
     "sdk.title": "{name} API reference",
     "sdk.leadActive":
-      "Aligned with xaiop-sdk/nodejs and docs/sdk/nodejs. Browseable, searchable signatures — Microsoft Learn–style reference layout.",
+      "Renders the authoritative markdown from docs/sdk/nodejs (API.md). Filter sections below; open Docsify for the full docs tree.",
     "sdk.leadPending":
       "Updates after the Node.js surface stabilizes. Placeholder for now.",
     "sdk.source": "Source of truth",
-    "sdk.search": "Search APIs",
-    "sdk.searchPh": "Filter by name, signature, or description",
+    "sdk.liveHint":
+      "Content comes from docs/ via Vite ?raw import — edit the markdown and refresh to see updates.",
+    "sdk.openDocsify": "Open full docs tree (/docs) →",
+    "sdk.notes": "Deep-dive notes",
+    "sdk.search": "Filter sections",
+    "sdk.searchPh": "Filter ## sections by keyword…",
+    "sdk.renderHint":
+      "Full API prose · tables · examples from docs — not a signature stub table.",
+    "sdk.noMatch": "No sections matched this filter.",
     "sdk.colApi": "API",
     "sdk.colSig": "Signature",
     "sdk.colRet": "Returns",
@@ -194,6 +202,7 @@ const messages = {
     "nav.protocol": "协议",
     "nav.api": "API 参考",
     "nav.try": "试用",
+    "nav.fullDocs": "文档树",
     "nav.primary": "主导航",
     "theme.system": "主题：跟随系统",
     "theme.light": "主题：浅色",
@@ -215,7 +224,7 @@ const messages = {
     "home.exploreOps": "浏览算子 →",
     "home.sdkTitle": "SDK",
     "home.sdkBody":
-      "Node.js 为权威实现；Java / Python 占位待更新。API 目录可搜索、可分组预览。",
+      "Node.js 为权威实现；Java / Python 占位。API 页直接渲染 docs/sdk/nodejs/API.zh-CN.md。",
     "home.openApi": "打开 API 参考 →",
     "home.tryTitle": "试用",
     "home.tryBody":
@@ -232,11 +241,17 @@ const messages = {
 
     "sdk.title": "{name} API 参考",
     "sdk.leadActive":
-      "与 xaiop-sdk/nodejs 与 docs/sdk/nodejs 对齐。签名可浏览、可搜索；结构参考 Microsoft Learn 参考页。",
+      "直接渲染 docs/sdk/nodejs/API.zh-CN.md 权威正文。下方可按章节过滤；完整文档树请打开 Docsify。",
     "sdk.leadPending": "对齐 Node.js 稳定后更新。当前为占位。",
     "sdk.source": "权威来源",
-    "sdk.search": "搜索 API",
-    "sdk.searchPh": "按名称、签名或描述过滤",
+    "sdk.liveHint":
+      "内容来自 docs/ 的 Vite ?raw 导入——改 markdown 后刷新即可看到更新。",
+    "sdk.openDocsify": "打开完整文档树（/docs）→",
+    "sdk.notes": "专题笔记",
+    "sdk.search": "过滤章节",
+    "sdk.searchPh": "按关键词过滤 ## 章节…",
+    "sdk.renderHint": "完整 API 正文 · 表格 · 示例 —— 不是签名占位表。",
+    "sdk.noMatch": "没有匹配该过滤条件的章节。",
     "sdk.colApi": "API",
     "sdk.colSig": "签名",
     "sdk.colRet": "返回",

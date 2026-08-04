@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-NOTE-WIRE` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** — checklist over Frozen text |
 | Depends on | `PROT-SYNTAX`, `PROT-HIER`, `PROT-BOUND`, `PROT-CONTENT` |
 
@@ -45,7 +45,7 @@ Normative: [../syntax.md](../syntax.md) §2.
 4. Bare `<` at Root is a **syntax error**.  
 5. After `.`, bare `>` on an object root **re-enters** that root (modify); it does **not** nest another anonymous object.
 
-Normative: [../hierarchy.md](../hierarchy.md) §9 / §4.2.
+Normative: [../hierarchy.md](../hierarchy.md) §10 / §4.2.
 
 ---
 
@@ -56,7 +56,7 @@ Normative: [../hierarchy.md](../hierarchy.md) §9 / §4.2.
 3. Re-opening a named **array** (`>name-` when it already exists as array) **re-enters** that array — later elements **append**; it does **not** replace the array.  
 4. Multi-phase documents **MAY** reopen `>name-` after `.` to grow the same named array.
 
-Normative: [../hierarchy.md](../hierarchy.md) §10–11.
+Normative: [../hierarchy.md](../hierarchy.md) §11–12.
 
 ---
 
@@ -83,20 +83,30 @@ Normative: [../syntax.md](../syntax.md), [../content.md](../content.md), [../bou
 
 ---
 
-## 7. Locate operators (`=` / `@` / `!`)
+## 7. Locate / delete operators (`=` / `@` / `!` / `&`)
 
 | Op | Role |
 | --- | --- |
 | `=path` | Fuzzy search over **tree so far** (向前跨相); first match; no create |
 | `@path` | Exact from Root; **create** missing objects (本相); single Cursor |
 | `!path` | All path-fragment matches over **tree so far** (向前跨相, outer prune); broadcast until `.` |
+| `&path` | Delete deepest key; single Cursor = absolute from Root (no Cursor move); missing = no-op |
 
-1. Path segments use `>`. Partial labels do not match.  
-2. While broadcast is active, `!` / `@` / `=` are illegal until `.`.  
-3. Broadcast writes fan out; any Cursor failure fails the line.  
-4. Streaming Diff: phases with `=` / `!` **MUST** use cumulative prefix parse.
+1. Path segments use `>` (same form as `@`). Bare `&` is illegal. Partial labels do not match.  
+2. While broadcast is active, `!` / `@` / `=` are illegal until `.`; **`&path` is allowed** (relative to each Cursor).  
+3. Broadcast writes fan out; any Cursor failure fails the line (including `&` Cursor-chain conflicts).  
+4. `&` requires object document root (not array / fragment root); may delete a whole named array value; no element-index delete; Cursor-chain delete → syntax error.  
+5. Streaming Diff: phases with `=` / `!` / `&` **MUST** use cumulative prefix parse.
 
-Normative: [../hierarchy.md](../hierarchy.md) §6–§8.
+Normative: [../hierarchy.md](../hierarchy.md) §6–§9.
+
+---
+
+## 7.1 Custom annotation transmission (`#…`)
+
+A standalone line that begins with `#` is **custom annotation transmission** (official name; not a “comment primitive”). Position unrestricted; protocol does not interpret text after `#`; no Cursor / tree effect. A `#` inside Content (e.g. `note:#x`) remains Content.
+
+Normative: [../hierarchy.md](../hierarchy.md) §11 · [../syntax.md](../syntax.md) §3.
 
 ---
 
@@ -107,7 +117,8 @@ Normative: [../hierarchy.md](../hierarchy.md) §6–§8.
 - [ ] After `.`, re-address from Root (`=` / `@` / `>`).  
 - [ ] Reopen `>name-` across resets when append is intended (create-or-reenter).  
 - [ ] Use `!` only when multi-Cursor broadcast is intended; emit `.` to exit.  
-- [ ] Prefer `@` for exact Root paths; `=` for fuzzy relocate.  
+- [ ] Prefer `@` for exact Root paths; `=` for fuzzy relocate; `&path` to delete a key (absolute from Root).  
+- [ ] Use standalone `#…` lines for custom annotation transmission when needed.  
 - [ ] No CR/LF inside values; no Bare Labels.  
 - [ ] Forced string when a numeric/bool-looking token must stay text.
 
@@ -117,8 +128,9 @@ Normative: [../hierarchy.md](../hierarchy.md) §6–§8.
 
 - [ ] Treat later same-key writes as overwrite.  
 - [ ] Treat `>name-` reopen as re-enter / append (not replace).  
-- [ ] Implement `@` exact-from-Root **create-or-enter** and `!` broadcast + outer prune (tree so far).  
-- [ ] Reject bare `<` at Root; reject locate ops while broadcast is active.  
+- [ ] Implement `@` exact-from-Root **create-or-enter**, `!` broadcast + outer prune (tree so far), and `&` delete (absolute / broadcast-relative).  
+- [ ] Recognize and ignore standalone `#…` lines (custom annotation transmission).  
+- [ ] Reject bare `<` at Root; reject locate ops while broadcast is active (`&` remains legal).  
 - [ ] Do not invent missing leaves or braces.  
 - [ ] Line-buffer until a full line before interpreting a Label (`PROT-BOUND` / streaming requirements).
 

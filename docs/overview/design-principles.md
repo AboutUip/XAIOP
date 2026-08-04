@@ -37,11 +37,11 @@ Future wire-format documents **MUST NOT** contradict these principles. Requireme
 
 ## 3. P1 — Generator First
 
-When traditional, computer-centric serialization idioms conflict with reliable **incremental / local** generation, the protocol **MUST** prefer designs that keep writer obligations local (enter / leave / locate / reset), not long-range brace pairing or depth bookkeeping.
+When traditional, computer-centric serialization idioms conflict with reliable **incremental / local** generation, the protocol **MUST** prefer designs that keep writer obligations local (enter / leave / locate / reset / delete), not long-range brace pairing or depth bookkeeping.
 
-LLMs are the **primary design reference** for Generator behavior; tool and session writers **MUST** remain valid Generators on the same wire.
+Valid Generators **MUST** include programmatic writers, tool encoders, and session push writers. The protocol **MUST NOT** require any particular model, Skill, or prompt strategy as a condition of conformance.
 
-**Rationale (informative):** Nested bracket languages and long-range syntactic commitments raise failure rates for long or streaming writers. Historical name of this principle was “AI First”; the ID `P1` is unchanged.
+**Rationale (informative):** Nested bracket languages and long-range syntactic commitments raise failure rates for long or streaming writers. Historical name of this principle was “AI First”; the ID `P1` is unchanged. Normative meaning is writer-local priority — **not** “LLM-centric design.”
 
 ---
 

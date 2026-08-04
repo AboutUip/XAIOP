@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseSync, PROTOCOL_VERSION, XaiopSyntaxError } from "../src/index.js";
+import { parseSync, PROTOCOL_VERSION, XaiopSyntaxError } from "../dist/index.js";
 
-test("protocol version 0.4.0", () => {
-  assert.equal(PROTOCOL_VERSION, "0.4.0");
+test("protocol version 0.6.0", () => {
+  assert.equal(PROTOCOL_VERSION, "0.6.0");
 });
 
 test("@path exact from Root; sibling branch untouched", () => {
@@ -336,7 +336,7 @@ z:9
 
 test("stream: ! after . uses cumulative prefix (向前跨相)", async () => {
   const { STREAM_MODES, STREAM_STATUS, TRANSPORT_KIND, XaiopStream } =
-    await import("../src/index.js");
+    await import("../dist/index.js");
   const { chunksOf, waitStatus } = await import("./helpers/stream.js");
   const stream = new XaiopStream("raw://local", {
     modes: [STREAM_MODES.PROMISE, STREAM_MODES.CALLBACK],
@@ -382,7 +382,7 @@ v:1
 
 test("streamProcessing off: full-buffer parse applies ! across prior . phases", async () => {
   const { STREAM_MODES, TRANSPORT_KIND, XaiopStream } = await import(
-    "../src/index.js"
+    "../dist/index.js"
   );
   const { chunksOf } = await import("./helpers/stream.js");
   const stream = new XaiopStream("raw://local", {

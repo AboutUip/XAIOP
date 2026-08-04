@@ -6,27 +6,54 @@
 | --- | --- |
 | Document ID | `OV-INTRO` |
 | Status | Draft |
-| Version | 0.2.0-draft |
-| Last updated | 2026-08-03 |
+| Version | 0.3.0-draft |
+| Last updated | 2026-08-04 |
 | Normative | Mixed (scope and non-goals are normative; background is informative) |
-| Depends on | `META-CONV`, `META-VER` |
+| Depends on | `META-CONV`, `META-VER`, `META-SEP` |
 | Informs | `OV-PRIN`, `REQ-FUNC`, `REQ-STREAM`, `CONF` |
 
 ---
 
 ## 1. Purpose
 
-XAIOP (eXtensible AI Output Protocol) is a line-oriented **cursor construction** protocol for reliable, deterministic, streaming-friendly structured data: writers emit enter / leave / locate / reset instructions; software **materializes** JSON (including mid-stream phases).
+**XAIOP** is a **streaming, line-oriented, cursor-construction** wire protocol for organizing structured data: writers emit enter / leave / locate / reset / delete instructions; parsers **deterministically materialize** structured values (commonly JSON, including mid-stream phases).
 
-Large Language Models are a **typical** Generator, not the only one. Tools (`encode`) and session push (e.g. skeleton WebSocket) use the same wire.
+**One line:** the writer walks a cursor; the program holds the tree.
 
-Full product stance: **[positioning.md](positioning.md)**.
+It is **not** a service-to-service JSON bus. It is a bridge from *incremental construction* to *consumable structured snapshots*.
+
+The historical expansion “eXtensible AI Output Protocol” is **legacy naming only**; it does not define scope, primary use case, or conformance. Normative identity is the wire described in sealed protocol packages (see `META-VER`). LLM emit, tooling `encode`, and session push are all **optional writer scenarios** (practice layer), not the wire definition.
+
+Seal rules: [../meta/status-and-versioning.md](../meta/status-and-versioning.md) · [../meta/releases.md](../meta/releases.md). Layers: [../SEPARATION.md](../SEPARATION.md).
 
 ---
 
-## 2. Problem Statement (informative)
+## 2. Layers
 
-Formats designed for deterministic programs (notably JSON and XML) ask for a finished, globally correct structure in one pass. That hurts long-form, incremental, and unreliable writers:
+| Layer | Owns | Who |
+| --- | --- | --- |
+| **Wire (protocol)** | Cursor operators, later-wins, phase reset, honest parse (no silent repair by default) | Any conforming Generator / Parser |
+| **Practice** | Recommended ways to *use* the wire (transport, sessions, optional model emit) | Applications |
+| **SDK** | Language APIs that implement a **cited sealed** protocol package | Implementations |
+
+```text
+Generator (any conforming writer)
+        │
+        ▼
+   XAIOP wire (cursor IR)
+        │
+        ▼
+   Parser / SDK (materialize · phases)
+        │
+        ▼
+   Structured Snapshot / Diff → Consumer
+```
+
+---
+
+## 3. Problem Statement (informative)
+
+Formats designed for deterministic programs (notably JSON and XML) often require a finished, globally correct structure in one pass. That hurts long-form and incremental writers:
 
 | Challenge | Impact |
 | --- | --- |
@@ -36,32 +63,32 @@ Formats designed for deterministic programs (notably JSON and XML) ask for a fin
 | Low tolerance for partial output | Poor incremental UX |
 | Reduced stability in streaming generation | Unreliable pipelines |
 
-**Rationale (informative):** XAIOP designs around **local cursor steps** and program-side materialization, rather than forcing writers to emulate brace-pairing serialization.
-
-**Wedge (informative):** for LLMs, turn a *memory* problem into a *logic* problem. Evidence and conditional gains: **[positioning.md](positioning.md)** · [performance.md](../performance.md).
+**Rationale (informative):** XAIOP designs around **local cursor steps** and program-side materialization, rather than forcing writers to emulate brace-pairing serialization — turning a *memory* burden into *next-step* logic. That design goal is independent of whether the Generator is a program, a human, or a model.
 
 ---
 
-## 3. Architectural Position
+## 4. Recommended scenarios (not protocol requirements)
 
-```text
-Writer (LLM · tool · session push)
- │
- ▼
-XAIOP Protocol (cursor IR)
- │
- ▼
-Parser / SDK (materialize · phases)
- │
- ▼
-Application / Downstream Systems
-```
+These are **practice / product** suggestions. None redefine the sealed wire. Details: [../practice/](../practice/).
 
-XAIOP sits between writers and application consumption. It is not defined as a general-purpose program-to-program interchange format replacing JSON buses.
+| Scenario | Role |
+| --- | --- |
+| Tooling `encode` | Programmatic Generator of strict wire |
+| Streaming consumers | Mid-stream phase Diff + committed / final Snapshot |
+| Session push (e.g. WebSocket skeletons) | Fixed-key phase push over a transport |
+| Optional LLM emit | See sealed archive [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |
+
+### 4.1 Optional LLM scenario (sealed; not live practice)
+
+LLM emit guidance and structured-output metrics recipes are **target-sealed** — not part of the live practice path:
+
+→ [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) · stub [../performance.md](../performance.md)
+
+Format design alone does not guarantee model compliance; that limit stays in the sealed pack so Skills / . advice are not mistaken for wire guarantees.
 
 ---
 
-## 4. Goals (normative intent)
+## 5. Goals (normative intent)
 
 The protocol design **MUST** pursue the following goals:
 
@@ -76,7 +103,7 @@ The protocol design **MUST** pursue the following goals:
 
 ---
 
-## 5. Non-Goals (normative)
+## 6. Non-Goals (normative)
 
 The following are **explicitly out of scope** for XAIOP as a protocol:
 
@@ -92,7 +119,18 @@ The following are **explicitly out of scope** for XAIOP as a protocol:
 
 ---
 
-## 6. Scope of This Document Set (Phase 1)
+## 7. In scope / not claimed
+
+| In scope (wire + sealed packages) | Not claimed |
+| --- | --- |
+| Progressive structured streams (cursor IR → materialize → Snapshot/Diff) | Replacing inter-service JSON |
+| Deterministic parse for a cited package version | “Always fewer tokens / always faster than JSON” |
+| Immutable sealed package versions (`META-VER`) | “Latest Frozen” without a version number |
+| Same wire for tools and sessions | Defining XAIOP as an AI-only prompt format |
+
+---
+
+## 8. Scope of This Document Set (Phase 1)
 
 **In scope for Phase 1:**
 
@@ -110,13 +148,15 @@ The following are **explicitly out of scope** for XAIOP as a protocol:
 
 ---
 
-## 7. Actors
+## 9. Actors
 
 | Actor | Role |
 | --- | --- |
-| Generator | Produces XAIOP text (typically an LLM under prompting or constraints; also encode tooling and session push) |
+| Generator | Produces XAIOP text (any conforming source: programs, encode tooling, session push; optional LLM emit) |
 | Parser | Deterministically interprets XAIOP text according to the protocol |
 | Consumer | Application logic that uses parsed units or streams |
 | Downstream system | Stores, transforms, or displays consumed data |
 
 Precise obligations for Generator and Parser appear in `REQ-FUNC` and `REQ-STREAM`.
+
+→ [Design principles](design-principles.md) · [Practice](../practice/) · Root [README.md](../../README.md)

@@ -6,6 +6,10 @@ description: >-
   XAIOP, when this skill is attached, or when the user asks for allowlist output.
 ---
 
+> **Notice (2026-08-04):** This Skill is **no longer provided** as an official product.
+> Source remains in the repository for download only — see [../README.md](../README.md)
+> and [../../docs/meta/release-notes-2026-08-04.md](../../docs/meta/release-notes-2026-08-04.md).
+
 # XAIOP Allowlist Skill (`xaiop-allowlist`)
 
 **Scheme:** ALLOWLIST (closed world).  

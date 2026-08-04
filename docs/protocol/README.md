@@ -1,25 +1,26 @@
-﻿# Protocol Documents — XAIOP v0.4.0 (Frozen)
+﻿# Protocol Documents — XAIOP Protocol Package v0.6.0 (Sealed)
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 | Field | Value |
 | --- | --- |
 | Document ID | `PROT-INDEX` |
-| Status | **Frozen** |
-| Version | 0.4.0 |
-| Last updated | 2026-08-03 |
+| Status | **Frozen (sealed)** |
+| Version | 0.6.0 |
+| Last updated | 2026-08-04 |
 | Normative | Informative (index) |
 
 ---
 
-## Freeze notice
+## Seal notice
 
-This package is the **sealed XAIOP protocol v0.4.0**.  
-Normative grammar and semantics only — Structure (boundary, cursor, arrays), Content (encoding, typing), Streaming validity.
+This directory describes the **sealed XAIOP protocol package v0.6.0**: streaming, line-oriented, cursor-construction wire grammar and semantics.
+
+**“Sealed” / Frozen** means the normative text under this version number is immutable; it does **not** mean “always equal to repository tip.” See [../meta/status-and-versioning.md](../meta/status-and-versioning.md) · [../meta/releases.md](../meta/releases.md).
 
 **Fixture:** [../examples/complex.xaiop](../examples/complex.xaiop) → [../examples/complex.expected.json](../examples/complex.expected.json)
 
-**Isolation:** Protocol stays wire-only. Model output and network streaming → [../practice/](../practice/). APIs → [../sdk/](../sdk/). See [../SEPARATION.md](../SEPARATION.md).
+**Isolation:** Protocol is wire-only. Recommended scenarios (including optional LLM emit, transport) → [../practice/](../practice/). Language APIs → [../sdk/](../sdk/). See [../SEPARATION.md](../SEPARATION.md).
 
 ---
 
@@ -31,11 +32,12 @@ Normative grammar and semantics only — Structure (boundary, cursor, arrays), C
 | 2 | [boundary.md](boundary.md) | Label/Block line endings |
 | 3 | [hierarchy.md](hierarchy.md) | Cursor operators in depth |
 | 4 | [content.md](content.md) | `:` typing and forced string |
-| 5 | [streaming.md](streaming.md) | When streamed wire is valid; JSON Snapshot/Diff *as protocol* |
+| 5 | [streaming.md](streaming.md) | When streamed wire is valid; protocol-face Snapshot/Diff |
 
-**Core pair:** `>` create/re-enter anonymous object (array → new element) · `<` pop one level (illegal at Root) · never Bare Labels.  
+**Core pair:** `>` create/re-enter anonymous object · `<` pop one level only (illegal at Root) · never Bare Labels.  
 **Root opener:** `>` / `-` → complete anonymous root document; omit → **root fragment** `"a":{}` — **not** `{"a":{}}`.  
-**Array one-line `k:v`:** complete single-property element at array level ([syntax.md](syntax.md) §6.1).
+**Array one-line `k:v`:** complete single-property element at array level.  
+**`#…`:** **custom annotation transmission** (standalone line; protocol does not interpret text after `#`; no tree effect).
 
 ---
 

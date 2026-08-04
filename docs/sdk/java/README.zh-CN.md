@@ -4,14 +4,13 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 产物 | `io.xaiop:xaiop` **0.4.0**（JAR） |
+| 产物 | `io.xaiop:xaiop` **0.5.0**（JAR） |
 | 协议 | v0.4.0 Frozen（`Xaiop.PROTOCOL_VERSION`） |
+| SDK 版本常量 | `Xaiop.SDK_VERSION` = `0.5.0` |
 | 运行时 | Java 17+ |
 | 代码 | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-当前产物版本与协议版本恰好相同，这只是时间上的巧合，并非规则：Node 包已到 `xaiop` **0.7.0**，
-而其 `PROTOCOL_VERSION` 同样是 `0.4.0`。请锁定产物版本；需要线格式版本时读取
-`Xaiop.PROTOCOL_VERSION`。
+仓库 **SDK 重心在 Node.js**（`xaiop` **0.13.0** ↔ 协议 **0.6.0**）；本 Java 包实现协议 **0.4.0** 线子集，并提供与 Node 对齐的 **流式消费端**（HTTP / SSE / RAW）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。
 
 **隔离：** 协议 = 仅线格式 · 实践 = 模型与流式传输 · 本包 = API — [../../SEPARATION.md](../../SEPARATION.md)。  
 **一致性：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（协议合规 ≠ 与本 SDK 等价）。  
@@ -21,7 +20,7 @@
 
 ## 状态
 
-**已启用** — parse · encode · merge · checkpoint。
+**已启用** — parse · encode · merge · checkpoint · **stream（消费端）**。
 
 | 能力 | 状态 |
 | --- | --- |
@@ -30,13 +29,14 @@
 | `Encode`（全部 `dotPolicy` 模式，含路径数组） | 已完成 |
 | `Merge` / inject（`overwrite` / `keep`） | 已完成 |
 | `DotCheckpointEngine`（`.` 相 Diff、窗口批量） | 已完成 |
-| `XaiopStream`（HTTP / SSE / RAW 消费端） | **尚未提供** |
+| `XaiopStream`（HTTP / SSE / RAW 消费端） | **已完成**（0.5.0） |
 | `XaiopWs` / hub / connection、单相推送辅助 | **尚未提供** |
+| cover Diff · typeCheck · 行拦截 · Annotation Span | **尚未提供**（随协议 / 产品层后续） |
 
 ### 一致性是如何验证的
 
 Java 单元测试套件移植了 Node 参考套件中关于 parse、`@` / `!` / `=` 定位、八项兼容修复、编码选项
-矩阵、merge / inject 以及 checkpoint 分相的场景，另加一个定长种子随机 JSON 语料库，以及对
+矩阵、merge / inject、checkpoint 分相，以及 **stream**（`StreamTest` · `StreamConsistencyTest` · `StreamHttpTest`：分相 Diff、窗口合并、asyncParse、busy/abort、promise/events、UTF-8 分片、HTTP/SSE 烟测、与一次性 parse 一致）的场景，另加一个定长种子随机 JSON 语料库，以及对
 [../../examples/complex.xaiop](../../examples/complex.xaiop) 的分片回放。浮点 token 严格遵循
 ECMAScript `Number::toString` 语义 —— 即可无损回读的最短十进制表示，且不依赖 JDK 版本 ——
 因此在这些共享样例上，编码输出与 Node 逐字节一致。
@@ -72,12 +72,13 @@ ECMAScript `Number::toString` 语义 —— 即可无损回读的最短十进制
 <dependency>
   <groupId>io.xaiop</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.4.0</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 
 ```java
 import io.xaiop.*;
+import io.xaiop.stream.*;
 
 Object json = Xaiop.parse(">\n>meta\nname:demo\n");   // LinkedHashMap 树
 String wire = Xaiop.encode(json);                      // 每个顶层键一个 `.` 相
@@ -108,6 +109,36 @@ String cut = Encode.encode(value, EncodeOptions.builder()
     .dotPolicyPaths(List.of("meta", "items[2]"))                            // 在每个路径后切相
     .build());
 ```
+
+### 流式消费（`XaiopStream`）
+
+对齐 Node `XaiopStream` 的消费端：状态机 `idle → connecting → streaming → completing → completed`（另有 `aborted` / `error`）；默认 `mergeChunkWindow=true`、`streamProcessing=true`。
+
+```java
+XaiopStream stream = Xaiop.stream("https://example.com/feed.xaiop");
+stream.onChunk(diff -> { /* 相位 Diff；空相为 null */ });
+stream.onDone(snapshot -> { /* 全缓冲 Snapshot */ });
+stream.onError(err -> { /* ... */ });
+stream.send(new XaiopStream.SendOptions().transport(TransportKind.HTTP));
+
+// 测试 / 本地：RAW 分片
+stream.sendRaw(List.of(">\na:1\n.\n", ">b\nc:2\n.\n"));
+
+// Promise 模式
+XaiopStream once = new XaiopStream("raw://x",
+    XaiopStream.Options.defaults().modes(StreamMode.PROMISE));
+Object jsonDone = once.send(new XaiopStream.SendOptions()
+    .transport(TransportKind.RAW)
+    .source(List.of(">\nz:9\n.\n"))).get();
+```
+
+| 传输 | 说明 |
+| --- | --- |
+| `HTTP` | `java.net.http.HttpClient` 流式读 body（默认） |
+| `SSE` | `Accept: text/event-stream`；多行 `data:` 用 `\n` 拼接，块末自动补换行以免粘连下一相 |
+| `RAW` | `Iterable` 的 `CharSequence`/`byte[]`，或 `InputStream`（跨块 UTF-8） |
+
+**未包含：** WebSocket 消费 / listen·hub、`cover`、typeCheck、行拦截、Annotation Span。
 
 | 选项 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -207,5 +238,6 @@ Object tree = Materialize.materializeSnapshot(live.value());
 ```bash
 cd xaiop-sdk/java
 mvn test                  # 221 项测试
-mvn -DskipTests package   # target/xaiop-0.4.0.jar
+mvn -DskipTests package   # target/xaiop-0.5.0.jar
+mvn test                  # 含 StreamTest / StreamConsistencyTest / StreamHttpTest
 ```

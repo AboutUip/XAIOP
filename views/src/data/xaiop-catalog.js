@@ -4,9 +4,9 @@
  */
 
 export const meta = {
-  protocolVersion: "0.4.0",
+  protocolVersion: "0.6.0",
   packageName: "xaiop",
-  packageVersion: "0.7.0",
+  packageVersion: "0.13.0",
   runtime: "Node.js ≥ 18 (ESM)",
   previewApp: "views/",
 };

@@ -3,19 +3,23 @@ package io.xaiop;
 import io.xaiop.compat.CompatFixId;
 import io.xaiop.compat.CompatPolicy;
 import io.xaiop.stream.DotCheckpointEngine;
+import io.xaiop.stream.XaiopStream;
 
 import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * XAIOP Java SDK entry (v0.4.0 Frozen).
+ * XAIOP Java SDK entry (artifact 0.5.0 · protocol wire 0.4.0 Frozen).
  *
- * <p>Convenience facade over {@link Parse}, {@link Encode}, {@link Merge} and
- * {@link DotCheckpointEngine}. Every method here is a thin delegate -- use the underlying
- * classes directly when you need their full option surface.
+ * <p>Convenience facade over {@link Parse}, {@link Encode}, {@link Merge},
+ * {@link DotCheckpointEngine}, and {@link XaiopStream}. Every method here is a thin delegate —
+ * use the underlying classes directly when you need their full option surface.
  */
 public final class Xaiop {
+  /** Wire protocol package implemented by this artifact. */
   public static final String PROTOCOL_VERSION = "0.4.0";
+  /** Maven / JAR artifact version. */
+  public static final String SDK_VERSION = "0.5.0";
 
   private Xaiop() {}
 
@@ -96,5 +100,14 @@ public final class Xaiop {
   /** Fully configured variant -- see {@link DotCheckpointEngine.Options}. */
   public static DotCheckpointEngine checkpoint(DotCheckpointEngine.Options options) {
     return options.build();
+  }
+
+  /** Opens a streaming consumer (HTTP / SSE / RAW). See {@link XaiopStream}. */
+  public static XaiopStream stream(String url) {
+    return new XaiopStream(url);
+  }
+
+  public static XaiopStream stream(String url, XaiopStream.Options options) {
+    return new XaiopStream(url, options);
   }
 }

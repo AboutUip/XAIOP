@@ -15,7 +15,7 @@ SDK notes describe **runtime choices**. They cite protocol notes; they do not re
 
 | Layer | Path |
 | --- | --- |
-| Third-party parity contract | [../behavioral-contract.md](../behavioral-contract.md) |
+| Third-party parity contract | [../behavioral-contract.md](../behavioral-contract.md) (**Node product catalog**; not a cross-language mandate) |
 | Cross-stack principles | [principles.md](principles.md) |
 | Node.js notes | [../nodejs/notes/](../nodejs/notes/) |
 | Protocol wire notes | [../../protocol/notes/](../../protocol/notes/) |

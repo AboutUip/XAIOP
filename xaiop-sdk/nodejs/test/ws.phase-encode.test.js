@@ -8,7 +8,7 @@ import {
   encodePhaseObject,
   parseSync,
   XaiopEncodeError,
-} from "../src/index.js";
+} from "../dist/index.js";
 
 test("phase-encode: non-final appends .\\n", () => {
   const wire = encodePhaseJson("modA", { x: 1 });

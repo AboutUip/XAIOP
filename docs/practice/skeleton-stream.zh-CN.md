@@ -6,11 +6,11 @@
 | --- | --- |
 | 文档 ID | `PRACTICE-SKELETON-WS` |
 | 状态 | 参考性 |
-| 更新日期 | 2026-08-03 |
+| 更新日期 | 2026-08-04 |
 | 规范性 | **否** |
 
-**不是协议。** 在一条长连接 WebSocket 上按固定键（骨架 + 模块）交付：每块就绪就 `JSON→XAIOP` 推送并丢弃缓冲。  
-运行时 API：Node `XaiopWs` — [../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md)。
+**建议场景** — 不是协议。在一条长连接 WebSocket 上按固定键（骨架 + 模块）交付：每块就绪就 `JSON→XAIOP` 推送并丢弃缓冲。  
+运行时：Node 生产 `XaiopWs` · 浏览器消费 `xaiop/browser` — **[../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md)** §7 / §7.6 · 深潜 [../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md)。
 
 ---
 
@@ -45,19 +45,21 @@ WebSocket（长连接）
 1. 相位 Diff = **该相 JSON**，不是 Patch。  
 2. 渐进 UI 用 **committed Snapshot**；关连接后用 **final Snapshot**。  
 3. 同键后写覆盖先写（later-wins）。  
-4. 连接关闭即通常的流结束信号。
+4. 连接关闭即通常的流结束信号。  
+5. **早帧时序（`connect`）：** 生产端常在 `connection` 里同步推送。消费端 **必须** 把 `onPhase` / `onDone` 放进 connect options（Node：`XaiopWs.connect`；浏览器：`XaiopBrowserWs.connect`）；**不要**假设「`await connect` 返回后才第一次收到相位」。  
+6. **浏览器：** 从 `xaiop/browser` 导入；**支持相位 Diff**（`onPhase` / `XaiopStream.onChunk`）。**无** `listen` — 服务端仍用 Node。见 [../sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md) §7.6。
 
 ---
 
 ## 4. 为何此路径以 WS 为主
 
-骨架/模块长会话需要面向帧的长连接。HTTP/SSE 仍可用于其它场景；**本实践路径以 WS 为一等公民**。同一 SDK 包覆盖 listen/push 与 connect/consume——不拆 client/server 包。
+骨架/模块长会话需要面向帧的长连接。HTTP/SSE 仍可用于其它场景；**本实践路径以 WS 为一等公民**。Node 负责 listen/push；浏览器用 `xaiop/browser` 做 connect/consume（**相位 Diff 可用**）。
 
 ---
 
 ## 5. 相关
 
 - 传输分帧：[streaming-transport.zh-CN.md](streaming-transport.zh-CN.md)  
-- 模型写出：[model-output.zh-CN.md](model-output.zh-CN.md)  
+- 模型写出：[封存 model-output](../archive/practice-llm-emit-2026-08-04/model-output.zh-CN.md)  
 - Node WS API：[../sdk/nodejs/notes/ws-session.zh-CN.md](../sdk/nodejs/notes/ws-session.zh-CN.md)  
 - 分层：[../SEPARATION.md](../SEPARATION.md)

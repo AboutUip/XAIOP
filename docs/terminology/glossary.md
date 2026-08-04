@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `TERM-GLOSS` |
 | Status | **Frozen** |
-| Version | 0.2.1 |
-| Last updated | 2026-08-03 |
+| Version | 0.5.0 |
+| Last updated | 2026-08-04 |
 | Normative | **Normative** (definitions) |
 | Depends on | `META-CONV`, `OV-PRIN` |
 | Informs | `REQ-FUNC`, `REQ-STREAM`, `CONF`, `protocol/*` |
@@ -27,15 +27,16 @@ Structure Layer terms in Section 3 are normative for `PROT-BOUND` / `PROT-HIER` 
 
 ### 2.1 XAIOP
 
-**XAIOP** (eXtensible AI Output Protocol) is the protocol defined by this specification document set.
+**XAIOP** is the **streaming, line-oriented, cursor-construction wire protocol** defined by this specification document set (project identifier).  
+The historical expansion “eXtensible AI Output Protocol” is **legacy naming only**; it does not define scope or primary use case. Normative claims **MUST** cite a sealed protocol package version (see `META-VER`).
 
 ### 2.2 Generator
 
-A **Generator** is an entity that produces XAIOP text. A Generator is typically an LLM operating under prompts, tools, or other constraints, but the protocol does not require a specific model.
+A **Generator** is an entity that produces XAIOP text. The protocol does **not** require a specific implementation; programs, tool encoders, session push, and (optional) model emitters may all be Generators, provided they emit wire text conforming to the cited sealed package.
 
 ### 2.3 Parser
 
-A **Parser** is an entity that interprets XAIOP text according to the protocol and yields structured results or deterministic error outcomes.
+A **Parser** is an entity that interprets XAIOP text according to the cited sealed protocol package and yields structured results or deterministic error outcomes.
 
 ### 2.4 Consumer
 
@@ -47,7 +48,7 @@ A **Downstream System** is any system that receives data from a Consumer or Pars
 
 ### 2.6 Encoder (SDK)
 
-An **Encoder** (implementation term) maps a JSON-compatible value to Well-Formed XAIOP text. The Node.js SDK encoder emits **strict** wire only; it is a tool **Generator** path, distinct from an LLM Generator. See [sdk/nodejs/encode.md](../sdk/nodejs/encode.md).
+An **Encoder** (implementation term) maps a JSON-compatible value to Well-Formed XAIOP text. An Encoder is a tooling-side **Generator** path. See [sdk/nodejs/API.md](../sdk/nodejs/API.md). SDK behavior is not the wire specification itself.
 
 ---
 
@@ -83,7 +84,9 @@ A **Bare Label** is a Label line that is only a name with **no** Cursor operator
 
 ### 3.7 Cursor Operator
 
-A **Cursor Operator** is one of: `>` / `>name` (create/enter object; empty `>` always enters), `<` (pop one level only; illegal at Root), `<name` (pop then enter name), `=`, `!`, `.`, and `-` / `>name-` (open arrays).
+A **Cursor Operator** is one of: `>` / `>name` (create/enter object; empty `>` always enters), `<` (pop one level only; illegal at Root), `<name` (pop then enter name), `=`, `@`, `!`, `&` (delete deepest key), `.`, and `-` / `>name-` (open arrays).
+
+**Custom Annotation Transmission** is the standalone line primitive that begins with `#` (`PROT-HIER` §11 / `PROT-SYNTAX` §3). The official name **MUST** be “custom annotation transmission”; the protocol does not interpret text after `#`; there is no Cursor / tree effect. A `#` inside a Content value is not this primitive.
 
 ### 3.8 Structure Layer
 
@@ -96,6 +99,7 @@ The **Content Layer** defines Content encoding and minimal typing (`PROT-CONTENT
 ### 3.10 Anonymous Object
 
 An **Anonymous Object** is an object created by empty `>` with no name segment. It **MUST** still be created by a Cursor operator; it is not a Bare Label.
+
 ---
 
 ## 4. Stream and Parse Outcomes

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>XAIOP docs</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta
+      name="description"
+      content="XAIOP — streaming cursor-construction wire · live docs from docs/"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
+    />
+    <link
+      rel="icon"
+      href="/resources/xaiop-mark.svg"
+      type="image/svg+xml"
+    />
+    <link
+      id="docsify-theme"
+      rel="stylesheet"
+      href="themes/dark.css"
+    />
+    <style>
+      :root {
+        --theme-color: #14b8a6;
+        --x-bg: #0b1220;
+        --x-panel: #111827;
+        --x-line: rgba(148, 163, 184, 0.18);
+        --x-ink: #e2e8f0;
+        --x-muted: #94a3b8;
+        --x-code: #0f172a;
+      }
+
+      html[data-theme="light"] {
+        --x-bg: #f8fafc;
+        --x-panel: #ffffff;
+        --x-line: rgba(15, 23, 42, 0.1);
+        --x-ink: #0f172a;
+        --x-muted: #64748b;
+        --x-code: #f1f5f9;
+      }
+
+      html,
+      body {
+        background: var(--x-bg) !important;
+        color: var(--x-ink);
+      }
+
+      /* Kill accidental raw HTML/script bleed if a fetch ever fails again */
+      .sidebar,
+      .sidebar-nav,
+      .content {
+        overflow-wrap: anywhere;
+      }
+
+      .sidebar {
+        background: var(--x-panel) !important;
+        border-right: 1px solid var(--x-line) !important;
+      }
+
+      .sidebar ul li a {
+        color: var(--x-muted) !important;
+      }
+
+      .sidebar ul li.active > a,
+      .sidebar ul li a:hover {
+        color: var(--theme-color) !important;
+      }
+
+      .markdown-section {
+        color: var(--x-ink) !important;
+        max-width: 880px;
+      }
+
+      .markdown-section h1,
+      .markdown-section h2,
+      .markdown-section h3 {
+        color: var(--x-ink) !important;
+        border-bottom-color: var(--x-line) !important;
+      }
+
+      .markdown-section a {
+        color: var(--theme-color) !important;
+      }
+
+      .markdown-section table {
+        display: block;
+        overflow-x: auto;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      .markdown-section tr,
+      .markdown-section th,
+      .markdown-section td {
+        background: transparent !important;
+        border: 1px solid var(--x-line) !important;
+        color: var(--x-ink) !important;
+      }
+
+      .markdown-section th {
+        background: rgba(148, 163, 184, 0.08) !important;
+        color: var(--x-muted) !important;
+      }
+
+      .markdown-section tr:nth-child(2n) {
+        background: rgba(148, 163, 184, 0.04) !important;
+      }
+
+      .markdown-section pre,
+      .markdown-section code,
+      .markdown-section p.tip,
+      .markdown-section blockquote {
+        background: var(--x-code) !important;
+        border-color: var(--x-line) !important;
+      }
+
+      .markdown-section code {
+        color: #fbbf24 !important;
+      }
+
+      .markdown-section pre > code {
+        color: var(--x-ink) !important;
+      }
+
+      .app-name-link img {
+        width: 28px;
+        height: 28px;
+        vertical-align: middle;
+        margin-right: 0.4rem;
+      }
+
+      .xaiop-chrome {
+        position: fixed;
+        top: 0.65rem;
+        right: 4.75rem;
+        z-index: 30;
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+      }
+
+      .xaiop-chrome a,
+      .xaiop-chrome button {
+        appearance: none;
+        border: 1px solid var(--x-line);
+        background: var(--x-panel);
+        color: var(--x-ink);
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        font: 600 0.75rem/1.2 system-ui, sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .xaiop-chrome a:hover,
+      .xaiop-chrome button:hover {
+        border-color: var(--theme-color);
+        color: var(--theme-color);
+      }
+
+      @media (max-width: 768px) {
+        .xaiop-chrome {
+          right: 0.75rem;
+          top: auto;
+          bottom: 0.75rem;
+        }
+      }
+    </style>
+    <script src="theme-boot.js"></script>
+  </head>
+  <body>
+    <div class="xaiop-chrome">
+      <a href="/">Lab</a>
+      <button type="button" id="theme-toggle">Theme</button>
+    </div>
+    <div id="app">Loading docs…</div>
+    <script>
+      // Docsify may call querySelector(location.hash) when hash is "#/" — invalid CSS.
+      (function () {
+        if (location.hash === "#/" || location.hash === "#") {
+          history.replaceState(null, "", location.pathname + location.search + "#/README");
+        }
+        var qs = Document.prototype.querySelector;
+        Document.prototype.querySelector = function (sel) {
+          if (sel === "#/" || sel === "#") return null;
+          try {
+            return qs.call(this, sel);
+          } catch (e) {
+            if (e && e.name === "SyntaxError") return null;
+            throw e;
+          }
+        };
+      })();
+    </script>
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\/index\.html$/i, "");
+        var atDocsMount = /\/docs\/?$/i.test(path);
+        // Docsify isAbsolutePath only treats URLs with "://" as absolute.
+        // Keep basePath as a root-relative directory; aliases must be
+        // relative filenames so getPath(base, alias) does not become /docs/docs/...
+        var mount = atDocsMount ? "/docs/" : "/";
+
+        window.$docsify = {
+          name: '<img src="/resources/xaiop-mark.svg" alt="" /> XAIOP',
+          nameLink: mount + "#/README",
+          repo: "https://github.com/AboutUip/XAIOP",
+          homepage: "README.md",
+          basePath: mount === "/" ? undefined : mount,
+          loadSidebar: true,
+          loadNavbar: true,
+          autoHeader: false,
+          auto2top: true,
+          maxLevel: 3,
+          subMaxLevel: 0,
+          // In-article relative links (notes/foo.zh-CN.md) need this.
+          // Sidebar/navbar use /path.md (router-root absolute; see Vite md fallback).
+          relativePath: true,
+          notFoundPage: "_404.md",
+          alias: {
+            "/.*/_sidebar.md": "_sidebar.md",
+            "/.*/_navbar.md": "_navbar.md",
+          },
+          search: {
+            maxAge: 0,
+            paths: "auto",
+            placeholder: "Search docs…",
+            noData: "No results",
+            depth: 4,
+          },
+          pagination: {
+            previousText: "Previous",
+            nextText: "Next",
+            crossChapter: true,
+          },
+          plugins: [
+            function (hook) {
+              hook.doneEach(function () {
+                document.title = document.title.replace(/ - jsDelivr$/, "");
+                if (window.__xaiopDocsTheme) window.__xaiopDocsTheme.apply();
+              });
+            },
+          ],
+        };
+
+        document
+          .getElementById("theme-toggle")
+          ?.addEventListener("click", function () {
+            window.__xaiopDocsTheme && window.__xaiopDocsTheme.cycle();
+          });
+      })();
+    </script>
+    <script src="vendor/lib/docsify.min.js"></script>
+    <script src="vendor/plugins/search.min.js"></script>
+    <script src="vendor/plugins/docsify-pagination.min.js"></script>
+    <script src="vendor/prism/prism-bash.min.js"></script>
+    <script src="vendor/prism/prism-json.min.js"></script>
+    <script src="vendor/prism/prism-typescript.min.js"></script>
+  </body>
+</html>

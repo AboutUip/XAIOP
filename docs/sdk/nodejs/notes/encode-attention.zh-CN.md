@@ -8,7 +8,7 @@
 | 状态 | 信息性 |
 | 最近更新 | 2026-08-03 |
 | 规范性 | **否** |
-| 完整指南 | [../encode.zh-CN.md](../encode.zh-CN.md) |
+| 完整指南 | [../API.zh-CN.md](../API.zh-CN.md) |
 
 协议线格式仍为 Frozen **0.3.0**。Encode 是 **SDK** 能力（`xaiop` **0.6.0+**）。
 
@@ -35,7 +35,7 @@
 默认 `perTopLevelKey` 与 Node 流式 Diff（`.` 相位）对齐。  
 `dotPolicy: string[]` 在列出的 JSON 路径节点后切相；与频率类选项互斥；下标必须为末段。
 
-**生产：** 用 encode 选项**主动安排** `.`——大块连续字段尽量一相；只在可分离子单元处切相，保证渐进送达丝滑。详见 [encode.zh-CN.md](../encode.zh-CN.md) §5「生产流式」。
+**生产：** 用 encode 选项**主动安排** `.`——大块连续字段尽量一相；只在可分离子单元处切相，保证渐进送达丝滑。详见 [API.zh-CN.md](../API.zh-CN.md) Encode 节。
 
 见 [streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)。线规则（再开追加）：[../../../protocol/notes/wire-attention.zh-CN.md](../../../protocol/notes/wire-attention.zh-CN.md)。
 
@@ -43,5 +43,5 @@
 
 ## 4. 相关
 
-- 指南：[../encode.zh-CN.md](../encode.zh-CN.md)  
+- 指南：[../API.zh-CN.md](../API.zh-CN.md)  
 - 评测方法论 ≠ 禁止 encode：[../../../performance.zh-CN.md](../../../performance.zh-CN.md) §2

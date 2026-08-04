@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `META-REV` |
 | Status | **Frozen** |
-| Version | 0.4.0 |
-| Last updated | 2026-08-03 |
+| Version | 0.6.0 |
+| Last updated | 2026-08-04 |
 | Normative | Informative (history) |
 | Depends on | `META-VER` |
 
@@ -21,6 +21,40 @@ English text is authoritative; Chinese mirrors track the same entries.
 ---
 
 ## 2. Package history
+
+### 0.6.0 — 2026-08-04 (Frozen)
+
+**Kind:** Additive normative (Hierarchy / Syntax — custom annotation transmission).
+
+**Summary:** Add standalone `#…` lines for **custom annotation transmission** (official name; not a "comment" primitive). Line must begin with `#`; position unrestricted; protocol does not interpret text after `#`; no Cursor / tree / Block / broadcast side effects. A `#` inside Content remains Content. Leading whitespace before `#` is not this primitive.
+
+| Area | Change |
+| --- | --- |
+| `PROT-HIER` §11 (and renumbered later §§) | Define `#` custom annotation transmission |
+| `PROT-SYNTAX` §3 | Table: `#…` |
+| Protocol notes | wire-attention — `#` |
+| `TERM-GLOSS` | Custom annotation transmission |
+| `META-VER` | Sealed package version → `0.6.0` |
+| Node.js SDK | **0.11.0** — ignore `#` lines; `PROTOCOL_VERSION` → `0.6.0`. Tip **0.12.0** — buffer line intercept (`onLineIntercept`). Tip **0.13.0** — Annotation Span (`onAnnotationSpan`; typeCheck escape) |
+
+**Compatibility:** Writers that never emit `#` lines remain valid. Parsers that do not ignore `#…` lines **do not conform** to protocol package **0.6.0**.
+
+### 0.5.0 — 2026-08-04 (Frozen)
+
+**Kind:** Additive / breaking normative (Hierarchy — delete).
+
+**Summary:** Add **`&path`** delete (syntax like `@`; segments via `>`; no bare `&`). Single Cursor: absolute from Root; delete deepest key; **do not** move Cursor. Missing target = silent no-op. Object document root only (illegal on array/fragment root; cannot delete document root). May delete a whole named array value; **no** array-element index delete. Deleting a node on the Cursor chain → syntax error. Broadcast (`!`): `&` **allowed**, path relative to each Cursor; per-Cursor miss = no-op; any chain conflict fails the line. `.` still only resets Cursor / exits broadcast. Later write to the same address = create.
+
+| Area | Change |
+| --- | --- |
+| `PROT-HIER` §8–§9 (and related) | Define `&`; clarify `.` vs `&` |
+| `PROT-SYNTAX` §3 | Table: `&path` |
+| Protocol notes | wire-attention / streaming-attention — `&` |
+| `TERM-GLOSS` | Delete / related terms |
+| `META-VER` | Sealed package version → `0.5.0` |
+| Node.js SDK | **0.8.0** — parse `&`; optional `cover` Diff (SDK-only); **0.9.0** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core` (browser phase consume); **0.10.0** — type registry/freeze checks; WS type-consistency push |
+
+**Compatibility:** Writers that never emitted `&` remain valid. Parsers that do **not** implement `&` are **not** conformant to package **0.5.0**. Cover-mode Diff shaping is **not** wire grammar.
 
 ### 0.4.0 — 2026-08-03 (Frozen)
 
@@ -118,7 +152,7 @@ English text is authoritative; Chinese mirrors track the same entries.
 | Encode | `encode` / `encodeSync` (static, instance, free) — JSON → strict XAIOP |
 | Engine | `uploadJson` / `uploadJsonSync` |
 | Options | Controllable `.` via `dotPolicy` / `phaseEvery` / `maxPhases` / `shouldPhase` |
-| Docs | [sdk/nodejs/encode.md](../sdk/nodejs/encode.md) |
+| Docs | [sdk/nodejs/API.md](../sdk/nodejs/API.md) § Encoding (historical note; was `encode.md`) |
 | Tests | `encode.test.js` + `encode.stability.test.js` |
 
 ---

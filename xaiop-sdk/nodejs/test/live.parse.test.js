@@ -13,7 +13,7 @@ import {
   materializeSnapshot,
   parseSync,
   DOT_POLICY,
-} from "../src/index.js";
+} from "../dist/index.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const complexXaiop = join(here, "../../../docs/examples/complex.xaiop");

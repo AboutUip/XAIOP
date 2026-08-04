@@ -1,0 +1,8 @@
+* [English hub](#/README)
+* [中文枢纽](/README.zh-CN.md)
+* [Protocol](/protocol/README.md)
+* [Practice](/practice/README.md)
+* [SDK API](/sdk/nodejs/API.md)
+* [Release notes](/meta/release-notes-2026-08-04.md)
+* [Archive](/archive/README.md)
+* [GitHub](https://github.com/AboutUip/XAIOP)

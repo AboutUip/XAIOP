@@ -11,7 +11,7 @@
 | Code | `xaiop-sdk/nodejs/src/stream/history.js` · wired in `checkpoint.js` |
 | Package | `xaiop` **0.7.0+** |
 
-Parent: [streaming-parse.md](streaming-parse.md) · [../stream.md](../stream.md) · Parity: [../../behavioral-contract.md](../../behavioral-contract.md)
+Parent: [streaming-parse.md](streaming-parse.md) · [../API.md](../API.md) · Parity: [../../behavioral-contract.md](../../behavioral-contract.md)
 
 ---
 

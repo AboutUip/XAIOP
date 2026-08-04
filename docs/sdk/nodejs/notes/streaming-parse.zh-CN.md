@@ -6,10 +6,10 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-STREAM` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-03 |
+| 最近更新 | 2026-08-04 |
 | 规范性 | **否** — Node SDK 行为 |
 | 代码 | `xaiop-sdk/nodejs/src/stream/` |
-| 包 | `xaiop` **0.7.0+**（协议线 **0.4.0**） |
+| 包 | `xaiop` **0.7.0+**（协议线 **0.5.0**） |
 
 **协议基线（先读）：**  
 [../../../protocol/notes/wire-attention.zh-CN.md](../../../protocol/notes/wire-attention.zh-CN.md) ·  
@@ -36,14 +36,14 @@
   → 扫描完整 "." 行
   → 将相位线文喂入 LiveXaiopParser（只喂一次；保活累积树）
   → materialize 活树 → committedSnapshot
-  → Diff = 相位局部 parse（先前已有 `.` 且相含 `=`/`!` 时与 committed 共用）
+  → Diff = 相位局部 parse（先前已有 `.` 且相含 `=`/`!`/`&` 时与 committed 共用）
   → onChunk(diff)
   → finish()：冲刷尾段；缓冲已盖满则复用末次 commit
 ```
 
 | 层 | 路径 |
 | --- | --- |
-| 客户端 | `src/stream/XaiopStream.js` · API 指南 [../stream.zh-CN.md](../stream.zh-CN.md) |
+| 客户端 | `src/stream/XaiopStream.js` · API [../API.zh-CN.md](../API.zh-CN.md) |
 | Checkpoint | `src/stream/checkpoint.js` |
 | Live parse | `src/parse.js` 中的 `LiveXaiopParser` |
 | Materialize | `src/stream/materialize.js` |
@@ -95,7 +95,7 @@ live.feedText(raw)
 
 | 值 | 来源 |
 | --- | --- |
-| Chunk / Diff | **仅该相文本** 的 parse（注入后）；若先前已有 `.` 且相含 `=`/`!` → 与累积 committed 同值 |
+| Chunk / Diff | **仅该相文本** 的 parse（注入后）；若先前已有 `.` 且相含 `=`/`!`/`&` → 与累积 committed 同值 |
 | `committedSnapshot` | 活树喂至最近 `.` / 已冲刷尾后的物化克隆 |
 
 不要把 Diff 实现成 `deepDiff(prevCommitted, newCommitted)`，除非另文档化为不同产品面 — **不是**官方 Node 行为。
@@ -130,13 +130,14 @@ live.feedText(raw)
 
 1. `onChunk` = 相位 JSON，不是 Patch，也不是累积 Snapshot。  
 2. 中途累积 JSON 用 `getCommittedSnapshot()`；自合并须按命名数组 **追加**理解。  
-2b. **跨相位定位：** `=` / `!` 看见**迄今整树**（向前跨相）。官方 Diff 对含 `=` / `!` 的相位做**累积前缀** parse。`@` 创建或进入属本相，可保持相位局部。  
+2b. **跨相位定位 / 删除：** `=` / `!` / `&` 看见**迄今整树**（向前跨相）。官方 Diff 对含 `=` / `!` / `&` 的相位做**累积前缀** parse。`@` 创建或进入属本相，可保持相位局部。  
+2c. **Cover 模式（`cover`，默认关）：** 仅 SDK 的 `&` Diff 整形。开启时，连续 `&` 注入 `.`、发最深键 `null` 墓碑 Diff、再用 `>` 链恢复 Cursor。关闭时 Commit 仍在 live 树上执行 `&`；已发出的 Diff 不回写。  
 3. 容忍 `null` chunk。  
 4. 勿用流中 `getSnapshot()` 做渐进 UI。  
 5. 兼容模式默认关；`forcedRoot` 看该相文本第一行（后续相常以合成 `.` 开头）。  
 6. RAW/WS **二进制**已流式 UTF-8 解码；勿在码点中间混插 string 帧。  
 7. 中途语法错不回滚已发 chunk。  
-8. **代价：** 每个 `.` 喂入 live parser；首相与 `=`/`!` 的 Diff 与 Commit 共用一次 materialize；后续普通 Diff 为 owned 相位 parse（不再额外 clone）。整树 materialize 惰性。`emitDiff: false`（`XaiopStream` 无 Diff 消费面时自动）跳过 Diff parse。`cloneJson` 走 JSON 往返。**禁止**每个 `.` 对增长前缀再 `parseSync`。  
+8. **代价：** 每个 `.` 喂入 live parser；首相与 `=`/`!`/`&` 的 Diff 与 Commit 共用一次 materialize；后续普通 Diff 为 owned 相位 parse（不再额外 clone）。整树 materialize 惰性。`emitDiff: false`（`XaiopStream` 无 Diff 消费面时自动）跳过 Diff parse。`cloneJson` 走 JSON 往返。**禁止**每个 `.` 对增长前缀再 `parseSync`。  
 9. 优先 LF/CRLF（单独 CR 时 `.` 检测弱于全量 `parseSync`）。
 
 ---
@@ -152,7 +153,7 @@ live.feedText(raw)
 ## 相关
 
 - 协议流式 note：[../../../protocol/notes/streaming-attention.zh-CN.md](../../../protocol/notes/streaming-attention.zh-CN.md)  
-- API 指南：[../stream.zh-CN.md](../stream.zh-CN.md) · [../README.zh-CN.md](../README.zh-CN.md)  
+- API：[../API.zh-CN.md](../API.zh-CN.md) · [../README.zh-CN.md](../README.zh-CN.md)  
 - 对等契约：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)  
-- 编码对齐：[../encode.zh-CN.md](../encode.zh-CN.md) · [encode-attention.zh-CN.md](encode-attention.zh-CN.md)  
+- 编码对齐：[../API.zh-CN.md](../API.zh-CN.md) · [encode-attention.zh-CN.md](encode-attention.zh-CN.md)  
 - 隔离：[../../../SEPARATION.zh-CN.md](../../../SEPARATION.zh-CN.md)

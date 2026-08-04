@@ -1,24 +1,33 @@
-# XAIOP Documentation
+# XAIOP documentation
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-Three **coupled but isolated** trees (see **[SEPARATION.md](SEPARATION.md)**).  
-**Stance:** line-oriented **cursor IR** → SDK materialize / phases; generative writers (LLM wedge) are conditional evidence — [overview/positioning.md](overview/positioning.md).
+Hub for three **coupled but isolated** trees — see **[SEPARATION.md](SEPARATION.md)**.  
+**What XAIOP is:** [overview/introduction.md](overview/introduction.md).  
+**Frozen / sealed** = immutable protocol package versions — [meta/releases.md](meta/releases.md) · [meta/status-and-versioning.md](meta/status-and-versioning.md) (`META-VER`).  
+**Latest release notes:** [meta/release-notes-2026-08-04.md](meta/release-notes-2026-08-04.md) (Node **0.13.0** · Java **0.5.0** · Skills discontinued as a product; source remains under [`../skills/`](../skills/)).
 
-| Tree | Path | Purpose |
+**Browse live:** `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) ([Docsify](https://docsify.js.org) over this tree, same origin as the lab). Sidebar: `python docs/archive/gen-sidebar.py`.
+
+```text
+protocol  →  practice  →  sdk  →  meta
+                ↘ archive (target seals; not the live path)
+```
+
+| Layer | Path | Role |
 | --- | --- | --- |
-| **Protocol** | [protocol/](protocol/) | Frozen v0.4.0 wire — cursor IR grammar & semantics only |
-| **Practice** | [practice/](practice/) | Writer recipes: **model emit**, **streaming transport**, sessions |
-| **SDK** | [sdk/](sdk/) | Runtime APIs per language (materialize · encode · stream · WS) |
-
-Foundation (conventions, glossary, requirements, conformance) supports the protocol package under this `docs/` root.
+| **Protocol** | [protocol/](protocol/) | Sealed streaming line wire (Cursor IR) |
+| **Practice** | [practice/](practice/) | Live usage scenarios (transport, sessions) |
+| **SDK** | [sdk/](sdk/) | Language APIs |
+| **Meta** | [meta/](meta/) | Releases, seal rules, revisions |
+| **Archive** | [archive/](archive/) | Target-sealed snapshots (not live hubs) |
 
 ---
 
 ## Protocol
 
-Start: **[protocol/syntax.md](protocol/syntax.md)**  
-Index: [protocol/README.md](protocol/README.md) · Wire notes: [protocol/notes/](protocol/notes/)  
+Entry: **[protocol/syntax.md](protocol/syntax.md)**  
+Index: [protocol/README.md](protocol/README.md) · wire notes: [protocol/notes/](protocol/notes/)  
 Fixtures: [examples/](examples/)
 
 ---
@@ -29,31 +38,34 @@ Index: [practice/README.md](practice/README.md)
 
 | Guide | Topic |
 | --- | --- |
-| [practice/model-output.md](practice/model-output.md) | LLM / Generator emit, Skills |
 | [practice/streaming-transport.md](practice/streaming-transport.md) | Network streaming, framing, product Snapshot/Diff |
 | [practice/skeleton-stream.md](practice/skeleton-stream.md) | Fixed-key WebSocket push (SDK `XaiopWs`) |
+
+LLM emit / metrics recipes moved to sealed archive: [archive/practice-llm-emit-2026-08-04/](archive/practice-llm-emit-2026-08-04/) (stubs remain at [practice/model-output.md](practice/model-output.md) · [performance.md](performance.md)).
 
 ---
 
 ## SDK
 
-Index: [sdk/README.md](sdk/README.md) · Parity: [sdk/behavioral-contract.md](sdk/behavioral-contract.md) · Notes: [sdk/notes/](sdk/notes/)
+Index: [sdk/README.md](sdk/README.md) · catalog: [sdk/behavioral-contract.md](sdk/behavioral-contract.md) · notes: [sdk/notes/](sdk/notes/)
 
 | Stack | Docs | Code |
 | --- | --- | --- |
-| **Node.js** | [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) (`xaiop` 0.6.0+) |
-| Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — **pending update** |
-| Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — **pending update** |
+| **Node.js** | **[sdk/nodejs/API.md](sdk/nodejs/API.md)** (primary · §6.4 line intercept · §6.5 Annotation Span; Node ≥ 18; browser phase consume via `xaiop/browser`) · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.13.0** ↔ protocol **0.6.0** |
+| Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.5.0** (stream consumer) · protocol **0.4.0** subset |
+| Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — pending |
 
 ---
 
-## Also
+## Other
 
-[meta/](meta/) · [overview/](overview/) ([positioning](overview/positioning.md) · [introduction](overview/introduction.md) · [principles](overview/design-principles.md)) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [performance.md](performance.md) · [metrics/](metrics/)
+[meta/](meta/) · [overview/](overview/) · [terminology/](terminology/) · [requirements/](requirements/) · [conformance/](conformance/) · [archive/](archive/) · [metrics/](metrics/) (data snapshots; recipes in sealed archive)
+
+**Browse this tree locally:** `cd views && npm run dev` → http://127.0.0.1:5173/docs/ (Docsify; edit markdown, refresh).
 
 ---
 
-## Language pairing
+## Language pairs
 
 | English (default) | Chinese |
 | --- | --- |

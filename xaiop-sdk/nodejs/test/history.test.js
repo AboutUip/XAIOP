@@ -12,7 +12,7 @@ import {
   STREAM_STATUS,
   TRANSPORT_KIND,
   XaiopStream,
-} from "../src/index.js";
+} from "../dist/index.js";
 import { chunksOf, waitStatus } from "./helpers/stream.js";
 
 function pushPhases(engine, text) {
@@ -1361,8 +1361,8 @@ describe("history package surface", () => {
     assert.equal(Object.isFrozen(HISTORY_NODE_KIND), true);
   });
 
-  it("exports SDK_VERSION 0.7.0", () => {
-    assert.equal(SDK_VERSION, "0.7.0");
+  it("exports SDK_VERSION 0.13.0", () => {
+    assert.equal(SDK_VERSION, "0.13.0");
   });
 
   it("exports ParseHistory as a constructible class", () => {

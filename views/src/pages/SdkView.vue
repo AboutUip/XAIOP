@@ -3,13 +3,17 @@ import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import DocsShell from "@/components/DocsShell.vue";
 import { useI18n } from "@/i18n.js";
-import { nodeSdkApis, sdkStacks } from "@/data/xaiop-catalog.js";
+import { sdkStacks } from "@/data/xaiop-catalog.js";
+import { extractToc, renderMarkdown } from "@/lib/md-docs.js";
+
+import apiEn from "@docs/sdk/nodejs/API.md?raw";
+import apiZh from "@docs/sdk/nodejs/API.zh-CN.md?raw";
 
 const props = defineProps({
   stack: { type: String, default: "nodejs" },
 });
 
-const { t, pick, locale } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const query = ref("");
@@ -37,31 +41,37 @@ const toc = computed(() =>
   })),
 );
 
-const filtered = computed(() => {
-  void locale.value;
-  const q = query.value.trim().toLowerCase();
-  const raw = query.value.trim();
-  return nodeSdkApis
-    .map((g) => ({
-      ...g,
-      items: g.items.filter((it) => {
-        if (!q) return true;
-        return (
-          it.name.toLowerCase().includes(q) ||
-          it.signature.toLowerCase().includes(q) ||
-          it.summary.toLowerCase().includes(q) ||
-          it.summaryZh.includes(raw)
-        );
-      }),
-    }))
-    .filter((g) => g.items.length > 0);
+const sourceMd = computed(() => {
+  if (current.value.status !== "active") return "";
+  return locale.value === "zh" ? apiZh : apiEn;
 });
+
+const filteredMd = computed(() => {
+  const md = sourceMd.value;
+  const q = query.value.trim();
+  if (!q) return md;
+  // Keep front matter / title, filter ## sections that match
+  const parts = md.split(/(?=^## )/m);
+  if (parts.length <= 1) return md;
+  const head = parts[0];
+  const kept = parts
+    .slice(1)
+    .filter((sec) => sec.toLowerCase().includes(q.toLowerCase()));
+  if (!kept.length) return `${head}\n\n> ${t("sdk.noMatch")}\n`;
+  return head + kept.join("");
+});
+
+const html = computed(() =>
+  current.value.status === "active"
+    ? renderMarkdown(filteredMd.value, { docsRelDir: "sdk/nodejs" })
+    : "",
+);
 
 const rail = computed(() =>
   current.value.status === "active"
-    ? filtered.value.map((g) => ({
-        href: `#${slug(g.group)}`,
-        label: pick(g.group, g.groupZh),
+    ? extractToc(filteredMd.value).map((r) => ({
+        href: r.href,
+        label: r.label,
       }))
     : [],
 );
@@ -76,9 +86,23 @@ const pageLead = computed(() =>
   current.value.status === "active" ? t("sdk.leadActive") : t("sdk.leadPending"),
 );
 
-function slug(s) {
-  return s.toLowerCase().replace(/\s+/g, "-");
-}
+const docsifyUrl = computed(() => {
+  const page = locale.value === "zh" ? "sdk/nodejs/API.zh-CN" : "sdk/nodejs/API";
+  return `/docs/#/${page}`;
+});
+
+const noteLinks = computed(() => {
+  const zh = locale.value === "zh";
+  const suf = zh ? ".zh-CN" : "";
+  const base = "/docs/#/sdk/nodejs/notes/";
+  return [
+    { label: zh ? "行拦截 §6.4" : "Line intercept §6.4", href: `${base}line-intercept${suf}` },
+    { label: "Annotation Span §6.5", href: `${base}annotation-span${suf}` },
+    { label: zh ? "类型检查" : "Type check", href: `${base}typecheck${suf}` },
+    { label: "WebSocket", href: `${base}ws-session${suf}` },
+    { label: zh ? "流式解析" : "Streaming parse", href: `${base}streaming-parse${suf}` },
+  ];
+});
 </script>
 
 <template>
@@ -87,6 +111,22 @@ function slug(s) {
       <div class="side-note">
         <p>{{ t("sdk.source") }}</p>
         <code>docs/sdk/{{ current.id }}/</code>
+        <p class="side-sub">{{ t("sdk.liveHint") }}</p>
+        <a class="docsify-link" :href="docsifyUrl" target="_blank" rel="noopener">{{
+          t("sdk.openDocsify")
+        }}</a>
+      </div>
+      <div v-if="current.status === 'active'" class="side-notes">
+        <p>{{ t("sdk.notes") }}</p>
+        <a
+          v-for="n in noteLinks"
+          :key="n.href"
+          class="note-a"
+          :href="n.href"
+          target="_blank"
+          rel="noopener"
+          >{{ n.label }}</a
+        >
       </div>
     </template>
 
@@ -100,44 +140,10 @@ function slug(s) {
             :placeholder="t('sdk.searchPh')"
           />
         </label>
+        <p class="toolbar-hint">{{ t("sdk.renderHint") }}</p>
       </div>
 
-      <section
-        v-for="g in filtered"
-        :id="slug(g.group)"
-        :key="g.group"
-        class="group"
-      >
-        <div class="group-h">
-          <h2>{{ pick(g.group, g.groupZh) }}</h2>
-          <span>{{ locale === "zh" ? g.group : g.groupZh }}</span>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{{ t("sdk.colApi") }}</th>
-                <th>{{ t("sdk.colSig") }}</th>
-                <th>{{ t("sdk.colRet") }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="it in g.items" :key="it.name">
-                <td>
-                  <div class="name">{{ it.name }}</div>
-                  <div class="desc">
-                    {{ pick(it.summary, it.summaryZh) }}
-                  </div>
-                  <span class="kind">{{ it.kind }}</span>
-                </td>
-                <td><code class="sig">{{ it.signature }}</code></td>
-                <td><code>{{ it.returns }}</code></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <article class="md-body" v-html="html" />
     </template>
 
     <section v-else class="pending">
@@ -151,13 +157,15 @@ function slug(s) {
 </template>
 
 <style scoped>
-.side-note {
+.side-note,
+.side-notes {
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line-soft);
 }
 
-.side-note p {
+.side-note p,
+.side-notes p {
   margin: 0 0 0.35rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -166,13 +174,43 @@ function slug(s) {
   color: var(--ink-3);
 }
 
+.side-sub {
+  margin-top: 0.75rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--ink-2) !important;
+  font-size: 0.8rem !important;
+  line-height: 1.45;
+}
+
 .side-note code {
   font-size: 0.75rem;
   word-break: break-all;
 }
 
+.docsify-link,
+.note-a {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.docsify-link:hover,
+.note-a:hover {
+  text-decoration: underline;
+}
+
 .toolbar {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.toolbar-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-3);
 }
 
 .search input {
@@ -185,97 +223,100 @@ function slug(s) {
   box-shadow: var(--shadow);
 }
 
-.group {
-  margin-bottom: 2.5rem;
+.md-body {
+  max-width: 52rem;
+  color: var(--ink);
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.md-body :deep(h1) {
+  font-size: 1.85rem;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
   scroll-margin-top: calc(var(--nav-h) + 1rem);
 }
 
-.group-h {
-  display: flex;
-  align-items: baseline;
-  gap: 0.65rem;
-  margin-bottom: 0.85rem;
-}
-
-.group-h h2 {
+.md-body :deep(h2) {
   font-size: 1.35rem;
-  margin: 0;
+  margin: 2.25rem 0 0.85rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--line-soft);
+  scroll-margin-top: calc(var(--nav-h) + 1rem);
 }
 
-.group-h span {
-  color: var(--ink-3);
-  font-size: 0.85rem;
-  font-family: var(--font-mono);
+.md-body :deep(h3) {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.55rem;
+  scroll-margin-top: calc(var(--nav-h) + 1rem);
 }
 
-.table-wrap {
-  overflow: auto;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+.md-body :deep(p),
+.md-body :deep(ul),
+.md-body :deep(ol) {
+  margin: 0 0 0.9rem;
+  color: var(--ink-2);
 }
 
-table {
+.md-body :deep(li) {
+  margin: 0.25rem 0;
+}
+
+.md-body :deep(a) {
+  color: var(--accent);
+}
+
+.md-body :deep(table) {
   width: 100%;
   border-collapse: collapse;
-  min-width: 640px;
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
 }
 
-th,
-td {
+.md-body :deep(th),
+.md-body :deep(td) {
   text-align: left;
-  padding: 0.95rem 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line-soft);
   vertical-align: top;
-  border-top: 1px solid var(--line-soft);
 }
 
-thead th {
-  border-top: 0;
+.md-body :deep(th) {
   background: var(--surface-2);
   color: var(--ink-3);
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.name {
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  margin-bottom: 0.25rem;
-}
-
-.desc {
-  color: var(--ink-2);
-  font-size: 0.9rem;
-  margin-bottom: 0.2rem;
-}
-
-.kind {
-  display: inline-flex;
-  margin-top: 0.45rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 0.15rem 0.45rem;
-  border-radius: 980px;
-}
-
-.sig {
-  display: inline-block;
-  max-width: 42vw;
-  white-space: pre-wrap;
-  word-break: break-word;
+.md-body :deep(pre) {
   background: var(--code-bg);
-  padding: 0.45rem 0.55rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  overflow: auto;
+  margin: 0 0 1.1rem;
+}
+
+.md-body :deep(code) {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.md-body :deep(:not(pre) > code) {
+  background: var(--code-bg);
+  padding: 0.12rem 0.35rem;
+  border-radius: 6px;
+}
+
+.md-body :deep(blockquote) {
+  margin: 0 0 1rem;
+  padding: 0.65rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink-2);
 }
 
 .pending {

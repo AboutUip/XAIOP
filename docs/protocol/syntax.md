@@ -6,8 +6,8 @@
 | --- | --- |
 | Document ID | `PROT-SYNTAX` |
 | Status | **Frozen** |
-| Version | 0.4.0 |
-| Last updated | 2026-08-03 |
+| Version | 0.6.0 |
+| Last updated | 2026-08-04 |
 | Normative | **Normative** — grammar entry point |
 | Depends on | `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT` |
 | Informs | Generators, Parsers, SKILL authors, `CONF` |
@@ -98,8 +98,12 @@ x:1
 | `=path` | Structure | Fuzzy locate (first match) |
 | `@path` | Structure | Exact from Root; **create** missing object segments |
 | `!path` | Structure | Broadcast to all path-fragment matches |
+| `&path` | Structure | Delete deepest key (absolute from Root; no Cursor move) |
+| `#…` | Custom annotation transmission | Standalone line; protocol does not interpret text after `#`; no Cursor / tree effect |
 
-**Forbidden:** Bare Label · `>>x` stacking · `<` at Root · multiline value.
+**Forbidden:** Bare Label · bare `&` · `>>x` stacking · `<` at Root · multiline value.
+
+> **Terminology:** The official name for `#` lines is **custom annotation transmission** (not a “comment primitive”). Parsers may ignore the whole line; normative wording must use the former.
 
 ---
 
@@ -271,7 +275,7 @@ See [content.md](content.md) §5–§6.
 
 - Label ends at `LF` or `CRLF`; Content until next Label; last Block at EOF; one Label per line.  
 - Later re-type at same address (object ↔ array): overwrite/discard (SDK clears).  
-- Same-type revisit: `>name` / `>name-` **re-enter** (array elements append). See [hierarchy.md](hierarchy.md) §9–§10.
+- Same-type revisit: `>name` / `>name-` **re-enter** (array elements append). See [hierarchy.md](hierarchy.md) §11–§12.
 
 ---
 

@@ -6,10 +6,10 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-WS` |
 | 状态 | 参考性 |
-| 更新日期 | 2026-08-03 |
+| 更新日期 | 2026-08-04 |
 | 规范性 | **否** — Node SDK 行为 |
-| 代码 | `xaiop-sdk/nodejs/src/stream/ws/` |
-| 包版本 | `xaiop` **0.6.0+**（协议线 **0.4.0**） |
+| 代码 | `xaiop-sdk/nodejs/src/node/ws/` · `src/browser/ws-client.ts` |
+| 包版本 | `xaiop` **0.13.0**（实现协议包 **0.6.0**） |
 
 实践基线：[../../../practice/skeleton-stream.zh-CN.md](../../../practice/skeleton-stream.zh-CN.md)。  
 相位解析语义：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)。
@@ -123,6 +123,8 @@ Listen 要点：`port ?? 0`、可选已有 `http.Server` + `path`、`host`、`ba
 
 - 实践：[../../../practice/skeleton-stream.zh-CN.md](../../../practice/skeleton-stream.zh-CN.md)  
 - 流式解析：[streaming-parse.zh-CN.md](streaming-parse.zh-CN.md)  
-- Stream API：[../stream.zh-CN.md](../stream.zh-CN.md)  
-- Encode：[../encode.zh-CN.md](../encode.zh-CN.md)  
-- 对等：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)
+- 行拦截：[line-intercept.zh-CN.md](line-intercept.zh-CN.md) · API [§6.4](../API.zh-CN.md#64-行拦截-onlineintercept)
+- Annotation Span：[annotation-span.zh-CN.md](annotation-span.zh-CN.md) · API [§6.5](../API.zh-CN.md#65-annotation-span-onannotationspan)  
+- 类型检查：[typecheck.zh-CN.md](typecheck.zh-CN.md)  
+- 主入口：[../API.zh-CN.md](../API.zh-CN.md) §7  
+- 目录：[../../behavioral-contract.zh-CN.md](../../behavioral-contract.zh-CN.md)

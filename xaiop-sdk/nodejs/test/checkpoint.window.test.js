@@ -3,7 +3,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DotCheckpointEngine, parseSync } from "../src/index.js";
+import { DotCheckpointEngine, parseSync } from "../dist/index.js";
 
 test("mergeChunkWindow ON: one push with two dots → one Diff (= committed)", () => {
   /** @type {unknown[]} */

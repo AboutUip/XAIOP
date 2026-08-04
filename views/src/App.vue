@@ -35,6 +35,8 @@ const links = computed(() => [
   },
 ]);
 
+const docsHref = "/docs/";
+
 const path = computed(() => route.path);
 const fullscreen = computed(() => Boolean(route.meta.fullscreen));
 const preference = ref(readThemePreference());
@@ -100,6 +102,7 @@ watch(preference, syncTheme);
           >
             {{ l.label }}
           </RouterLink>
+          <a class="nav-a" :href="docsHref">{{ t("nav.fullDocs") }}</a>
         </nav>
 
         <div class="top-meta">

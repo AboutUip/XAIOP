@@ -6,13 +6,13 @@
 | --- | --- |
 | 文档 ID | `SDK-BEHAVE` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-03 |
-| 规范性 | **否** — SDK 对等清单（非协议符合性） |
-| 参考实现 | Node.js `xaiop` **0.7.0+**（`xaiop-sdk/nodejs/`） |
-| 协议线格式 | Frozen **v0.4.0** |
+| 最近更新 | 2026-08-04 |
+| 规范性 | **否** — SDK 产品目录（非协议符合性） |
+| 参考实现（重心） | Node.js `xaiop` **0.13.0**（`xaiop-sdk/nodejs/`） |
+| 协议线格式 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
-**立场：** 协议 IR ≠ 仅 LLM 产品 — [../overview/positioning.zh-CN.md](../overview/positioning.zh-CN.md)。  
+**立场：** 协议 IR ≠ 产品营销面 — [../overview/introduction.zh-CN.md](../overview/introduction.zh-CN.md)。  
 **符合性：** 协议层级（`CONF`）**不**认证 SDK API（[../conformance/conformance.zh-CN.md](../conformance/conformance.zh-CN.md) §7）。**协议符合 ≠ 官方 SDK 同等。**
 
 ---
@@ -26,8 +26,9 @@
 | 需求 | 文档 |
 | --- | --- |
 | 线文法 / Content 类型 | [../protocol/](../protocol/) |
-| 模型发射 / 网络分帧 | [../practice/](../practice/) |
-| Node API 表面 | [nodejs/README.zh-CN.md](nodejs/README.zh-CN.md) · [nodejs/stream.zh-CN.md](nodejs/stream.zh-CN.md) · [nodejs/encode.zh-CN.md](nodejs/encode.zh-CN.md) · [nodejs/merge.zh-CN.md](nodejs/merge.zh-CN.md) |
+| 现行实践（传输 / 会话） | [../practice/](../practice/) |
+| LLM 发射（封存） | [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/) |
+| Node API 表面 | [nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) · [nodejs/README.zh-CN.md](nodejs/README.zh-CN.md) · [nodejs/notes/](nodejs/notes/) |
 | 相位 Diff 算法 | [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md) |
 | WS 会话细节 | [nodejs/notes/ws-session.zh-CN.md](nodejs/notes/ws-session.zh-CN.md) |
 
@@ -108,7 +109,7 @@ Content 类型遵循 `PROT-CONTENT`（`:` 后空格强制字符串；int → flo
 6. 拒绝键：空 / 空白 / `:`、尾 `-`、字符 `>` `<` `=` `!`。
 7. 稀疏数组 `undefined` 洞 → 错误；对象 `null` 在 `omit` 下丢键；**数组 null 仍编码**（除非 `nullPolicy: "error"`）。
 
-完整指南：[nodejs/encode.zh-CN.md](nodejs/encode.zh-CN.md)。
+完整指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md)。
 
 ---
 
@@ -123,7 +124,7 @@ Content 类型遵循 `PROT-CONTENT`（`:` 后空格强制字符串；int → flo
 | Engine 注入 | `injectXaiop` / `injectJson` 按 `dataId` 写回 store；`as: "json"\|"xaiop"` 选返回形态 |
 | 片段 | 已存 `XaiopFragment` 先物化再合并 |
 
-指南：[nodejs/merge.zh-CN.md](nodejs/merge.zh-CN.md)。
+指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md)。
 
 ---
 
@@ -173,7 +174,9 @@ finish 时:
 | 事件监听器 | 监听器内异常隔离（不拖垮流） |
 | 传输 | 默认 `http`；SSE 多行 `data:` 用 `\n` 拼接；二进制用流式 UTF-8 解码；空文本不转发；超时 abort |
 
-API：[nodejs/stream.zh-CN.md](nodejs/stream.zh-CN.md)。
+API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md)。
+
+**Java（`io.xaiop:xaiop` 0.5.0）：** 实现本消费端表面的 **HTTP / SSE / RAW**（状态机、模式、`mergeChunkWindow`、监听器隔离、UTF-8 解码、SSE 拼接）。相对 Node 的缺口：**无 WebSocket**、无 `cover` Diff、无线拦截 / Annotation Span，线格式仍为协议 **0.4.0**。指南：[java/README.zh-CN.md](java/README.zh-CN.md)。
 
 ---
 

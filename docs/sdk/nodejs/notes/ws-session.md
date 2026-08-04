@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `SDK-NODE-NOTE-WS` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** — Node SDK behavior |
-| Code | `xaiop-sdk/nodejs/src/stream/ws/` |
-| Package | `xaiop` **0.6.0+** (protocol wire **0.4.0**) |
+| Code | `xaiop-sdk/nodejs/src/node/ws/` · `src/browser/ws-client.ts` |
+| Package | `xaiop` **0.13.0** (implements protocol package **0.6.0**) |
 
 Practice baseline: [../../../practice/skeleton-stream.md](../../../practice/skeleton-stream.md).  
 Phase parse semantics: [streaming-parse.md](streaming-parse.md).
@@ -123,6 +123,8 @@ Phase Diff algorithm (leading `.` inject, empty → `null`): [streaming-parse.md
 
 - Practice: [../../../practice/skeleton-stream.md](../../../practice/skeleton-stream.md)  
 - Streaming parse: [streaming-parse.md](streaming-parse.md)  
-- Stream API: [../stream.md](../stream.md)  
-- Encode: [../encode.md](../encode.md)  
-- Parity: [../../behavioral-contract.md](../../behavioral-contract.md)
+- Line intercept: [line-intercept.md](line-intercept.md) · API [§6.4](../API.md#64-line-intercept-onlineintercept)
+- Annotation Span: [annotation-span.md](annotation-span.md) · API [§6.5](../API.md#65-annotation-span-onannotationspan)  
+- Type check: [typecheck.md](typecheck.md)  
+- Primary API: [../API.md](../API.md) §7  
+- Catalog: [../../behavioral-contract.md](../../behavioral-contract.md)

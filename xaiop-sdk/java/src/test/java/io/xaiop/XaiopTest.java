@@ -5,16 +5,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import io.xaiop.stream.DotCheckpointEngine;
+import io.xaiop.stream.StreamStatus;
+import io.xaiop.stream.Transport;
+import io.xaiop.stream.XaiopStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /** The {@link Xaiop} facade is a thin delegate over the underlying entry points. */
 class XaiopTest {
 
   @Test
-  void protocolVersion() {
+  void protocolAndSdkVersions() {
     assertEquals("0.4.0", Xaiop.PROTOCOL_VERSION);
+    assertEquals("0.5.0", Xaiop.SDK_VERSION);
   }
 
   @Test
@@ -51,5 +56,23 @@ class XaiopTest {
       engine.finish();
     }
     assertEquals(List.of(map("a", 1), map("b", 2)), chunks);
+  }
+
+  @Test
+  void streamFacadeCompletesRawSend() throws Exception {
+    XaiopStream stream = Xaiop.stream("raw://facade");
+    Object[] done = new Object[1];
+    stream.onChunk(d -> {});
+    stream.onDone(j -> done[0] = j);
+    stream.sendRaw(Transport.chunksOf(">\nz:1\n.\n"));
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (stream.status() != StreamStatus.COMPLETED) {
+      if (stream.status() == StreamStatus.ERROR) {
+        throw new AssertionError(stream.lastError());
+      }
+      if (System.nanoTime() > deadline) throw new AssertionError("timeout");
+      Thread.sleep(4);
+    }
+    assertEquals(map("z", 1), done[0]);
   }
 }

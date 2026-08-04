@@ -6,13 +6,14 @@
 | --- | --- |
 | Document ID | `PRACTICE-STREAM` |
 | Status | Informative |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **No** |
 
+**Recommended scenario** for carrying sealed wire over real networks — not protocol.  
 **Protocol** defines when streamed *text* is valid and what JSON Snapshot/Diff mean at the Block level ([../protocol/streaming.md](../protocol/streaming.md)).  
-**This page** is how to carry that text over real transports and what product teams usually get wrong.
+**This page** is framing / transport practice and common product mistakes.
 
-Runtime-specific APIs: Node `XaiopStream` ([../sdk/nodejs/stream.md](../sdk/nodejs/stream.md) · [../sdk/nodejs/notes/streaming-parse.md](../sdk/nodejs/notes/streaming-parse.md)) · skeleton WS sessions `XaiopWs` ([../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md) · practice [skeleton-stream.md](skeleton-stream.md)) · third-party parity ([../sdk/behavioral-contract.md](../sdk/behavioral-contract.md)).
+Runtime APIs: Node — **[../sdk/nodejs/API.md](../sdk/nodejs/API.md)** (`XaiopStream` · `XaiopWs`); browser phase consume — `xaiop/browser` (`XaiopStream` · `XaiopBrowserWs`, see API §7.6); Java consumer — **[../sdk/java/README.md](../sdk/java/README.md)** (`XaiopStream` · HTTP / SSE / RAW; no WS) · deep-dive [../sdk/nodejs/notes/streaming-parse.md](../sdk/nodejs/notes/streaming-parse.md) · [../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md) · practice [skeleton-stream.md](skeleton-stream.md).
 
 ---
 
@@ -60,7 +61,7 @@ Implementations **may** choose a coarser Diff boundary (e.g. `.` phases) — tha
 | If you need… | Do… |
 | --- | --- |
 | Strict Block-level UI updates | Prefer an implementation that Diffs per Block, or emit denser Labels without relying on `.` alone |
-| Coarse section updates | Agree with the consumer that `.` bounds Diffs; structure the model Skill accordingly ([model-output.md](model-output.md)) |
+| Coarse section updates | Agree with the consumer that `.` bounds Diffs; structure the model Skill accordingly ([archive model-output](../archive/practice-llm-emit-2026-08-04/model-output.md)) |
 | Only final JSON | Disable mid-stream processing if the SDK allows; still stream bytes for latency of first byte |
 
 ---
@@ -68,8 +69,9 @@ Implementations **may** choose a coarser Diff boundary (e.g. `.` phases) — tha
 ## 5. Related
 
 - Protocol: [../protocol/streaming.md](../protocol/streaming.md)  
-- Model emit: [model-output.md](model-output.md)  
+- Model emit: [archive model-output](../archive/practice-llm-emit-2026-08-04/model-output.md)  
 - Skeleton WS: [skeleton-stream.md](skeleton-stream.md)  
-- Node stream client: [../sdk/nodejs/notes/streaming-parse.md](../sdk/nodejs/notes/streaming-parse.md)  
-- Node WS sessions: [../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md)  
+- Node stream client: [../sdk/nodejs/notes/streaming-parse.md](../sdk/nodejs/notes/streaming-parse.md)
+- Java stream consumer: [../sdk/java/README.md](../sdk/java/README.md) (`XaiopStream`)
+- Node / browser WS: [../sdk/nodejs/notes/ws-session.md](../sdk/nodejs/notes/ws-session.md) (§9 browser phases)
 - Separation: [../SEPARATION.md](../SEPARATION.md)

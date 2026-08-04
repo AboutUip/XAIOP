@@ -6,8 +6,8 @@
 | --- | --- |
 | 文档 ID | `TERM-GLOSS` |
 | 状态 | **Frozen（已冻结）** |
-| 版本 | 0.2.1 |
-| 最近更新 | 2026-08-03 |
+| 版本 | 0.5.0 |
+| 最近更新 | 2026-08-04 |
 | 规范性 | **规范性**（定义） |
 | 依赖 | `META-CONV`, `OV-PRIN` |
 | 影响 | `REQ-FUNC`, `REQ-STREAM`, `CONF`, `protocol/*` |
@@ -27,15 +27,16 @@
 
 ### 2.1 XAIOP
 
-**XAIOP**（eXtensible AI Output Protocol）指由本规范文档集定义的协议。
+**XAIOP** 指由本规范文档集定义的**流式、按行、游标构造线协议**（项目标识符）。  
+历史全称 “eXtensible AI Output Protocol” **仅作遗留命名**，不构成范围或主用例定义。规范性主张必须引用已封存的协议包版本号（见 `META-VER`）。
 
 ### 2.2 Generator（生成器）
 
-**Generator（生成器）** 是产生 XAIOP 文本的实体。生成器通常是在提示、工具或其他约束下运行的 LLM，但协议不要求特定模型。
+**Generator（生成器）** 是产生 XAIOP 文本的实体。协议**不**要求特定实现；程序、工具编码器、会话推送与（可选的）模型发射均可作为 Generator，前提是产出符合所引用已封存包的线文本。
 
 ### 2.3 Parser（解析器）
 
-**Parser（解析器）** 是按协议解释 XAIOP 文本，并产生结构化结果或确定性错误结果的实体。
+**Parser（解析器）** 是按所引用已封存协议包解释 XAIOP 文本，并产生结构化结果或确定性错误结果的实体。
 
 ### 2.4 Consumer（消费者）
 
@@ -47,7 +48,7 @@
 
 ### 2.6 Encoder（编码器，SDK）
 
-**Encoder（编码器）**（实现用语）将 JSON 兼容值映射为良构 XAIOP 文本。Node.js SDK 编码器只产出**严格**线格式；它是工具侧 **Generator** 路径，不同于 LLM Generator。见 [sdk/nodejs/encode.zh-CN.md](../sdk/nodejs/encode.zh-CN.md)。
+**Encoder（编码器）**（实现用语）将 JSON 兼容值映射为良构 XAIOP 文本。编码器是工具侧 **Generator** 路径。见 [sdk/nodejs/API.zh-CN.md](../sdk/nodejs/API.zh-CN.md)。SDK 行为不是线规范本身。
 
 ---
 
@@ -83,7 +84,9 @@
 
 ### 3.7 Cursor Operator（游标操作符）
 
-**Cursor Operator（游标操作符）** 指：`>` / `>name`（创建/进入 object；空 `>` 一律进入）、`<`（仅回退一层；根上非法）、`<name`（回退再进入）、`=`、`!`、`.`，以及 `-` / `>name-`（打开 array）。
+**Cursor Operator（游标操作符）** 指：`>` / `>name`（创建/进入 object；空 `>` 一律进入）、`<`（仅回退一层；根上非法）、`<name`（回退再进入）、`=`、`@`、`!`、`&`（删除最深键）、`.`，以及 `-` / `>name-`（打开 array）。
+
+**Custom Annotation Transmission（自定义注解传递）** 指独立单行且以 `#` 开头的线原语（`PROT-HIER` §11 / `PROT-SYNTAX` §3）。官方名称必须是「自定义注解传递」；协议不解释 `#` 之后内容；无 Cursor / 树副作用。Content 值内的 `#` 不是本原语。
 
 ### 3.8 Structure Layer（结构层）
 

@@ -6,10 +6,10 @@
 | --- | --- |
 | Document ID | `PROT-HIER` |
 | Status | **Frozen** |
-| Version | 0.4.0 |
+| Version | 0.6.0 |
 | Spec title | Boundary & Hierarchy Specification |
 | Spec version | v0.1 |
-| Last updated | 2026-08-03 |
+| Last updated | 2026-08-04 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `PROT-BOUND`, `TERM-GLOSS` |
 | Informs | `PROT-STREAM`, `PROT-CONTENT`, `CONF` |
@@ -29,7 +29,7 @@ Cursor operators and hierarchy.
 
 ## 2. Cursor address type
 
-Any address located by the Cursor **MUST** have value type **`object`**, unless fixed as **`array`** by postfix `-` (Section 10).
+Any address located by the Cursor **MUST** have value type **`object`**, unless fixed as **`array`** by postfix `-` (Section 11).
 
 A Label that creates/enters a named or anonymous object denotes an **object** node (unless postfix `-` applies).
 
@@ -77,7 +77,7 @@ Semantics: Context-dependent create-or-update for an anonymous object
 
 This is the **only** way to create an anonymous object. There is no “create empty element without entering” variant. `>name` never implies a prior anonymous outer object.
 
-Same-address revisit (object Cursor + bare `>` again, or later Content on the same keys) follows create-or-update / overwrite (Section 11): later wins. Duplicate counting by a Generator is out of scope for the wire protocol.
+Same-address revisit (object Cursor + bare `>` again, or later Content on the same keys) follows create-or-update / overwrite (Section 12): later wins. Duplicate counting by a Generator is out of scope for the wire protocol.
 
 ```text
 >
@@ -216,14 +216,36 @@ Semantics: Locate every complete path-fragment match; enter broadcast multi-Curs
 2. Subsequent Structure and Content lines apply to **every** Cursor.  
 3. If **any** Cursor fails the line → the whole line **fails** (document error).  
 4. `!` / `@` / `=` while broadcast is active → **syntax error** (emit `.` first).  
-5. `.` resets Cursor to Root and **exits** broadcast mode.  
-6. After `!`, writes use ordinary XAIOP (type conflict → overwrite; compatible re-enter → update / append). `@` alone may create; `!` / `=` only move.
+5. **`&path` is allowed** while broadcast is active (Section 9) — path is relative to each Cursor.  
+6. `.` resets Cursor to Root and **exits** broadcast mode.  
+7. After `!`, writes use ordinary XAIOP (type conflict → overwrite; compatible re-enter → update / append). `@` alone may create; `!` / `=` only move.
 
-Streaming: implementations that emit per-`.` Diff **MUST** parse a **cumulative prefix** for phases that contain `=` / `!` so locate sees prior phases. `@` create-or-enter **MAY** stay phase-local.
+Streaming: implementations that emit per-`.` Diff **MUST** parse a **cumulative prefix** for phases that contain `=` / `!` / `&` so locate and delete see prior phases. `@` create-or-enter **MAY** stay phase-local.
 
 ---
 
-## 9. Operator `.` (reset)
+## 9. Operator `&` (delete path)
+
+```text
+Syntax: &<path>
+Semantics: Delete the deepest key along <path>; do not move Cursor
+```
+
+1. Path segments separated by `>` (same path form as `@`, e.g. `&a`, `&a>b`). Bare `&` (empty path) is **forbidden** (syntax error).  
+2. **Single Cursor:** path is **absolute from Root**; delete the deepest key; **do not** move Cursor.  
+3. **Missing target:** silent **no-op**.  
+4. Requires an **object** document root. Forbidden on **array root** and **fragment root**. Cannot delete the document root itself.  
+5. **MAY** delete a whole named array value (the key whose value is the array). There is **no** array-element index delete.  
+6. If the delete would remove a node on the **Cursor chain** (the current Cursor value or any ancestor on the stack) → **syntax error**.  
+7. **Broadcast** (`!` active): **allowed**. Path is **relative to each Cursor**. Per-Cursor missing target = no-op. Cursor-chain conflict on **any** Cursor fails the whole line (same as other broadcast failures).  
+8. `.` still only resets Cursor / exits broadcast; it does not specially interact with `&`.  
+9. A later write to the same address **creates** again (ordinary create-or-update).
+
+Streaming: phases that contain `&` **MUST** use cumulative-prefix parse for per-`.` Diff (same rule as `=` / `!`). Cover-mode Diff shaping for `&` is an **SDK-only** option (default off): inject `.` after consecutive `&`, emit a deepest-key `null` tombstone Diff, then restore with a `>` chain — not part of the wire grammar.
+
+---
+
+## 10. Operator `.` (reset)
 
 ```text
 Syntax: .
@@ -234,13 +256,29 @@ When level is uncertain or generation accuracy is dropping, Generators **SHOULD*
 
 ---
 
-## 10. Array operator `-`
+## 11. Operator `#` (custom annotation transmission)
+
+```text
+Syntax: # <any text to end of line>
+Semantics: Custom annotation transmission; protocol does not interpret text after #; no Cursor / JSON tree effect
+```
+
+1. **Official name:** **custom annotation transmission**. Normative text **MUST NOT** define this primitive as a “comment”.  
+2. **MUST** be a **standalone line** whose logical line begins with `#` (`#` is the first character; leading whitespace means it is **not** this primitive).  
+3. **Position unrestricted** — anywhere in the document, as long as it is a standalone line.  
+4. Parsers **MUST** recognize such lines and **MUST NOT** move Cursor, write/delete the tree, end a Block, or enter/exit broadcast because of them.  
+5. Text after `#` has **no protocol meaning** (may be empty: a line that is only `#`). Whether apps retain or forward annotations is out of scope.  
+6. A `#` inside a Content value (e.g. `note:#x`) is **not** this primitive — still parsed as Content.
+
+---
+
+## 12. Array operator `-`
 
 `-` **opens** arrays. Sibling elements are **not** separated by `-`.
 
 After `>` opens an object element, Cursor stays **inside** that element until `<` / `<name` / `.` returns to the array.
 
-### 10.1 Postfix `-` (named array)
+### 12.1 Postfix `-` (named array)
 
 ```text
 >data
@@ -269,7 +307,7 @@ After `>` opens an object element, Cursor stays **inside** that element until `<
 
 → `{ "tags": ["a", "b"] }`
 
-### 10.2 Standalone `-` (anonymous array)
+### 12.2 Standalone `-` (anonymous array)
 
 ```text
 -
@@ -282,7 +320,7 @@ After `>` opens an object element, Cursor stays **inside** that element until `<
 
 Inside an array, another `-` opens a **nested** anonymous array as the next element and enters it.
 
-### 10.3 Array level vs inside element
+### 12.3 Array level vs inside element
 
 | At array level | Inside element after `>` |
 | --- | --- |
@@ -292,7 +330,7 @@ Inside an array, another `-` opens a **nested** anonymous array as the next elem
 | `-` → nested array element | — |
 | | `<` → return to array |
 
-### 10.4 Examples
+### 12.4 Examples
 
 ```text
 -
@@ -339,9 +377,9 @@ a:b
 
 ---
 
-## 11. Create-or-update and overwrite / discard
+## 13. Create-or-update and overwrite / discard
 
-### 11.1 Create-or-update
+### 13.1 Create-or-update
 
 No explicit create vs modify declaration. Missing paths are created; compatible continued use appends / updates / **re-enters**.
 
@@ -350,9 +388,10 @@ Examples:
 - `>name` then later `>name` at the same parent (still an object) → re-enter.  
 - `>name-` then later `>name-` at the same parent (still an array) → re-enter; elements **append**.  
 - Bare `>` while Cursor is already on an object → re-enter that object (Section 4.2).  
-- Bare `>` while Cursor is inside an array → create a **new** element (not re-enter).
+- Bare `>` while Cursor is inside an array → create a **new** element (not re-enter).  
+- After `&path` removes a key, a later write to the same address **creates** again.
 
-### 11.2 Overwrite / discard
+### 13.2 Overwrite / discard
 
 Later Cursor action that re-types or replaces a populated address (object ↔ array, or equivalent): later wins; prior payload discarded. Clearing / JSON materialization is an SDK concern.
 
@@ -360,11 +399,11 @@ Examples:
 
 - Key holds an object, then `>name-` → discard object, install new array.  
 - Key holds an array, then `>name` → discard array, install new object.  
-- Key already holds an array, then `>name-` → **not** discard; re-enter and append (Section 10.1).
+- Key already holds an array, then `>name-` → **not** discard; re-enter and append (Section 11.1).
 
 ---
 
-## 12. Order independence
+## 14. Order independence
 
 1. `.` plus absolute / more complete `=` / `@` paths **can** yield order-independent tree shape.  
 2. Relative `>` / `<` introduce order dependency.  
@@ -373,6 +412,6 @@ Examples:
 
 ---
 
-## 13. See also
+## 15. See also
 
 Cheat-sheet: **[syntax.md](syntax.md)**.

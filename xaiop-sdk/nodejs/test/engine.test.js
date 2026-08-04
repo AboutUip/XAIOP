@@ -9,7 +9,7 @@ import {
   XaiopFragment,
   XaiopSyntaxError,
   parseSync,
-} from "../src/index.js";
+} from "../dist/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureXaiop = path.resolve(
@@ -22,7 +22,7 @@ const fixtureJson = path.resolve(
 );
 
 test("protocol version", () => {
-  assert.equal(PROTOCOL_VERSION, "0.4.0");
+  assert.equal(PROTOCOL_VERSION, "0.6.0");
 });
 
 test("named array >name- re-enters and appends (with .)", () => {

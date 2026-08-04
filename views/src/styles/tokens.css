@@ -57,9 +57,11 @@ html[data-theme="dark"] {
   --rail-w: 220px;
   /* Full-bleed desktop shell — only horizontal padding constrains */
   --shell-pad: clamp(1.25rem, 2.5vw, 3rem);
-  --font-ui: "Manrope", "Segoe UI", system-ui, sans-serif;
-  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+  --font-ui: "Segoe UI", system-ui, -apple-system, "PingFang SC", "Noto Sans SC",
+    sans-serif;
+  --font-display: "Segoe UI", system-ui, -apple-system, "PingFang SC",
+    "Noto Sans SC", sans-serif;
+  --font-mono: "Cascadia Code", "SF Mono", "Consolas", ui-monospace, monospace;
 }
 
 *,
