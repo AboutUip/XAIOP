@@ -1,8 +1,8 @@
 # =============================================================================
 # XAIOP — repository .gitignore
 # Layout: docs/ (Docsify) · site/ (optional docs CLI) · views/ (lab) ·
-#         xaiop-sdk/{nodejs,java,python} · skills/ (source-only, tracked) ·
-#         demos/ · resources/
+#         xaiop-sdk/{nodejs,java,python,go} · skills/ (source-only, tracked) ·
+#         demos/ · resources/ · conformance/
 # Intentionally TRACKED (do not ignore): docs/vendor/, skills/, docs/themes/
 # =============================================================================
 
@@ -24,6 +24,9 @@ dev/sdk-timing/baseline-bench.json
 *~
 .history/
 .fleet/
+.zed/
+*.sublime-project
+*.sublime-workspace
 
 # --- OS ----------------------------------------------------------------------
 .DS_Store
@@ -177,9 +180,11 @@ __pycache__/
 .eggs/
 pip-wheel-metadata/
 .pytest_cache/
+pytest-cache-files-*/
 .mypy_cache/
 .ruff_cache/
 .pytype/
+.pyre/
 .tox/
 .nox/
 .coverage
@@ -191,10 +196,45 @@ htmlcov/
 venv/
 ENV/
 env/
+.python-version
 python-version.txt
 *.manifest
+MANIFEST
+# Wheel / sdist build drops
+*.whl
 # Keep intentional specs under docs; ignore accidental pyinstaller drops at root
 /*.spec
+# Editable / setuptools local state
+src/*.egg-info/
+**/src/*.egg-info/
+
+# --- Go (xaiop-sdk/go) -------------------------------------------------------
+# Module: github.com/AboutUip/XAIOP/xaiop-sdk/go
+bin/
+**/bin/
+vendor/
+*.exe
+*.exe~
+*.dll
+*.dylib
+*.test
+*.out
+coverage.out
+coverage.html
+profile.cov
+cpu.prof
+mem.prof
+*.prof
+go.work
+go.work.sum
+# Accidental local binaries named after the package
+/xaiop
+/xaiop.exe
+
+# --- Conformance dumps (Node↔Java golden · Python↔Go core-wire) --------------
+xaiop-sdk/conformance/out/
+xaiop-sdk/conformance/**/out/
+*.ndjson
 
 # --- Archives / binary drops (accidental at repo root) -----------------------
 /*.zip
@@ -211,3 +251,5 @@ python-version.txt
 *.seed
 *.pid.lock
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+.direnv/
+.envrc.local

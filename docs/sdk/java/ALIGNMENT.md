@@ -57,7 +57,7 @@ Pin the Maven artifact version; read `Xaiop.PROTOCOL_VERSION` for the wire packa
 | Line intercept | ✅ | ✅ | `LineIntercept` |
 | Annotation Span | ✅ | ✅ | `AnnotationSpan.KEEP` ↔ Node `undefined` keep |
 | Control Root (`#!` session / ack / resume / snapshot / seq) | ✅ | ✅ | `io.xaiop.control` |
-| `XaiopWs` listen | ✅ | ✅ | Zero-dep RFC6455 `ServerSocket` |
+| `XaiopWs` listen | ✅ | ✅ | Zero-dep RFC6455; `serverSocket` / path / `protocols` / `maxPayload` |
 | `XaiopWs` connect | ✅ | ✅ | JDK `HttpClient` WebSocket |
 | Phase encode (`phaseEncode`) | ✅ | ✅ | `PhaseEncode` · force `dotPolicy: none` |
 | `symbolKeys` (U+001F label escape) | ✅ | ✅ | Encode + parse / checkpoint / stream |
@@ -84,7 +84,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | One JS `number` | `Integer`/`Long` integers · `Double` floats — compare with `Number#doubleValue()` when needed |
 | `throw new TypeError(...)` | `IllegalArgumentException` / `NullPointerException`; protocol → `XaiopSyntaxError` / `XaiopEncodeError` (unchecked) |
 | `xaiop` · `xaiop/browser` · `xaiop/core` barrels | Single JAR; import packages directly (no barrel re-export) |
-| Attach WS hub to existing `http.Server` | **Not offered** — `XaiopWs.listen` owns its `ServerSocket` |
+| Attach WS hub to existing `http.Server` | **`ListenOptions.serverSocket(ServerSocket)`** + same-port HTTP multiplex (`GET /health`); JDK `HttpServer` upgrade is not supported |
 
 ---
 
@@ -138,12 +138,12 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | `control.plane.test.js` | `ControlPlaneTest` |
 | `control.coverage.test.js` | `ControlCoverageTest` |
 | `control.resume.test.js` | `ControlResumeTest` |
-| `ws.session.test.js` | `WsSessionTest` |
+| `ws.session.test.js` | `WsSessionTest` · `WsDeepTest` |
 | `ws.phase-encode.test.js` | `PhaseEncodeTest` |
 | `symbol.keys.test.js` | `SymbolKeysTest` |
 | *(surface smoke)* | `SdkSurfaceTest` |
 
-≈33 JUnit classes under `io.xaiop` (ported suite + thin robustness / surface smokes; **555** methods in `mvn test`). Parity is asserted by Java-side expectations transcribed from the Node suite. **There is no automated Node↔Java golden comparison in CI.**
+≈33 JUnit classes under `io.xaiop` (ported suite + thin robustness / surface smokes; **555** methods in `mvn test`). Parity is asserted by Java-side expectations transcribed from the Node suite. **Node↔Java golden comparison runs in CI** ([`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) `golden` job — encode / parse / stream Diff NDJSON dumps under [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)).
 
 ---
 
@@ -157,7 +157,8 @@ These are intentional host-language / packaging differences — **not** parity g
 | No browser package | No `xaiop/browser`; WS client + server live under `io.xaiop.ws` |
 | `chunks()` | Blocking `Iterable` / `ChunkPull`, not a native async iterator |
 | Compat setters | Single `setCompatFix` instead of eight `setCompat*` methods |
-| No attach-to-`HttpServer` | `XaiopWs.listen` does not attach to an existing JDK `HttpServer` |
+| No attach-to-`HttpServer` | JDK `HttpServer` cannot expose the TCP socket for RFC6455 upgrade. Use `ListenOptions.serverSocket(...)` or same-port multiplex (`path` + `GET /health`). Node `listen({ server })` attaches to `http.Server` directly. |
+| WS advanced options | Java offers `protocols` / `maxPayload` / `serverSocket` / path filter; `perMessageDeflate` is not implemented (Node `ws` optional) |
 | No barrel re-export | Import `io.xaiop.*` / `stream` / `ws` / `types` / `control` as needed |
 | Abort | `abort()` + `timeoutMs` instead of DOM/`AbortSignal` |
 | `undefined` | Absent; Annotation Span keep uses `AnnotationSpan.KEEP` |
@@ -170,12 +171,14 @@ These are intentional host-language / packaging differences — **not** parity g
 1. Ported JUnit scenarios covering the matrix in §2 (see §5).  
 2. Shared fixtures (including chunked replay of [../../examples/complex.xaiop](../../examples/complex.xaiop)) and a seeded random JSON corpus.  
 3. Encode float surface = ECMAScript `Number::toString` (shortest round-tripping decimal on any JDK) → byte-identical wire for shared fixtures.  
-4. Manual / PR review against [../behavioral-contract.md](../behavioral-contract.md).
+4. Manual / PR review against [../behavioral-contract.md](../behavioral-contract.md).  
+5. **Golden CI** — Node and Java dump the same case ids (encode corpus · parse · stream Diffs) to NDJSON; [`compare.mjs`](../../../xaiop-sdk/conformance/compare.mjs) deep-equals trees/diffs and byte-equals wire. See [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) job `golden` and [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/).
 
-**Claim strength:** “verified by the ported suite”, not “continuously golden-diffed against Node in CI”.
+**Claim strength:** “verified by the ported suite **and** continuously golden-diffed against Node in CI”.
 
 ```bash
 cd xaiop-sdk/java && mvn test
+cd xaiop-sdk/conformance && npm run golden
 ```
 
 ---

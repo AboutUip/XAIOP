@@ -1,0 +1,15 @@
+[
+  { "a": 1 },
+  { "flag": true, "off": false },
+  { "n": null, "s": "hello" },
+  { "x": 1.5, "y": -2 },
+  { "nested": { "k": "v", "n": 3 } },
+  { "arr": [1, 2, 3] },
+  { "mixed": [true, "s", null, { "i": 9 }] },
+  { "users": [{ "id": 1, "name": "alice" }, { "id": 2, "name": "bob" }] },
+  { "meta": { "enabled": true, "count": 0 }, "tags": ["a", "b"] },
+  { "deep": { "a": { "b": { "c": 1 } } } },
+  { "emptyObj": {}, "emptyArr": [] },
+  { "f": 0.1, "g": 1e-6 },
+  { "root": { "left": 1, "right": [2, 3] } }
+]

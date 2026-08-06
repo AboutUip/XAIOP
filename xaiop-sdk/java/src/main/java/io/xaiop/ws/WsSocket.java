@@ -20,6 +20,20 @@ public interface WsSocket {
 
   void send(String text);
 
+  /**
+   * Send a binary WebSocket frame. Peers decode UTF-8 as text (Node {@code Buffer} send parity).
+   */
+  default void sendBinary(byte[] data) {
+    throw new UnsupportedOperationException("sendBinary not supported on this socket");
+  }
+
+  /**
+   * Negotiated {@code Sec-WebSocket-Protocol}, or {@code null} when none.
+   */
+  default String protocol() {
+    return null;
+  }
+
   void close(int code, String reason);
 
   /** Abrupt teardown (may skip graceful close handshake). */

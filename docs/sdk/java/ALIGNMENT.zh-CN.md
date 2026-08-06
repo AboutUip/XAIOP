@@ -57,7 +57,7 @@
 | 行拦截 | ✅ | ✅ | `LineIntercept` |
 | Annotation Span | ✅ | ✅ | `AnnotationSpan.KEEP` ↔ Node 返回 `undefined` 表示保留 |
 | 控制根（`#!` session / ack / resume / snapshot / seq） | ✅ | ✅ | `io.xaiop.control` |
-| `XaiopWs` listen | ✅ | ✅ | 零依赖 RFC6455 `ServerSocket` |
+| `XaiopWs` listen | ✅ | ✅ | 零依赖 RFC6455；`serverSocket` / path / `protocols` / `maxPayload` |
 | `XaiopWs` connect | ✅ | ✅ | JDK `HttpClient` WebSocket |
 | 相位编码（`phaseEncode`） | ✅ | ✅ | `PhaseEncode` · 强制 `dotPolicy: none` |
 | `symbolKeys`（U+001F 标签转义） | ✅ | ✅ | Encode + parse / checkpoint / stream |
@@ -84,7 +84,7 @@
 | 单一 JS `number` | 整数 `Integer`/`Long` · 浮点 `Double` — 跨界比较用 `Number#doubleValue()` |
 | `throw new TypeError(...)` | `IllegalArgumentException` / `NullPointerException`；协议错误 → `XaiopSyntaxError` / `XaiopEncodeError`（非受检） |
 | `xaiop` · `xaiop/browser` · `xaiop/core` 桶导出 | 单一 JAR；直接 import 包（无 barrel 再导出） |
-| 把 WS hub 挂到已有 `http.Server` | **不提供** — `XaiopWs.listen` 自管 `ServerSocket` |
+| 把 WS hub 挂到已有 `http.Server` | **`ListenOptions.serverSocket(ServerSocket)`** + 同端口 HTTP 多路复用（`GET /health`）；JDK `HttpServer` 升级不支持 |
 
 ---
 
@@ -138,12 +138,12 @@
 | `control.plane.test.js` | `ControlPlaneTest` |
 | `control.coverage.test.js` | `ControlCoverageTest` |
 | `control.resume.test.js` | `ControlResumeTest` |
-| `ws.session.test.js` | `WsSessionTest` |
+| `ws.session.test.js` | `WsSessionTest` · `WsDeepTest` |
 | `ws.phase-encode.test.js` | `PhaseEncodeTest` |
 | `symbol.keys.test.js` | `SymbolKeysTest` |
 | *（表面冒烟）* | `SdkSurfaceTest` |
 
-约 33 个 JUnit 测试类（`io.xaiop` 下：移植套件 + 薄鲁棒 / 表面冒烟；`mvn test` 约 **555** 个方法）。一致性由 Java 侧断言，期望值从 Node 套件转写。**CI 中没有 Node↔Java 自动黄金比对。**
+约 33 个 JUnit 测试类（`io.xaiop` 下：移植套件 + 薄鲁棒 / 表面冒烟；`mvn test` 约 **555** 个方法）。一致性由 Java 侧断言，期望值从 Node 套件转写。**Node↔Java 黄金比对已接入 CI**（[`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) 的 `golden` job — encode / parse / 流式 Diff NDJSON，见 [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)）。
 
 ---
 
@@ -157,7 +157,8 @@
 | 无浏览器包 | 无 `xaiop/browser`；WS 客户端与服务端同在 `io.xaiop.ws` |
 | `chunks()` | 阻塞 `Iterable` / `ChunkPull`，非原生异步迭代器 |
 | Compat setter | 单个 `setCompatFix`，而非八个 `setCompat*` |
-| 不挂接 `HttpServer` | `XaiopWs.listen` 不挂到已有 JDK `HttpServer` |
+| 不挂接 `HttpServer` | JDK `HttpServer` 无法交出 TCP 套接字做 RFC6455 升级。请用 `ListenOptions.serverSocket(...)` 或同端口多路复用（`path` + `GET /health`）。Node 的 `listen({ server })` 可直接挂 `http.Server`。 |
+| WS 高级选项 | Java 提供 `protocols` / `maxPayload` / `serverSocket` / path；未实现 `perMessageDeflate`（Node `ws` 可选） |
 | 无 barrel 再导出 | 按需 import `io.xaiop.*` / `stream` / `ws` / `types` / `control` |
 | Abort | `abort()` + `timeoutMs`，而非 DOM/`AbortSignal` |
 | `undefined` | 不存在；Annotation Span 保留使用 `AnnotationSpan.KEEP` |
@@ -170,12 +171,14 @@
 1. 移植的 JUnit 场景覆盖 §2 矩阵（见 §5）。  
 2. 共享样例（含 [../../examples/complex.xaiop](../../examples/complex.xaiop) 分片回放）与定长种子随机 JSON 语料。  
 3. Encode 浮点面 = ECMAScript `Number::toString`（任意 JDK 上可无损回读的最短十进制）→ 共享样例线文逐字节一致。  
-4. 对照 [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) 做人工 / PR 审查。
+4. 对照 [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) 做人工 / PR 审查。  
+5. **黄金 CI** — Node 与 Java 对同一 case id（encode 语料 · parse · 流式 Diff）转储 NDJSON；[`compare.mjs`](../../../xaiop-sdk/conformance/compare.mjs) 深相等树 / Diff，线文字节相等。见 [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) 的 `golden` job 与 [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)。
 
-**声明强度：**「由已移植套件验证」，而非「CI 中持续与 Node 黄金比对」。
+**声明强度：**「由已移植套件验证，**并**在 CI 中持续与 Node 黄金比对」。
 
 ```bash
 cd xaiop-sdk/java && mvn test
+cd xaiop-sdk/conformance && npm run golden
 ```
 
 ---

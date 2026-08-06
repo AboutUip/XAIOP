@@ -198,6 +198,8 @@ hub.close().join();
 
 零 runtime 依赖：listen 使用精简 RFC6455 `ServerSocket` 栈；connect 使用 JDK `HttpClient` WebSocket。处理器须在 connect 选项中注册（打开后锁定）。相位推送使用 `PhaseEncode`（强制 `dotPolicy: none`；非 `final` 追加 `.\n`）。
 
+高级选项：`ListenOptions.protocols` / `maxPayload` / `serverSocket` / `path`（同端口 `GET /health` 多路复用）；`ConnectOptions.protocols`。不支持挂接 JDK `HttpServer`（无原始套接字升级）— 用 `serverSocket` 对应 Node 的 `listen({ server })`。
+
 ### 流式高级选项
 
 ```java

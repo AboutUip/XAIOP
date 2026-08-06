@@ -22,6 +22,8 @@ final class ServerWsSocket implements WsSocket {
   private final Socket socket;
   private final InputStream in;
   private final OutputStream out;
+  private final int maxPayload;
+  private final String protocol;
   private final Object writeLock = new Object();
   private final AtomicInteger readyState = new AtomicInteger(OPEN);
   private final AtomicLong bufferedAmount = new AtomicLong(0);
@@ -34,9 +36,16 @@ final class ServerWsSocket implements WsSocket {
   private boolean inTextFragment;
 
   ServerWsSocket(Socket socket, InputStream in, OutputStream out) {
+    this(socket, in, out, Rfc6455.DEFAULT_MAX_PAYLOAD, null);
+  }
+
+  ServerWsSocket(
+      Socket socket, InputStream in, OutputStream out, int maxPayload, String protocol) {
     this.socket = socket;
     this.in = in instanceof BufferedInputStream ? in : new BufferedInputStream(in);
     this.out = out instanceof BufferedOutputStream ? out : new BufferedOutputStream(out);
+    this.maxPayload = maxPayload > 0 ? maxPayload : Rfc6455.DEFAULT_MAX_PAYLOAD;
+    this.protocol = protocol;
     this.reader = new Thread(this::readLoop, "xaiop-ws-server-reader");
     this.reader.setDaemon(true);
     this.reader.start();
@@ -53,21 +62,37 @@ final class ServerWsSocket implements WsSocket {
   }
 
   @Override
+  public String protocol() {
+    return protocol;
+  }
+
+  @Override
   public void send(String text) {
     if (text == null) throw new NullPointerException("text");
+    sendFrame(Rfc6455.OPCODE_TEXT, text.getBytes(StandardCharsets.UTF_8), true);
+  }
+
+  @Override
+  public void sendBinary(byte[] data) {
+    if (data == null) throw new NullPointerException("data");
+    sendFrame(Rfc6455.OPCODE_BINARY, data, true);
+  }
+
+  /** Send a (possibly fragmented) data frame. Package-visible for deep tests. */
+  void sendFrame(int opcode, byte[] payload, boolean fin) {
     if (readyState.get() != OPEN) {
       throw new IllegalStateException("WebSocket is not OPEN");
     }
-    byte[] payload = text.getBytes(StandardCharsets.UTF_8);
+    byte[] body = payload == null ? new byte[0] : payload;
     synchronized (writeLock) {
       try {
-        bufferedAmount.addAndGet(payload.length);
-        Rfc6455.writeFrame(out, Rfc6455.OPCODE_TEXT, payload, false);
+        bufferedAmount.addAndGet(body.length);
+        Rfc6455.writeFrame(out, opcode, body, false, fin);
       } catch (IOException e) {
         fail(e);
         throw new IllegalStateException("WebSocket send failed", e);
       } finally {
-        bufferedAmount.addAndGet(-payload.length);
+        bufferedAmount.addAndGet(-body.length);
       }
     }
   }
@@ -119,10 +144,10 @@ final class ServerWsSocket implements WsSocket {
   private void readLoop() {
     try {
       while (readyState.get() == OPEN || readyState.get() == CLOSING) {
-        Rfc6455.Frame frame = Rfc6455.readFrame(in);
+        Rfc6455.Frame frame = Rfc6455.readFrame(in, maxPayload);
         switch (frame.opcode) {
-          case Rfc6455.OPCODE_TEXT -> handleText(frame);
-          case Rfc6455.OPCODE_BINARY -> handleBinary(frame);
+          case Rfc6455.OPCODE_TEXT -> handleData(frame, Rfc6455.OPCODE_TEXT);
+          case Rfc6455.OPCODE_BINARY -> handleData(frame, Rfc6455.OPCODE_BINARY);
           case Rfc6455.OPCODE_CONTINUATION -> handleContinuation(frame);
           case Rfc6455.OPCODE_PING -> {
             synchronized (writeLock) {
@@ -150,6 +175,9 @@ final class ServerWsSocket implements WsSocket {
           }
         }
       }
+    } catch (Rfc6455.PayloadTooLargeException tooBig) {
+      fail(tooBig);
+      close(Rfc6455.CLOSE_MESSAGE_TOO_BIG, "message too big");
     } catch (EOFException eof) {
       hardClose();
     } catch (IOException e) {
@@ -160,7 +188,7 @@ final class ServerWsSocket implements WsSocket {
     }
   }
 
-  private void handleText(Rfc6455.Frame frame) {
+  private void handleData(Rfc6455.Frame frame, int opcode) {
     String piece = new String(frame.payload, StandardCharsets.UTF_8);
     if (frame.fin) {
       if (inTextFragment) {
@@ -176,11 +204,6 @@ final class ServerWsSocket implements WsSocket {
       textCarry.append(piece);
       inTextFragment = true;
     }
-  }
-
-  private void handleBinary(Rfc6455.Frame frame) {
-    // Treat binary as UTF-8 text for XAIOP wire (Node connection does the same).
-    handleText(frame);
   }
 
   private void handleContinuation(Rfc6455.Frame frame) {

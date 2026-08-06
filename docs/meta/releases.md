@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `META-REL` |
 | Status | Informative |
-| Last updated | 2026-08-05 |
+| Last updated | 2026-08-06 |
 | Normative | **No** — release index; seal rules live in `META-VER` |
 | Depends on | `META-VER`, `META-REV` |
 
@@ -63,6 +63,14 @@ Full narrative history: [revisions.md](revisions.md).
 | `0.5.0` | `0.4.0` | `XaiopStream` consumer (HTTP / SSE / RAW); still wire **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
 
+
+### SDK packages (Python `xaiop` · Go module)
+
+| SDK | Protocol | Notes |
+| --- | --- | --- |
+| Python **0.6.0a1** | `0.6.0` | Core-protocol STRICT wire (parse / encode / Live / materialize); not Node product parity. Track: [../sdk/notes/core-sdk-track.md](../sdk/notes/core-sdk-track.md) |
+| Go **0.6.0-alpha.1** | `0.6.0` | Same core-protocol track as Python; `cmd/dump-core-wire` for CI |
+
 Other languages: declare their own sealed mapping in language READMEs.
 
 ---
@@ -71,6 +79,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-06 | [release-notes-2026-08-06-core-sdk.md](release-notes-2026-08-06-core-sdk.md) — Python `0.6.0a1` · Go `0.6.0-alpha.1` core-wire + CI |
 | 2026-08-06 | [release-notes-2026-08-06-java-0.15.1.md](release-notes-2026-08-06-java-0.15.1.md) — Java `0.15.1` `XaiopStream` full option wiring |
 | 2026-08-06 | [release-notes-2026-08-06-java-0.15.0.md](release-notes-2026-08-06-java-0.15.0.md) — Java `0.15.0` full Node parity (protocol **0.6.0**) |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.1.md](release-notes-2026-08-05-0.15.1.md) — Node `0.15.1` Diff/Commit perf (single materialize) |

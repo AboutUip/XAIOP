@@ -208,6 +208,28 @@ Zero runtime deps: listen uses a minimal RFC6455 `ServerSocket` stack; connect u
 `HttpClient` WebSocket. Handlers must be registered in connect options (locked after open).
 Phase push uses `PhaseEncode` (force `dotPolicy: none`; non-`final` appends `.\n`).
 
+Advanced listen/connect options:
+
+```java
+// Subprotocol negotiation (no match → handshake 400)
+XaiopWs.listen(new XaiopWsHub.ListenOptions()
+    .port(0).host("127.0.0.1").protocols("xaiop-a"));
+XaiopWs.connect(url, new XaiopWs.ConnectOptions().protocols("xaiop-b", "xaiop-a"));
+
+// maxPayload (inbound frame limit; default 100 MiB)
+XaiopWs.listen(new XaiopWsHub.ListenOptions().port(0).maxPayload(1 << 20));
+
+// Attach to a pre-bound ServerSocket + path; same socket serves GET /health
+ServerSocket ss = new ServerSocket();
+ss.bind(new InetSocketAddress("127.0.0.1", 0));
+XaiopWsHub hub = XaiopWs.listen(
+    new XaiopWsHub.ListenOptions().serverSocket(ss).path("/xaiop")).join();
+// hub.url() → ws://127.0.0.1:<port>/xaiop
+```
+
+JDK `com.sun.net.httpserver.HttpServer` attach is **not** supported (no raw-socket upgrade).
+Use `serverSocket` + path multiplex instead of Node `listen({ server, path })`.
+
 ### Stream advanced options
 
 ```java

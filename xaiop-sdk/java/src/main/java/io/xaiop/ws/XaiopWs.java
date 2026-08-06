@@ -5,6 +5,9 @@ import io.xaiop.stream.PhaseEncode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -32,6 +35,8 @@ public final class XaiopWs {
     public Long handshakeTimeoutMs;
     public Map<String, String> headers;
     public HttpClient httpClient;
+    /** Requested {@code Sec-WebSocket-Protocol} values (preference order). */
+    public List<String> protocols;
 
     public ConnectOptions handshakeTimeoutMs(long ms) {
       handshakeTimeoutMs = ms;
@@ -45,6 +50,20 @@ public final class XaiopWs {
 
     public ConnectOptions httpClient(HttpClient c) {
       httpClient = c;
+      return this;
+    }
+
+    public ConnectOptions protocols(String... p) {
+      if (p == null) {
+        protocols = null;
+      } else {
+        protocols = new ArrayList<>(Arrays.asList(p));
+      }
+      return this;
+    }
+
+    public ConnectOptions protocols(List<String> p) {
+      protocols = p == null ? null : new ArrayList<>(p);
       return this;
     }
 
@@ -113,6 +132,14 @@ public final class XaiopWs {
       for (Map.Entry<String, String> e : opts.headers.entrySet()) {
         wb.header(e.getKey(), e.getValue());
       }
+    }
+    if (opts.protocols != null && !opts.protocols.isEmpty()) {
+      String first = opts.protocols.get(0);
+      String[] rest =
+          opts.protocols.size() > 1
+              ? opts.protocols.subList(1, opts.protocols.size()).toArray(new String[0])
+              : new String[0];
+      wb.subprotocols(first, rest);
     }
 
     URI uri = URI.create(url);

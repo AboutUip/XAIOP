@@ -1,7 +1,9 @@
 package io.xaiop.ws;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -14,9 +16,14 @@ import java.util.function.Consumer;
  * WebSocket hub — accept connections for skeleton / phase push.
  *
  * <p>Faithful port of the Node.js SDK's {@code node/ws/hub.ts}.
+ *
+ * <p>JDK cannot cleanly upgrade {@code com.sun.net.httpserver.HttpServer} connections. Attach
+ * parity uses {@link ListenOptions#serverSocket(ServerSocket)} and same-socket HTTP multiplex
+ * ({@code GET /health} + WS path) instead of Node's {@code listen({ server })}.
  */
 public final class XaiopWsHub {
   private final Rfc6455Server server;
+  private final String path;
   private final XaiopWsConnection.Options connectionOptions;
   private volatile BiConsumer<XaiopWsConnection, Rfc6455Server.HttpUpgradeRequest> onConnection;
   private volatile Consumer<Throwable> onError;
@@ -27,6 +34,7 @@ public final class XaiopWsHub {
   XaiopWsHub(Rfc6455Server server, XaiopWsConnection.Options connectionOptions) {
     if (server == null) throw new IllegalArgumentException("XaiopWsHub requires a server");
     this.server = server;
+    this.path = server.path();
     this.connectionOptions =
         connectionOptions == null ? new XaiopWsConnection.Options() : connectionOptions;
     this.server.onConnection(
@@ -55,13 +63,20 @@ public final class XaiopWsHub {
     return server.port();
   }
 
-  /** {@code ws://host:port} for loopback tests. */
+  /** WS path filter, or {@code null} when any path is accepted. */
+  public String path() {
+    return path;
+  }
+
+  /** {@code ws://host:port[/path]} for loopback tests. */
   public String url() {
     return url("127.0.0.1");
   }
 
   public String url(String host) {
-    return "ws://" + host + ":" + port();
+    String base = "ws://" + host + ":" + port();
+    if (path == null || path.isEmpty()) return base;
+    return base + path;
   }
 
   public List<XaiopWsConnection> connections() {
@@ -114,12 +129,18 @@ public final class XaiopWsHub {
         .thenApply(x -> null);
   }
 
-  /** Listen options (port / host / path + connection options). */
+  /** Listen options (port / host / path / attach + connection options). */
   public static final class ListenOptions extends XaiopWsConnection.Options {
     public int port;
     public String host = "0.0.0.0";
     public String path;
     public int backlog = 50;
+    /** Pre-bound {@link ServerSocket}; when set, {@link #port}/{@link #host} are ignored. */
+    public ServerSocket serverSocket;
+    /** Offered subprotocols; handshake fails with 400 when set and no client match. */
+    public List<String> protocols;
+    /** Max inbound frame payload; {@code null} → 100 MiB (Node {@code ws} default). */
+    public Integer maxPayload;
 
     public ListenOptions port(int p) {
       this.port = p;
@@ -138,6 +159,30 @@ public final class XaiopWsHub {
 
     public ListenOptions backlog(int b) {
       this.backlog = b;
+      return this;
+    }
+
+    public ListenOptions serverSocket(ServerSocket ss) {
+      this.serverSocket = ss;
+      return this;
+    }
+
+    public ListenOptions protocols(String... p) {
+      if (p == null) {
+        this.protocols = null;
+      } else {
+        this.protocols = new ArrayList<>(Arrays.asList(p));
+      }
+      return this;
+    }
+
+    public ListenOptions protocols(List<String> p) {
+      this.protocols = p == null ? null : new ArrayList<>(p);
+      return this;
+    }
+
+    public ListenOptions maxPayload(int n) {
+      this.maxPayload = n;
       return this;
     }
 
@@ -170,6 +215,9 @@ public final class XaiopWsHub {
             so.host = opts.host;
             so.path = opts.path;
             so.backlog = opts.backlog;
+            so.serverSocket = opts.serverSocket;
+            so.protocols = opts.protocols;
+            so.maxPayload = opts.maxPayload;
             Rfc6455Server server = new Rfc6455Server(so);
             return new XaiopWsHub(server, opts);
           } catch (IOException e) {

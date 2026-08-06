@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xaiop"
-version = "0.1.0"
-description = "XAIOP protocol SDK for Python (v0.1.0 Frozen)"
+version = "0.6.0a1"
+description = "XAIOP Python SDK — core protocol track (wire 0.6.0 STRICT)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -27,7 +27,7 @@ dev = ["pytest>=8.0"]
 
 [project.urls]
 Homepage = "https://github.com/AboutUip/XAIOP"
-Documentation = "https://github.com/AboutUip/XAIOP/tree/main/docs"
+Documentation = "https://github.com/AboutUip/XAIOP/tree/main/docs/sdk/python"
 
 [tool.setuptools.packages.find]
 where = ["src"]

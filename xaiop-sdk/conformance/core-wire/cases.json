@@ -1,0 +1,245 @@
+{
+  "version": "0.6.0",
+  "description": "Shared STRICT core-wire corpus for Python ↔ Go (protocol-authoritative; not Node/Java product golden).",
+  "cases": [
+    {
+      "id": "parse.empty",
+      "kind": "parse",
+      "wire": "",
+      "expect": {}
+    },
+    {
+      "id": "parse.root.simple",
+      "kind": "parse",
+      "wire": ">\nx:1\ny:true\nz:null\n",
+      "expect": { "x": 1, "y": true, "z": null }
+    },
+    {
+      "id": "parse.root.forced_string",
+      "kind": "parse",
+      "wire": ">\ncount: 2\nratio: 1.5\nflag: true\n",
+      "expect": { "count": "2", "ratio": "1.5", "flag": "true" }
+    },
+    {
+      "id": "parse.content.types",
+      "kind": "parse",
+      "wire": ">\ni:42\nf:1.5\ne:1e3\nb:false\nn:null\ns:hello\n",
+      "expect": { "i": 42, "f": 1.5, "e": 1000.0, "b": false, "n": null, "s": "hello" }
+    },
+    {
+      "id": "parse.fragment.named",
+      "kind": "parse",
+      "wire": ">a\nx:1\n",
+      "fragment": true,
+      "expect": { "a": { "x": 1 } }
+    },
+    {
+      "id": "parse.fragment.content",
+      "kind": "parse",
+      "wire": "x:1\ny:2\n",
+      "fragment": true,
+      "expect": { "x": 1, "y": 2 }
+    },
+    {
+      "id": "parse.array.root",
+      "kind": "parse",
+      "wire": "-\n:a\n:b\n:c\n",
+      "expect": ["a", "b", "c"]
+    },
+    {
+      "id": "parse.array.objects",
+      "kind": "parse",
+      "wire": "-\n>\na:1\n<\n>\nb:2\n<\na:solo\n",
+      "expect": [{ "a": 1 }, { "b": 2 }, { "a": "solo" }]
+    },
+    {
+      "id": "parse.named_array.append",
+      "kind": "parse",
+      "wire": ">\n>tags-\n:a\n.\n>\n>tags-\n:b\n",
+      "expect": { "tags": ["a", "b"] }
+    },
+    {
+      "id": "parse.compose.path",
+      "kind": "parse",
+      "wire": ">\n>a>b>c\nx:1\n",
+      "expect": { "a": { "b": { "c": { "x": 1 } } } }
+    },
+    {
+      "id": "parse.hash.ignore",
+      "kind": "parse",
+      "wire": ">\n# annotation\nx:1\n#\ny:2\n",
+      "expect": { "x": 1, "y": 2 }
+    },
+    {
+      "id": "parse.dot.reset",
+      "kind": "parse",
+      "wire": ">\n>a\nx:1\n.\n>b\ny:2\n",
+      "expect": { "a": { "x": 1 }, "b": { "y": 2 } }
+    },
+    {
+      "id": "parse.locate.fuzzy",
+      "kind": "parse",
+      "wire": ">\n>wrap\n>a\n>b\nx:1\n.\n=a>b\nz:3\n",
+      "expect": { "wrap": { "a": { "b": { "x": 1, "z": 3 } } } }
+    },
+    {
+      "id": "parse.at.create",
+      "kind": "parse",
+      "wire": "@a>b\nz:1\n",
+      "expect": { "a": { "b": { "z": 1 } } }
+    },
+    {
+      "id": "parse.at.exact_not_fuzzy",
+      "kind": "parse",
+      "wire": ">\n>wrap\n>a\n>b\nx:1\n.\n@a>b\nz:1\n",
+      "expect": {
+        "wrap": { "a": { "b": { "x": 1 } } },
+        "a": { "b": { "z": 1 } }
+      }
+    },
+    {
+      "id": "parse.bang.broadcast",
+      "kind": "parse",
+      "wire": ">\n>left\n>test\nx:1\n.\n>right\n>test\ny:2\n.\n!test\nz:9\n",
+      "expect": {
+        "left": { "test": { "x": 1, "z": 9 } },
+        "right": { "test": { "y": 2, "z": 9 } }
+      }
+    },
+    {
+      "id": "parse.amp.delete",
+      "kind": "parse",
+      "wire": ">\n>a\nx:1\n.\n>b\ny:2\n&a\nz:3\n",
+      "expect": { "b": { "y": 2, "z": 3 } }
+    },
+    {
+      "id": "parse.amp.noop_missing",
+      "kind": "parse",
+      "wire": ">\nx:1\n&missing\n",
+      "expect": { "x": 1 }
+    },
+    {
+      "id": "parse.reenter.object",
+      "kind": "parse",
+      "wire": ">\nid:1\n.\n>\nid:2\n",
+      "expect": { "id": 2 }
+    },
+    {
+      "id": "parse.file.complex",
+      "kind": "parse_file",
+      "file": "complex.xaiop",
+      "expect_file": "complex.expected.json"
+    },
+    {
+      "id": "parse_error.bare_label",
+      "kind": "parse_error",
+      "wire": "data\n"
+    },
+    {
+      "id": "parse_error.empty_line",
+      "kind": "parse_error",
+      "wire": ">\n\nx:1\n"
+    },
+    {
+      "id": "parse_error.lt_at_root",
+      "kind": "parse_error",
+      "wire": ">\n<\n"
+    },
+    {
+      "id": "parse_error.locate_missing",
+      "kind": "parse_error",
+      "wire": ">\n>a\nx:1\n.\n=missing\n"
+    },
+    {
+      "id": "parse_error.bang_then_at",
+      "kind": "parse_error",
+      "wire": ">\n>a\nx:1\n.\n>b\n>a\ny:2\n.\n!a\n@a\nz:1\n"
+    },
+    {
+      "id": "parse_error.amp_fragment",
+      "kind": "parse_error",
+      "wire": ">a\nx:1\n&a\n"
+    },
+    {
+      "id": "parse_error.amp_array_root",
+      "kind": "parse_error",
+      "wire": "-\n:a\n&0\n"
+    },
+    {
+      "id": "parse_error.stacking",
+      "kind": "parse_error",
+      "wire": ">\n>>a\n"
+    },
+    {
+      "id": "live.chunks.same_as_sync",
+      "kind": "live",
+      "chunks": [">\n", ">a\n", "x:1\n", ".\n", ">b\n", "y:2"],
+      "expect": { "a": { "x": 1 }, "b": { "y": 2 } }
+    },
+    {
+      "id": "encode.object.simple",
+      "kind": "encode",
+      "value": { "a": 1, "b": true },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\na:1\nb:true\n"
+    },
+    {
+      "id": "encode.array.root",
+      "kind": "encode",
+      "value": ["a", 1, null],
+      "root": "array",
+      "expect_wire": "-\n:a\n:1\n:null\n"
+    },
+    {
+      "id": "encode.fragment",
+      "kind": "encode",
+      "value": { "a": { "x": 1 } },
+      "root": "fragment",
+      "key_order": "sorted",
+      "expect_wire": ">a\nx:1\n"
+    },
+    {
+      "id": "encode.forced_string",
+      "kind": "encode",
+      "value": { "n": "1", "t": "true" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\nn: 1\nt: true\n"
+    },
+    {
+      "id": "encode_error.space_string",
+      "kind": "encode_error",
+      "value": { "s": " leading" },
+      "root": "object"
+    },
+    {
+      "id": "encode_error.newline_string",
+      "kind": "encode_error",
+      "value": { "s": "a\nb" },
+      "root": "object"
+    },
+    {
+      "id": "roundtrip.nested",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": {
+        "meta": { "n": 1, "ok": true },
+        "tags": ["a", "b"],
+        "items": [{ "id": 1 }, { "id": 2 }, "plain", ["x", "y"]]
+      }
+    },
+    {
+      "id": "roundtrip.array_root",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": [1, "a", true, null, { "k": "v" }]
+    },
+    {
+      "id": "roundtrip.empty_object",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": {}
+    }
+  ]
+}

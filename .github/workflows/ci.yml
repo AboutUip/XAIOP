@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: xaiop-sdk/nodejs/package-lock.json
+      - name: Node SDK tests
+        working-directory: xaiop-sdk/nodejs
+        run: npm ci && npm test
+
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: xaiop-sdk/java/pom.xml
+      - name: Java SDK tests
+        working-directory: xaiop-sdk/java
+        run: mvn -B test
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python SDK tests
+        working-directory: xaiop-sdk/python
+        run: |
+          python -m pip install -e ".[dev]"
+          python -m pytest -q
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: xaiop-sdk/go/go.mod
+      - name: Go SDK tests
+        working-directory: xaiop-sdk/go
+        run: go test ./...
+
+  golden:
+    needs: [node, java]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: xaiop-sdk/nodejs/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: xaiop-sdk/java/pom.xml
+      - name: Build Node SDK
+        working-directory: xaiop-sdk/nodejs
+        run: npm ci && npm run build:ts
+      - name: Dump Node goldens
+        working-directory: xaiop-sdk/conformance
+        run: node node/dump-goldens.mjs --out out/node.ndjson
+      - name: Dump Java goldens
+        working-directory: xaiop-sdk/conformance
+        run: node java/run-dump.mjs --out out/java.ndjson
+      - name: Compare goldens
+        working-directory: xaiop-sdk/conformance
+        run: node compare.mjs out/node.ndjson out/java.ndjson
+
+  core-wire:
+    needs: [python, go]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: xaiop-sdk/go/go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Python SDK
+        working-directory: xaiop-sdk/python
+        run: python -m pip install -e ".[dev]"
+      - name: Dump Python core-wire
+        working-directory: xaiop-sdk/conformance
+        run: python core-wire/dump-python.py --out out/python.ndjson
+      - name: Dump Go core-wire
+        working-directory: xaiop-sdk/go
+        run: go run ./cmd/dump-core-wire --cases ../conformance/core-wire/cases.json --out ../conformance/out/go.ndjson
+      - name: Compare Python ↔ Go
+        working-directory: xaiop-sdk/conformance
+        run: node core-wire/compare-core.mjs out/python.ndjson out/go.ndjson
+
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: xaiop-sdk/nodejs/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: xaiop-sdk/java/pom.xml
+      - name: Build Node SDK
+        working-directory: xaiop-sdk/nodejs
+        run: npm ci && npm run build:ts
+      - name: Fuzz Node (budget 100)
+        working-directory: xaiop-sdk/conformance
+        run: node fuzz/fuzz-node.mjs --max=100 --seed=1
+      - name: Fuzz Java (budget 100)
+        working-directory: xaiop-sdk/conformance
+        run: node fuzz/fuzz-java/run-fuzz.mjs --max=100 --seed=1

@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "name": "XAIOP-Complex-Fixture",
+    "version": 1,
+    "enabled": true,
+    "count": "2",
+    "author": {
+      "name": "xuan",
+      "role": "maintainer"
+    }
+  },
+  "application": {
+    "config": {
+      "host": "localhost",
+      "port": 8080,
+      "debug": false,
+      "flags": ["alpha", "beta"]
+    },
+    "users": [
+      {
+        "id": 1,
+        "name": "alice",
+        "active": true,
+        "score": "10"
+      },
+      {
+        "id": 2,
+        "name": "bob",
+        "tags": ["dev", "ops"]
+      }
+    ],
+    "payload": {
+      "items": [
+        {
+          "title": "first",
+          "nested": true
+        },
+        {
+          "title": "second",
+          "count": 3
+        },
+        "plain",
+        { "a": "solo" },
+        ["x", "y"]
+      ]
+    },
+    "note": {
+      "text": "end"
+    }
+  }
+}

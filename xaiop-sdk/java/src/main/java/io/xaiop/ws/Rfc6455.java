@@ -23,6 +23,12 @@ final class Rfc6455 {
   static final int OPCODE_PING = 0x9;
   static final int OPCODE_PONG = 0xA;
 
+  /** Close status: message too big (maxPayload exceeded). */
+  static final int CLOSE_MESSAGE_TOO_BIG = 1009;
+
+  /** Default max payload (matches Node {@code ws} default). */
+  static final int DEFAULT_MAX_PAYLOAD = 100 * 1024 * 1024;
+
   private Rfc6455() {}
 
   static String acceptKey(String secWebSocketKey) {
@@ -47,7 +53,17 @@ final class Rfc6455 {
     }
   }
 
+  static final class PayloadTooLargeException extends IOException {
+    PayloadTooLargeException(long len, int max) {
+      super("WebSocket frame too large: " + len + " > maxPayload " + max);
+    }
+  }
+
   static Frame readFrame(InputStream in) throws IOException {
+    return readFrame(in, DEFAULT_MAX_PAYLOAD);
+  }
+
+  static Frame readFrame(InputStream in, int maxPayload) throws IOException {
     int b0 = in.read();
     if (b0 < 0) throw new EOFException("WebSocket EOF");
     int b1 = in.read();
@@ -64,6 +80,9 @@ final class Rfc6455 {
         throw new IOException("WebSocket frame too large: " + len);
       }
     }
+    if (maxPayload > 0 && len > maxPayload) {
+      throw new PayloadTooLargeException(len, maxPayload);
+    }
     byte[] mask = null;
     if (masked) {
       mask = readFully(in, 4);
@@ -77,12 +96,18 @@ final class Rfc6455 {
     return new Frame(fin, opcode, payload);
   }
 
-  /** Write a frame. {@code mask} true for client→server; server must pass false. */
+  /** Write a FIN frame. {@code mask} true for client→server; server must pass false. */
   static void writeFrame(OutputStream out, int opcode, byte[] payload, boolean mask)
+      throws IOException {
+    writeFrame(out, opcode, payload, mask, true);
+  }
+
+  /** Write a frame with explicit FIN bit. */
+  static void writeFrame(OutputStream out, int opcode, byte[] payload, boolean mask, boolean fin)
       throws IOException {
     if (payload == null) payload = new byte[0];
     ByteArrayOutputStream buf = new ByteArrayOutputStream(payload.length + 14);
-    buf.write(0x80 | (opcode & 0x0F));
+    buf.write((fin ? 0x80 : 0x00) | (opcode & 0x0F));
     int len = payload.length;
     if (len < 126) {
       buf.write((mask ? 0x80 : 0) | len);

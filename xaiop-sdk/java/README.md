@@ -38,7 +38,7 @@ There is no automated Node↔Java golden comparison in CI. See
 | Protocol ops | `BangAtTest` · `AmpDeleteTest` · `HashAnnotationTest` |
 | Checkpoint | `CheckpointTest` · `CheckpointRobustTest` · `HistoryTest` · `CheckpointDiffIsolationTest` · `CheckpointBufferCompactTest` |
 | Stream | `StreamTest` · `StreamHttpTest` · `StreamConsistencyTest` · `StreamAdvancedTest` · `StreamControlTest` |
-| Advanced | `TypeCheckTest` · `WsTypeCheckTest` · `LineInterceptTest` · `AnnotationSpanTest` · `ControlPlaneTest` · `ControlCoverageTest` · `ControlResumeTest` · `WsSessionTest` · `PhaseEncodeTest` · `SdkSurfaceTest` |
+| Advanced | `TypeCheckTest` · `WsTypeCheckTest` · `LineInterceptTest` · `AnnotationSpanTest` · `ControlPlaneTest` · `ControlCoverageTest` · `ControlResumeTest` · `WsSessionTest` · `WsDeepTest` · `PhaseEncodeTest` · `SdkSurfaceTest` |
 
 ## Build
 
@@ -91,3 +91,8 @@ opts.onPhase(diff -> System.out.println(diff));
 XaiopWsConnection client = XaiopWs.connect(hub.url(), opts).join();
 hub.close().join();
 ```
+
+Advanced WS options: `ListenOptions.protocols` / `maxPayload` / `serverSocket` / `path` (same-port
+`GET /health` multiplex); `ConnectOptions.protocols`. JDK `HttpServer` attach is not supported —
+use `serverSocket` instead of Node `listen({ server })`. See
+[ALIGNMENT.md](../../docs/sdk/java/ALIGNMENT.md) §6.

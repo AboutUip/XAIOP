@@ -29,6 +29,7 @@ final class JdkClientWsSocket implements WsSocket {
   private final List<Consumer<Throwable>> errorHandlers = new CopyOnWriteArrayList<>();
   private final List<Runnable> openHandlers = new CopyOnWriteArrayList<>();
   private final StringBuilder textCarry = new StringBuilder();
+  private volatile String protocol;
   private final CharsetDecoder binaryDecoder =
       StandardCharsets.UTF_8
           .newDecoder()
@@ -41,6 +42,8 @@ final class JdkClientWsSocket implements WsSocket {
       public void onOpen(WebSocket webSocket) {
         ws.set(webSocket);
         readyState.set(OPEN);
+        String sub = webSocket.getSubprotocol();
+        protocol = (sub == null || sub.isEmpty()) ? null : sub;
         webSocket.request(1);
         for (Runnable h : openHandlers) {
           try {
@@ -122,6 +125,11 @@ final class JdkClientWsSocket implements WsSocket {
   }
 
   @Override
+  public String protocol() {
+    return protocol;
+  }
+
+  @Override
   public void send(String text) {
     if (text == null) throw new NullPointerException("text");
     WebSocket socket = ws.get();
@@ -129,6 +137,16 @@ final class JdkClientWsSocket implements WsSocket {
       throw new IllegalStateException("WebSocket is not OPEN");
     }
     socket.sendText(text, true).join();
+  }
+
+  @Override
+  public void sendBinary(byte[] data) {
+    if (data == null) throw new NullPointerException("data");
+    WebSocket socket = ws.get();
+    if (socket == null || readyState.get() != OPEN) {
+      throw new IllegalStateException("WebSocket is not OPEN");
+    }
+    socket.sendBinary(ByteBuffer.wrap(data), true).join();
   }
 
   @Override

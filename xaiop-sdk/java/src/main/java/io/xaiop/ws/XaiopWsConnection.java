@@ -495,6 +495,59 @@ public final class XaiopWsConnection {
     }
   }
 
+  /**
+   * Send a binary WebSocket frame (UTF-8 decoded by the peer). Mirrors Node {@code
+   * conn._ws.send(Buffer.from(...))}.
+   */
+  public boolean sendBinary(byte[] data) {
+    if (data == null) {
+      throw new IllegalArgumentException("sendBinary requires a byte array");
+    }
+    if (closed || ws.readyState() != WsSocket.OPEN) {
+      return false;
+    }
+    try {
+      ws.sendBinary(data);
+      return true;
+    } catch (RuntimeException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Send text as multiple WebSocket frames (FIN only on the last). Supported on the RFC6455
+   * server socket; useful for fragmentation tests.
+   */
+  public boolean sendTextFragments(String... parts) {
+    if (parts == null || parts.length == 0) {
+      throw new IllegalArgumentException("sendTextFragments requires at least one part");
+    }
+    if (!(ws instanceof ServerWsSocket serverSock)) {
+      throw new UnsupportedOperationException(
+          "sendTextFragments requires the RFC6455 server socket");
+    }
+    if (closed || ws.readyState() != WsSocket.OPEN) {
+      return false;
+    }
+    try {
+      for (int i = 0; i < parts.length; i++) {
+        String part = parts[i] == null ? "" : parts[i];
+        byte[] bytes = part.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        boolean fin = i == parts.length - 1;
+        int opcode = i == 0 ? Rfc6455.OPCODE_TEXT : Rfc6455.OPCODE_CONTINUATION;
+        serverSock.sendFrame(opcode, bytes, fin);
+      }
+      return true;
+    } catch (RuntimeException e) {
+      return false;
+    }
+  }
+
+  /** Negotiated {@code Sec-WebSocket-Protocol}, or {@code null}. */
+  public String protocol() {
+    return ws.protocol();
+  }
+
   public boolean pushWireLn(String text) {
     if (text == null) {
       throw new IllegalArgumentException("pushWireLn requires a string");
