@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * JSON &rarr; XAIOP encoder (protocol v0.4.0 wire), faithful port of the Node.js SDK's
+ * JSON &rarr; XAIOP encoder (protocol v0.6.0 wire), faithful port of the Node.js SDK's
  * {@code encode.js}.
  *
  * <p>Accepts the tree shape produced by {@link Parse}: {@link java.util.Map} for objects,

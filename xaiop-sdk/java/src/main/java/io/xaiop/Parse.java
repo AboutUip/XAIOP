@@ -5,6 +5,7 @@ import io.xaiop.compat.CompatFixId;
 import io.xaiop.compat.CompatPolicy;
 import io.xaiop.internal.Parser;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -129,6 +130,22 @@ public final class Parse {
      */
     public Object value() {
       return p.result();
+    }
+
+    /**
+     * Lines to re-enter the current Cursor after a {@code .} (cover-mode restore).
+     * Named object/array keys only.
+     */
+    public List<String> cursorRestoreLines() {
+      return p.cursorRestoreLines();
+    }
+
+    /**
+     * Live document root kind ({@code "object"} / {@code "array"} / {@code "fragment"}), or
+     * {@code null} when unset.
+     */
+    public String docKind() {
+      return p.docKind();
     }
   }
 }

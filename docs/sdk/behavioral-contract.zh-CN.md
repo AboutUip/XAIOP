@@ -6,9 +6,10 @@
 | --- | --- |
 | 文档 ID | `SDK-BEHAVE` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-04 |
+| 最近更新 | 2026-08-06 |
 | 规范性 | **否** — SDK 产品目录（非协议符合性） |
-| 参考实现（重心） | Node.js `xaiop` **0.15.0**（`xaiop-sdk/nodejs/`） |
+| 参考实现（重心） | Node.js `xaiop` **0.15.1**（`xaiop-sdk/nodejs/`） |
+| Java 官方移植 | `io.xaiop:xaiop` **0.15.1** — 全面对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)） |
 | 协议线格式 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
@@ -178,7 +179,7 @@ finish 时:
 
 API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md)。
 
-**Java（`io.xaiop:xaiop` 0.5.0）：** 实现本消费端表面的 **HTTP / SSE / RAW**（状态机、模式、`mergeChunkWindow`、监听器隔离、UTF-8 解码、SSE 拼接）。相对 Node 的缺口：**无 WebSocket**、无 `cover` Diff、无线拦截 / Annotation Span / 控制根，线格式仍为协议 **0.4.0**。指南：[java/README.zh-CN.md](java/README.zh-CN.md)。
+**Java（`io.xaiop:xaiop` 0.15.1）：** 与 Node **0.15.1** 全面对齐的官方移植（协议 **0.6.0**）。`XaiopStream` 已接通**全部**消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等矩阵：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md) · 指南：[java/README.zh-CN.md](java/README.zh-CN.md)。
 
 ---
 
@@ -212,6 +213,8 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 - [ ] 最终 Snapshot ≡ 同兼容策略下全缓冲一次性 parse  
 - [ ] 若提供骨架会话：WS 相位 `.\n` / `final` / 关闭码  
 
+**Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。
+
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 
 ---
@@ -220,4 +223,5 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 
 - 跨栈原则：[notes/principles.zh-CN.md](notes/principles.zh-CN.md)  
 - 隔离：[../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)  
-- Node 指南：[nodejs/README.zh-CN.md](nodejs/README.zh-CN.md)
+- Node 指南：[nodejs/README.zh-CN.md](nodejs/README.zh-CN.md)  
+- Java 对等矩阵：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)

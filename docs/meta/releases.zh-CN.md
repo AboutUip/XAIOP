@@ -58,10 +58,12 @@
 
 | SDK | 实现的协议 | 说明 |
 | --- | --- | --- |
+| `0.15.1` | `0.6.0` | 流式消费端接通 cover/history/typeCheck/control/拦截/Annotation Span + `chunks()`；与 Node tip 对齐。现行对等矩阵：[../sdk/java/ALIGNMENT.zh-CN.md](../sdk/java/ALIGNMENT.zh-CN.md) |
+| `0.15.0` | `0.6.0` | 与 Node 对齐的完整产品面：WS · 控制根 · cover · typeCheck · 行拦截 / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` 消费端（HTTP / SSE / RAW）；线格式仍为 **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
 
-其他语言：在各自 README 中声明封存映射。尚未实现协议 `0.5.0` 的语言 **必须** 继续引用其实际实现的协议版本（例如 Java 可仍引用 `0.4.0`）。
+其他语言：在各自 README 中声明封存映射。
 
 ---
 
@@ -69,6 +71,8 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-06 | [release-notes-2026-08-06-java-0.15.1.zh-CN.md](release-notes-2026-08-06-java-0.15.1.zh-CN.md) — Java `0.15.1` `XaiopStream` 完整选项接线 |
+| 2026-08-06 | [release-notes-2026-08-06-java-0.15.0.zh-CN.md](release-notes-2026-08-06-java-0.15.0.zh-CN.md) — Java `0.15.0` 全面对齐 Node（协议 **0.6.0**） |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.1.zh-CN.md](release-notes-2026-08-05-0.15.1.zh-CN.md) — Node `0.15.1` Diff/Commit 性能（单次 materialize） |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.0.zh-CN.md](release-notes-2026-08-05-0.15.0.zh-CN.md) — Node `0.15.0` `bufferStats` / `compactCommitted` |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.3.zh-CN.md](release-notes-2026-08-05-0.14.3.zh-CN.md) — Node `0.14.3` `@` 累积 Diff（D2）/ 可选 `onChunk` |

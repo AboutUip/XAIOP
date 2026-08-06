@@ -8,47 +8,118 @@ import io.xaiop.compat.CompatFixId;
 import io.xaiop.compat.CompatPolicy;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
  * Dot-checkpoint stream parser (XAIOP PROT-HIER / PROT-BOUND), faithful port of the Node.js
- * SDK's {@code stream/checkpoint.js}.
+ * SDK's {@code stream/checkpoint.js} (0.15.x).
  *
  * <p>{@code .} bounds <b>phases</b>. Diff is the phase document (later-wins unit); Commit is the
  * live cumulative tree.
  *
- * <p>Performance (space/speed):
- *
- * <ul>
- *   <li>One {@link Parse.LiveXaiopParser} for Commit (phase lines fed once, no prefix re-parse).
- *   <li>First phase / {@code =} / {@code !}: Diff shares one materialize with Commit.
- *   <li>{@code emitDiff = false} skips the Diff parse when callers only need Commit / final.
- *   <li>{@code mergeChunkWindow} (default {@code true}): batch every complete {@code .} in the
- *       current buffer window into one feed + one Commit + one {@code onChunk}.
- * </ul>
- *
- * <p><b>Async ingest.</b> {@link #pushAsync(String)} / {@link #finishAsync()} are not thin
- * wrappers around the sync path: they append immediately and coalesce the scan onto a single
- * daemon-threaded {@link ScheduledExecutorService} (zero-delay schedule), so a burst of rapid
- * pushes shares one drain -- the counterpart of the JS {@code setImmediate} coalescing. All
- * state (including {@code onChunk} delivery) is serialized on this engine's monitor, so the
- * callback sees the same single-threaded ordering as the Node implementation. The executor is
- * created lazily on first async use and shut down on {@link #finish()} / {@link #finishAsync()}
- * / {@link #close()}; its thread is a daemon, so a forgotten engine never blocks JVM exit.
+ * <p>{@code cover: true} — at consecutive {@code &} runs, inject {@code .}, emit deepest-key
+ * {@code null} tombstone Diffs, then restore Cursor with a {@code >} chain before following lines.
  */
 public final class DotCheckpointEngine implements AutoCloseable {
+  /** Optional metadata delivered with {@code onChunk} (seq / logSeq / escape paths). */
+  public static final class ChunkMeta {
+    public final List<String> typeCheckEscapePaths;
+    public final Integer seq;
+    public final List<Integer> seqs;
+    public final Integer logSeq;
+    public final List<Integer> logSeqs;
+
+    public ChunkMeta(
+        List<String> typeCheckEscapePaths,
+        Integer seq,
+        List<Integer> seqs,
+        Integer logSeq,
+        List<Integer> logSeqs) {
+      this.typeCheckEscapePaths = typeCheckEscapePaths;
+      this.seq = seq;
+      this.seqs = seqs;
+      this.logSeq = logSeq;
+      this.logSeqs = logSeqs;
+    }
+
+    public boolean isEmpty() {
+      return (typeCheckEscapePaths == null || typeCheckEscapePaths.isEmpty())
+          && (seqs == null || seqs.isEmpty())
+          && (logSeqs == null || logSeqs.isEmpty());
+    }
+  }
+
+  /** Receive-buffer sizes without reading the full wire string. */
+  public static final class BufferStats {
+    public final int length;
+    public final int committedAt;
+    public final int pendingBytes;
+    public final boolean openPhase;
+
+    public BufferStats(int length, int committedAt, int pendingBytes, boolean openPhase) {
+      this.length = length;
+      this.committedAt = committedAt;
+      this.pendingBytes = pendingBytes;
+      this.openPhase = openPhase;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof BufferStats other)) return false;
+      return length == other.length
+          && committedAt == other.committedAt
+          && pendingBytes == other.pendingBytes
+          && openPhase == other.openPhase;
+    }
+
+    @Override
+    public int hashCode() {
+      return java.util.Objects.hash(length, committedAt, pendingBytes, openPhase);
+    }
+  }
+
+  /** Result of {@link #compactCommitted(boolean)}. */
+  public static final class CompactResult {
+    public final int discardedBytes;
+    public final int length;
+
+    public CompactResult(int discardedBytes, int length) {
+      this.discardedBytes = discardedBytes;
+      this.length = length;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof CompactResult other)) return false;
+      return discardedBytes == other.discardedBytes && length == other.length;
+    }
+
+    @Override
+    public int hashCode() {
+      return java.util.Objects.hash(discardedBytes, length);
+    }
+  }
+
   private final Map<CompatFixId, Boolean> compat;
   private final boolean symbolKeys;
   private final boolean streamProcessing;
-  private final Consumer<Object> onChunk;
+  private final BiConsumer<Object, ChunkMeta> onChunk;
   private final boolean emitDiff;
   private final boolean mergeChunkWindow;
+  private final boolean cover;
+  private final boolean phaseSeqEnabled;
 
   private final StringBuilder buffer = new StringBuilder();
   private final List<String> phaseLines = new ArrayList<>();
@@ -56,6 +127,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
   private int scanAt;
   private boolean sawDot;
   private Object latestSnapshot;
+  private boolean hasLatestSnapshot;
   /** Bytes of buffer covered by completed phases (through the last {@code .} or flushed tail). */
   private int committedAt;
   private Object committedSnapshot;
@@ -64,19 +136,45 @@ public final class DotCheckpointEngine implements AutoCloseable {
   private boolean closed;
   private Parse.LiveXaiopParser live;
 
+  private final ParseHistory history;
+  private final List<LineIntercept.Handler> lineInterceptors = new ArrayList<>();
+  private final List<AnnotationSpan.Handler> annotationSpanHandlers = new ArrayList<>();
+  private final List<String> pendingTypeCheckEscape = new ArrayList<>();
+  private int phaseSeq;
+  private final List<Integer> pendingSeqs = new ArrayList<>();
+  private final List<Integer> logSeqQueue = new ArrayList<>();
+  private final List<Integer> pendingLogSeqs = new ArrayList<>();
+
   private ScheduledExecutorService executor;
   private CompletableFuture<Void> asyncDrainPromise;
   private boolean asyncDrainCancelled;
 
   public DotCheckpointEngine(Options options) {
     if (options == null) throw new NullPointerException("checkpoint options are required");
-    if (options.onChunk == null) throw new NullPointerException("onChunk hook is required");
     this.compat = Compat.resolveCompatOptions(options.compat);
     this.symbolKeys = options.symbolKeys;
     this.streamProcessing = options.streamProcessing;
     this.onChunk = options.onChunk;
     this.emitDiff = options.emitDiff;
     this.mergeChunkWindow = options.mergeChunkWindow;
+    this.cover = options.cover;
+    this.phaseSeqEnabled = options.phaseSeq;
+    boolean snap = options.historySnapshot;
+    boolean liveHist = options.historyRealtime;
+    this.history =
+        (snap || liveHist)
+            ? new ParseHistory(snap, liveHist, options.retainWireHistory, options.compat)
+            : null;
+    if (options.lineIntercept != null) {
+      for (LineIntercept.Handler h : options.lineIntercept) {
+        if (h != null) lineInterceptors.add(h);
+      }
+    }
+    if (options.annotationSpan != null) {
+      for (AnnotationSpan.Handler h : options.annotationSpan) {
+        if (h != null) annotationSpanHandlers.add(h);
+      }
+    }
   }
 
   /** Everything ingested so far. */
@@ -84,9 +182,17 @@ public final class DotCheckpointEngine implements AutoCloseable {
     return buffer.toString();
   }
 
-  /** Latest full-document snapshot; only set at {@code finish}. */
+  /**
+   * Latest full-document snapshot; only set at {@code finish}. After {@link #jumpTo(int)} this
+   * returns {@code null} until the next finish.
+   */
   public synchronized Object snapshot() {
-    return latestSnapshot;
+    return hasLatestSnapshot ? latestSnapshot : null;
+  }
+
+  /** Whether {@link #snapshot()} was set by the last {@code finish} (not cleared by jump). */
+  public synchronized boolean hasSnapshot() {
+    return hasLatestSnapshot;
   }
 
   public synchronized int committedAt() {
@@ -98,14 +204,146 @@ public final class DotCheckpointEngine implements AutoCloseable {
     return mergeChunkWindow;
   }
 
+  public synchronized BufferStats bufferStats() {
+    int length = buffer.length();
+    return new BufferStats(
+        length, committedAt, Math.max(0, length - committedAt), segmentStart < length);
+  }
+
+  /**
+   * Discard committed wire {@code buffer[0 .. committedAt)} while keeping the live Commit tree and
+   * any uncommitted tail. Does <b>not</b> re-parse.
+   */
+  public synchronized CompactResult compactCommitted() {
+    return compactCommitted(false);
+  }
+
+  /**
+   * @param dropHistory when {@code true}, clear history first (required when history nodes exist or
+   *     realtime+retainWire)
+   */
+  public synchronized CompactResult compactCommitted(boolean dropHistory) {
+    if (closed) {
+      throw new IllegalStateException("compactCommitted: checkpoint engine is closed");
+    }
+    cancelPendingAsyncDrain();
+
+    if (history != null) {
+      if (history.realtimeEnabled() && history.retainWireEnabled() && !dropHistory) {
+        throw new IllegalStateException(
+            "compactCommitted conflicts with historyRealtime + retainWireHistory; pass dropHistory: true or disable retainWireHistory");
+      }
+      if (history.length() > 0 && !dropHistory) {
+        throw new IllegalStateException(
+            "compactCommitted invalidates history buffer indices; pass dropHistory: true");
+      }
+      if (dropHistory) {
+        history.clear();
+      }
+    }
+
+    int cut = committedAt;
+    if (cut <= 0) {
+      return new CompactResult(0, buffer.length());
+    }
+    if (cut > buffer.length()) {
+      int discardedBytes = buffer.length();
+      buffer.setLength(0);
+      committedAt = 0;
+      segmentStart = 0;
+      scanAt = 0;
+      phaseLines.clear();
+      return new CompactResult(discardedBytes, 0);
+    }
+
+    buffer.delete(0, cut);
+    committedAt = 0;
+    segmentStart = Math.max(0, segmentStart - cut);
+    scanAt = Math.max(0, scanAt - cut);
+    return new CompactResult(cut, buffer.length());
+  }
+
+  /** Opt-in parse history ({@code null} when both history modes are off). */
+  public ParseHistory history() {
+    return history;
+  }
+
+  /** Anytime history summary (empty shape when history is off). */
+  public ParseHistory.Info historyInfo() {
+    if (history == null) {
+      return new ParseHistory.Info(false, false, 0, -1, null, false, null);
+    }
+    return history.info();
+  }
+
+  /**
+   * Realtime: jump live head forward to history index; discard nodes after. Rebuilds Commit /
+   * buffer / live parser from the retained prefix.
+   */
+  public synchronized ParseHistory.JumpResult jumpTo(int index) {
+    if (history == null || !history.realtimeEnabled()) {
+      throw new IllegalStateException("jumpTo requires historyRealtime");
+    }
+    cancelPendingAsyncDrain();
+    ParseHistory.JumpResult result = history.jumpTo(index);
+    rebuildFromHistoryJump(result);
+    return result;
+  }
+
+  public synchronized DotCheckpointEngine onLineIntercept(LineIntercept.Handler fn) {
+    if (fn == null) throw new NullPointerException("onLineIntercept requires a function");
+    lineInterceptors.add(fn);
+    return this;
+  }
+
+  public synchronized DotCheckpointEngine clearLineIntercepts() {
+    lineInterceptors.clear();
+    return this;
+  }
+
+  public synchronized int lineInterceptCount() {
+    return lineInterceptors.size();
+  }
+
+  /**
+   * Register a phase {@code #} annotation-span handler (append; registration order). Fires when
+   * phase JSON for the capture is ready, <b>before</b> Diff / typeCheck.
+   */
+  public synchronized DotCheckpointEngine onAnnotationSpan(AnnotationSpan.Handler fn) {
+    if (fn == null) throw new NullPointerException("onAnnotationSpan requires a function");
+    annotationSpanHandlers.add(fn);
+    return this;
+  }
+
+  public synchronized DotCheckpointEngine clearAnnotationSpans() {
+    annotationSpanHandlers.clear();
+    return this;
+  }
+
+  public synchronized int annotationSpanCount() {
+    return annotationSpanHandlers.size();
+  }
+
+  /** Highest completed phase seq (0 = none). */
+  public synchronized int phaseSeq() {
+    return phaseSeq;
+  }
+
+  /**
+   * Queue a session-log seq for the next physical phase unit(s).
+   *
+   * @param seq must be {@code >= 1}
+   */
+  public synchronized DotCheckpointEngine noteLogSeq(int seq) {
+    if (seq < 1) throw new IllegalArgumentException("noteLogSeq requires seq >= 1");
+    logSeqQueue.add(seq);
+    return this;
+  }
+
   /**
    * Materialized parse of {@code buffer[0..committedAt)}. Advances when a {@code .} phase
    * completes or the unfinished tail is flushed at {@link #finish()} — never from mid-phase
    * partial wire.
-   *
-   * <p>After a phase commit the value may be <b>live-backed</b> until first read: this method
-   * materializes (and caches) then. Use {@link #committedAt()} {@code > 0} to test whether a
-   * commit exists.
    */
   public synchronized Object committedSnapshot() {
     if (commitFromLive && live != null) {
@@ -163,26 +401,28 @@ public final class DotCheckpointEngine implements AutoCloseable {
     }
     CompletableFuture<Void> base =
         pending != null ? pending : CompletableFuture.completedFuture(null);
-    return base.thenCompose(ignored -> {
-      CompletableFuture<Void> done = new CompletableFuture<>();
-      executor().schedule(
-          () -> {
-            RuntimeException failure = null;
-            synchronized (this) {
-              try {
-                if (!closed) finishBody();
-              } catch (RuntimeException e) {
-                failure = e;
-              }
-            }
-            shutdownExecutor();
-            if (failure != null) done.completeExceptionally(failure);
-            else done.complete(null);
-          },
-          0,
-          TimeUnit.MILLISECONDS);
-      return done;
-    });
+    return base.thenCompose(
+        ignored -> {
+          CompletableFuture<Void> done = new CompletableFuture<>();
+          executor()
+              .schedule(
+                  () -> {
+                    RuntimeException failure = null;
+                    synchronized (this) {
+                      try {
+                        if (!closed) finishBody();
+                      } catch (RuntimeException e) {
+                        failure = e;
+                      }
+                    }
+                    shutdownExecutor();
+                    if (failure != null) done.completeExceptionally(failure);
+                    else done.complete(null);
+                  },
+                  0,
+                  TimeUnit.MILLISECONDS);
+          return done;
+        });
   }
 
   /** Releases the drain thread. Safe to call repeatedly; does not finish the document. */
@@ -199,8 +439,10 @@ public final class DotCheckpointEngine implements AutoCloseable {
     if (!streamProcessing) {
       Object value = parseOwned(buffer.toString());
       storeCommit(buffer.length(), value, false);
-      onChunk.accept(value);
+      allocPhaseSeq();
+      emitChunk(value);
       latestSnapshot = value;
+      hasLatestSnapshot = true;
       segmentStart = buffer.length();
       scanAt = buffer.length();
       phaseLines.clear();
@@ -211,9 +453,11 @@ public final class DotCheckpointEngine implements AutoCloseable {
     flushTail();
     if (committedAt == buffer.length()) {
       latestSnapshot = committedSnapshot();
+      hasLatestSnapshot = true;
     } else {
       latestSnapshot = parseOwned(buffer.toString());
       storeCommit(buffer.length(), latestSnapshot, false);
+      hasLatestSnapshot = true;
     }
   }
 
@@ -226,8 +470,13 @@ public final class DotCheckpointEngine implements AutoCloseable {
       Line info = readLine(buffer, scanAt, atEof);
       if (info == null) break;
       scanAt = info.end();
-      phaseLines.add(info.text());
-      if (info.text().equals(".")) emitPhase(info.end());
+      String accepted = acceptLine(info.text());
+      if (accepted == null) {
+        if (!info.consumedNewline() && atEof) break;
+        continue;
+      }
+      phaseLines.add(accepted);
+      if (accepted.equals(".")) emitPhase(info.end());
       if (!info.consumedNewline() && atEof) break;
     }
   }
@@ -242,8 +491,13 @@ public final class DotCheckpointEngine implements AutoCloseable {
       Line info = readLine(buffer, scanAt, atEof);
       if (info == null) break;
       scanAt = info.end();
-      pending.add(info.text());
-      if (info.text().equals(".")) {
+      String accepted = acceptLine(info.text());
+      if (accepted == null) {
+        if (!info.consumedNewline() && atEof) break;
+        continue;
+      }
+      pending.add(accepted);
+      if (accepted.equals(".")) {
         closedPhases.add(new ClosedPhase(start, info.end(), pending));
         pending = new ArrayList<>();
         start = info.end();
@@ -260,9 +514,61 @@ public final class DotCheckpointEngine implements AutoCloseable {
   }
 
   private void emitClosedWindow(List<ClosedPhase> closedPhases) {
-    List<String> allLines = new ArrayList<>();
-    for (ClosedPhase phase : closedPhases) allLines.addAll(phase.lines());
     int lastEnd = closedPhases.get(closedPhases.size() - 1).end();
+
+    if (cover) {
+      for (ClosedPhase phase : closedPhases) {
+        emitCoverPhase(phase.lines(), phase.start(), phase.end(), false);
+      }
+      segmentStart = lastEnd;
+      return;
+    }
+
+    // One seq per physical `.` even when Diff delivery is window-merged.
+    for (int i = 0; i < closedPhases.size(); i++) {
+      allocPhaseSeq();
+    }
+
+    if (history != null) {
+      for (ClosedPhase phase : closedPhases) {
+        List<String> lines = applyAnnotationSpans(phase.lines());
+        Object before = peekCommit();
+        String raw = phaseWire(lines, phase.start(), phase.end());
+        boolean hadPriorDot = sawDot;
+        feedLiveLines(lines);
+        sawDot = hadPriorDot;
+        Diff result = buildDiff(raw);
+        sawDot = true;
+        storeCommit(phase.end(), result.committed(), result.fromLive());
+        history.record(
+            ParseHistory.HISTORY_NODE_KIND.DOT,
+            phase.start(),
+            phase.end(),
+            raw,
+            before,
+            peekCommit(),
+            result.diff());
+      }
+      segmentStart = lastEnd;
+      if (!emitDiff) {
+        emitChunk(null);
+        return;
+      }
+      if (closedPhases.size() == 1) {
+        emitChunk(history.getDiff(history.length() - 1));
+        return;
+      }
+      emitChunk(Json.deepClone(peekCommit()));
+      return;
+    }
+
+    List<String> allLines = new ArrayList<>();
+    List<List<String>> appliedPhases = new ArrayList<>(closedPhases.size());
+    for (ClosedPhase phase : closedPhases) {
+      List<String> lines = applyAnnotationSpans(phase.lines());
+      appliedPhases.add(lines);
+      allLines.addAll(lines);
+    }
     boolean sawDotBefore = sawDot;
 
     feedLiveLines(allLines);
@@ -271,74 +577,259 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
     if (!emitDiff) {
       storeCommit(lastEnd, null, true);
-      onChunk.accept(null);
+      emitChunk(null);
       return;
     }
 
     if (closedPhases.size() == 1) {
       ClosedPhase only = closedPhases.get(0);
-      String raw = buffer.substring(only.start(), only.end());
-      // buildDiff reads sawDot as "a prior dot existed"; restore the pre-batch value.
+      String raw = phaseWire(appliedPhases.get(0), only.start(), only.end());
       sawDot = sawDotBefore;
       Diff result = buildDiff(raw);
       sawDot = true;
       storeCommit(lastEnd, result.committed(), result.fromLive());
-      onChunk.accept(result.diff());
+      emitChunk(result.diff());
       return;
     }
 
-    // Multi-phase window: one Commit + one Diff = the cumulative tree after the batch.
-    Object committed = Materialize.materializeSnapshot(live.value());
-    storeCommit(lastEnd, committed, false);
-    onChunk.accept(isolateDiff(committed, committed));
+    storeCommit(lastEnd, null, true);
+    emitChunk(Materialize.materializeSnapshot(live.value()));
   }
 
   /** @param end exclusive end of the {@code .} line */
   private void emitPhase(int end) {
-    String raw = buffer.substring(segmentStart, end);
-    feedLiveLines(phaseLines);
+    int start = segmentStart;
+    List<String> lines = applyAnnotationSpans(new ArrayList<>(phaseLines));
+    String raw = phaseWire(lines, start, end);
     phaseLines.clear();
+    if (cover) {
+      emitCoverPhase(lines, start, end, false);
+      segmentStart = end;
+      return;
+    }
+    allocPhaseSeq();
+    Object before = history != null ? peekCommit() : null;
+    feedLiveLines(lines);
     Diff result = buildDiff(raw);
     sawDot = true;
     segmentStart = end;
     storeCommit(end, result.committed(), result.fromLive());
-    onChunk.accept(result.diff());
+    if (history != null) {
+      history.record(
+          ParseHistory.HISTORY_NODE_KIND.DOT,
+          start,
+          end,
+          raw,
+          before,
+          peekCommit(),
+          result.diff());
+    }
+    emitChunk(result.diff());
   }
 
   private void flushTail() {
     if (segmentStart < buffer.length()) {
-      String raw = buffer.substring(segmentStart);
-      feedLiveLines(phaseLines);
+      int start = segmentStart;
+      List<String> lines = applyAnnotationSpans(new ArrayList<>(phaseLines));
+      String raw = phaseWire(lines, start, buffer.length());
       phaseLines.clear();
+      if (cover) {
+        emitCoverPhase(lines, start, buffer.length(), true);
+        segmentStart = buffer.length();
+        return;
+      }
+      allocPhaseSeq();
+      Object before = history != null ? peekCommit() : null;
+      feedLiveLines(lines);
       Diff result;
       if (!sawDot) {
-        if (!emitDiff) {
+        if (!emitDiff || isEmptyPhaseWire(raw)) {
           result = new Diff(null, null, true);
         } else {
-          Object committed = Materialize.materializeSnapshot(live.value());
-          result = new Diff(isolateDiff(committed, committed), committed, false);
+          result = new Diff(Materialize.materializeSnapshot(live.value()), null, true);
         }
       } else {
         result = buildDiff(raw);
       }
       segmentStart = buffer.length();
       storeCommit(buffer.length(), result.committed(), result.fromLive());
-      onChunk.accept(result.diff());
+      if (history != null) {
+        history.record(
+            ParseHistory.HISTORY_NODE_KIND.TAIL,
+            start,
+            buffer.length(),
+            raw,
+            before,
+            peekCommit(),
+            result.diff());
+      }
+      emitChunk(result.diff());
       return;
     }
     if (!sawDot && buffer.length() == 0) {
       phaseLines.clear();
       storeCommit(0, null, false);
-      onChunk.accept(null);
+      emitChunk(null);
     }
   }
 
-  private void feedLiveLines(List<String> lines) {
+  private void emitCoverPhase(List<String> lines, int bufferStart, int bufferEnd, boolean isTail) {
+    lines = applyAnnotationSpans(lines);
+    boolean trailingDot = !lines.isEmpty() && ".".equals(lines.get(lines.size() - 1));
+    int bodyLen = trailingDot ? lines.size() - 1 : lines.size();
+    List<String> pendingRestore = new ArrayList<>();
+    int i = 0;
+    boolean any = false;
+
+    while (i < bodyLen) {
+      int j = i;
+      while (j < bodyLen && !isAmpLine(lines.get(j))) j++;
+
+      if (j < bodyLen) {
+        List<String> prefix = new ArrayList<>(pendingRestore);
+        prefix.addAll(lines.subList(i, j));
+        pendingRestore = new ArrayList<>();
+        ensureLive();
+        if (!prefix.isEmpty()) {
+          feedLiveLines(prefix);
+        }
+        List<String> restore = live.cursorRestoreLines();
+        if (!prefix.isEmpty()) {
+          feedLiveLines(List.of("."));
+          List<String> wireLines = new ArrayList<>(prefix);
+          wireLines.add(".");
+          emitCoverChunk(wireLines, null, bufferStart, bufferEnd, ParseHistory.HISTORY_NODE_KIND.DOT, false);
+          any = true;
+        }
+
+        int k = j;
+        while (k < bodyLen && isAmpLine(lines.get(k))) k++;
+        List<String> amps = lines.subList(j, k);
+        feedLiveLines(amps);
+        Map<String, Object> tombstone = buildDeleteTombstone(amps);
+        feedLiveLines(List.of("."));
+        List<String> ampWire = new ArrayList<>(amps);
+        ampWire.add(".");
+        emitCoverChunk(ampWire, tombstone, bufferStart, bufferEnd, ParseHistory.HISTORY_NODE_KIND.DOT, false);
+        any = true;
+        pendingRestore = new ArrayList<>(restore);
+        i = k;
+        continue;
+      }
+
+      List<String> restBody = new ArrayList<>(pendingRestore);
+      restBody.addAll(lines.subList(i, bodyLen));
+      pendingRestore = new ArrayList<>();
+      if (!restBody.isEmpty()) {
+        feedLiveLines(restBody);
+      }
+      if (trailingDot) {
+        feedLiveLines(List.of("."));
+        List<String> wireLines = new ArrayList<>(restBody);
+        wireLines.add(".");
+        if (wireLines.isEmpty()) wireLines = List.of(".");
+        emitCoverChunk(
+            wireLines,
+            null,
+            bufferStart,
+            bufferEnd,
+            ParseHistory.HISTORY_NODE_KIND.DOT,
+            false);
+        any = true;
+      } else if (!restBody.isEmpty()) {
+        Object committed = Materialize.materializeSnapshot(live.value());
+        storeCommit(bufferEnd, committed, false);
+        emitCoverChunk(
+            restBody,
+            null,
+            bufferStart,
+            bufferEnd,
+            isTail ? ParseHistory.HISTORY_NODE_KIND.TAIL : ParseHistory.HISTORY_NODE_KIND.DOT,
+            true);
+        any = true;
+      }
+      i = bodyLen;
+    }
+
+    if (!pendingRestore.isEmpty()) {
+      feedLiveLines(pendingRestore);
+      Object committed = Materialize.materializeSnapshot(live.value());
+      storeCommit(bufferEnd, committed, false);
+      sawDot = true;
+    } else if (!any && trailingDot) {
+      feedLiveLines(List.of("."));
+      sawDot = true;
+      storeCommit(bufferEnd, null, true);
+      if (history != null) {
+        history.record(
+            ParseHistory.HISTORY_NODE_KIND.DOT,
+            bufferStart,
+            bufferEnd,
+            ".\n",
+            peekCommit(),
+            peekCommit(),
+            null);
+      }
+      allocPhaseSeq();
+      emitChunk(null);
+    } else if (!any && isTail && !lines.isEmpty()) {
+      feedLiveLines(lines);
+      storeCommit(bufferEnd, null, true);
+      allocPhaseSeq();
+      emitChunk(emitDiff ? Materialize.materializeSnapshot(live.value()) : null);
+    }
+
+    sawDot = sawDot || trailingDot || any;
+  }
+
+  private void emitCoverChunk(
+      List<String> wireLines,
+      Map<String, Object> tombstone,
+      int bufferStart,
+      int bufferEnd,
+      String kind,
+      boolean committedDiff) {
+    allocPhaseSeq();
+    Object before = history != null ? peekCommit() : null;
+    sawDot = true;
+    String wire = linesToWire(wireLines);
+    Object diff = null;
+    if (emitDiff) {
+      if (tombstone != null) {
+        diff = Json.deepClone(tombstone);
+        storeCommit(bufferEnd, null, true);
+      } else if (committedDiff) {
+        diff = Materialize.materializeSnapshot(live.value());
+        storeCommit(bufferEnd, null, true);
+      } else {
+        Diff built = buildDiff(wire);
+        diff = built.diff();
+        storeCommit(bufferEnd, built.committed(), built.fromLive());
+      }
+    } else {
+      storeCommit(bufferEnd, null, true);
+    }
+    if (history != null) {
+      history.record(kind, bufferStart, bufferEnd, wire, before, peekCommit(), diff);
+    }
+    emitChunk(diff);
+  }
+
+  private void ensureLive() {
     if (live == null) {
       live = new Parse.LiveXaiopParser(ParseOptions.of(compat, symbolKeys));
     }
-    // Invalidate cached commit; live is ahead until storeCommit. Keep commitFromLive
-    // true so peeks still materialize from live between feed and store.
+  }
+
+  private Object peekCommit() {
+    if (commitFromLive && live != null) {
+      return Materialize.materializeSnapshot(live.value());
+    }
+    return committedSnapshot;
+  }
+
+  private void feedLiveLines(List<String> lines) {
+    ensureLive();
     committedSnapshot = null;
     commitFromLive = true;
     for (String line : lines) {
@@ -351,16 +842,41 @@ public final class DotCheckpointEngine implements AutoCloseable {
       return new Diff(null, null, true);
     }
 
-    // First phase: the live tree IS the phase document — share one materialize.
-    // `=` / `!` see the cumulative tree (向前跨相).
+    // First phase / locate / fallback: Diff is a clone of the live Commit tree.
     if (!sawDot || phaseNeedsPriorTree(raw)) {
-      Object committed = Materialize.materializeSnapshot(live.value());
-      return new Diff(isolateDiff(normalizeEmptyPhase(raw, committed), committed), committed, false);
+      if (isEmptyPhaseWire(raw)) {
+        return new Diff(null, null, true);
+      }
+      return new Diff(Materialize.materializeSnapshot(live.value()), null, true);
     }
 
-    // Later ordinary phase: phase-local Diff via an owned parse (no extra clone).
-    Object diff = normalizeEmptyPhase(raw, parseOwned(withLeadingDot(raw)));
-    return new Diff(diff, null, true);
+    // Later ordinary phase: phase-local Diff with synthetic document root when needed.
+    try {
+      String text = withLeadingDot(ensureDiffDocumentRoot(raw, liveRootKind()));
+      Object diff = normalizeEmptyPhase(raw, parseOwned(text));
+      return new Diff(diff, null, true);
+    } catch (RuntimeException e) {
+      // Commit already applied; never abort the stream solely because Diff isolation failed.
+      if (isEmptyPhaseWire(raw)) {
+        return new Diff(null, null, true);
+      }
+      return new Diff(Materialize.materializeSnapshot(live.value()), null, true);
+    }
+  }
+
+  private String liveRootKind() {
+    if (live == null) return null;
+    String kind = live.docKind();
+    if ("array".equals(kind) || "fragment".equals(kind) || "object".equals(kind)) {
+      return kind;
+    }
+    try {
+      Object v = live.value();
+      if (v instanceof List) return "array";
+    } catch (RuntimeException ignored) {
+      /* ignore */
+    }
+    return "object";
   }
 
   private void storeCommit(int at, Object snapshot, boolean fromLive) {
@@ -376,6 +892,101 @@ public final class DotCheckpointEngine implements AutoCloseable {
         Parse.parse(text, ParseOptions.of(compat, symbolKeys)));
   }
 
+  private void rebuildFromHistoryJump(ParseHistory.JumpResult result) {
+    int end = result.bufferEnd;
+    if (result.wirePrefix != null) {
+      buffer.setLength(0);
+      buffer.append(result.wirePrefix);
+    } else if (end <= buffer.length()) {
+      buffer.setLength(end);
+    } else {
+      buffer.setLength(Math.min(end, buffer.length()));
+    }
+    live = new Parse.LiveXaiopParser(ParseOptions.of(compat, symbolKeys));
+    if (buffer.length() > 0) {
+      if (!lineInterceptors.isEmpty()) {
+        int at = 0;
+        while (at < buffer.length()) {
+          Line info = readLine(buffer, at, true);
+          if (info == null) break;
+          at = info.end();
+          String accepted = acceptLine(info.text());
+          if (accepted != null) live.feedLine(accepted);
+        }
+      } else {
+        live.feedText(buffer.toString());
+      }
+    }
+    sawDot = true;
+    segmentStart = buffer.length();
+    scanAt = buffer.length();
+    phaseLines.clear();
+    committedAt = buffer.length();
+    committedSnapshot = result.after;
+    commitFromLive = false;
+    latestSnapshot = null;
+    hasLatestSnapshot = false;
+    closed = false;
+  }
+
+  private String acceptLine(String line) {
+    if (lineInterceptors.isEmpty()) return line;
+    return LineIntercept.runLineInterceptChain(line, lineInterceptors);
+  }
+
+  private List<String> applyAnnotationSpans(List<String> lines) {
+    if (annotationSpanHandlers.isEmpty()) return lines;
+    AnnotationSpan.Result result =
+        AnnotationSpan.applyAnnotationSpans(lines, annotationSpanHandlers);
+    if (!result.escapePaths().isEmpty()) {
+      pendingTypeCheckEscape.addAll(result.escapePaths());
+    }
+    return result.lines();
+  }
+
+  private String phaseWire(List<String> lines, int bufferStart, int bufferEnd) {
+    if (!lineInterceptors.isEmpty() || !annotationSpanHandlers.isEmpty()) {
+      return linesToWire(lines);
+    }
+    return buffer.substring(bufferStart, bufferEnd);
+  }
+
+  private Integer allocPhaseSeq() {
+    if (!phaseSeqEnabled) return null;
+    phaseSeq += 1;
+    pendingSeqs.add(phaseSeq);
+    if (!logSeqQueue.isEmpty()) {
+      pendingLogSeqs.add(logSeqQueue.remove(0));
+    }
+    return phaseSeq;
+  }
+
+  private void emitChunk(Object diff) {
+    List<String> escapes = new ArrayList<>(pendingTypeCheckEscape);
+    pendingTypeCheckEscape.clear();
+    List<Integer> seqs = new ArrayList<>(pendingSeqs);
+    pendingSeqs.clear();
+    List<Integer> logSeqs = new ArrayList<>(pendingLogSeqs);
+    pendingLogSeqs.clear();
+    if (onChunk == null) return;
+
+    List<String> uniqueEscapes = escapes.isEmpty() ? null : uniqueEscape(escapes);
+    Integer seq = seqs.isEmpty() ? null : seqs.get(seqs.size() - 1);
+    Integer logSeq = logSeqs.isEmpty() ? null : logSeqs.get(logSeqs.size() - 1);
+    ChunkMeta meta =
+        new ChunkMeta(
+            uniqueEscapes,
+            seq,
+            seqs.isEmpty() ? null : List.copyOf(seqs),
+            logSeq,
+            logSeqs.isEmpty() ? null : List.copyOf(logSeqs));
+    if (meta.isEmpty()) {
+      onChunk.accept(diff, null);
+    } else {
+      onChunk.accept(diff, meta);
+    }
+  }
+
   // --- async plumbing --------------------------------------------------------
 
   private CompletableFuture<Void> scheduleAsyncDrain() {
@@ -383,33 +994,30 @@ public final class DotCheckpointEngine implements AutoCloseable {
     CompletableFuture<Void> promise = new CompletableFuture<>();
     asyncDrainPromise = promise;
     asyncDrainCancelled = false;
-    executor().schedule(
-        () -> {
-          RuntimeException failure = null;
-          synchronized (this) {
-            boolean cancelled = asyncDrainCancelled;
-            asyncDrainPromise = null;
-            asyncDrainCancelled = false;
-            if (!cancelled) {
-              try {
-                if (!closed && streamProcessing) scanDots(false);
-              } catch (RuntimeException e) {
-                failure = e;
+    executor()
+        .schedule(
+            () -> {
+              RuntimeException failure = null;
+              synchronized (this) {
+                boolean cancelled = asyncDrainCancelled;
+                asyncDrainPromise = null;
+                asyncDrainCancelled = false;
+                if (!cancelled) {
+                  try {
+                    if (!closed && streamProcessing) scanDots(false);
+                  } catch (RuntimeException e) {
+                    failure = e;
+                  }
+                }
               }
-            }
-          }
-          if (failure != null) promise.completeExceptionally(failure);
-          else promise.complete(null);
-        },
-        0,
-        TimeUnit.MILLISECONDS);
+              if (failure != null) promise.completeExceptionally(failure);
+              else promise.complete(null);
+            },
+            0,
+            TimeUnit.MILLISECONDS);
     return promise;
   }
 
-  /**
-   * A sync {@code push} / {@code finish} already scanned (or is about to): cancel the pending
-   * drain so the scheduled task does not scan twice. Waiters still resolve.
-   */
   private void cancelPendingAsyncDrain() {
     if (asyncDrainPromise != null) asyncDrainCancelled = true;
   }
@@ -444,12 +1052,6 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
   // --- helpers ---------------------------------------------------------------
 
-  private static Object isolateDiff(Object diff, Object committed) {
-    if (diff == null) return null;
-    if (diff == committed) return Json.deepClone(committed);
-    return diff;
-  }
-
   private static String withLeadingDot(String raw) {
     if (raw.equals(".") || raw.startsWith(".\n") || raw.startsWith(".\r\n")) {
       return raw;
@@ -457,7 +1059,44 @@ public final class DotCheckpointEngine implements AutoCloseable {
     return raw.startsWith("\n") ? "." + raw : ".\n" + raw;
   }
 
-  /** Whether the phase contains a {@code =} locate or {@code !} delete (needs the prior tree). */
+  private static String firstPhaseLine(String raw) {
+    int i = 0;
+    int n = raw.length();
+    while (i < n) {
+      char c = raw.charAt(i);
+      if (c == '\r' || c == '\n') {
+        i++;
+        continue;
+      }
+      int j = i;
+      while (j < n) {
+        char ch = raw.charAt(j);
+        if (ch == '\n' || ch == '\r') break;
+        j++;
+      }
+      String line = raw.substring(i, j);
+      if (line.endsWith("\r")) line = line.substring(0, line.length() - 1);
+      if (line.equals(".") || line.isEmpty()) {
+        i = j + 1;
+        continue;
+      }
+      return line;
+    }
+    return null;
+  }
+
+  private static boolean phaseHasBareDocumentRoot(String raw) {
+    String line = firstPhaseLine(raw);
+    return ">".equals(line) || "-".equals(line);
+  }
+
+  private static String ensureDiffDocumentRoot(String raw, String rootKind) {
+    if (phaseHasBareDocumentRoot(raw)) return raw;
+    if ("array".equals(rootKind)) return raw;
+    return ">\n" + raw;
+  }
+
+  /** Whether the phase contains {@code =}/{@code !}/{@code &}/{@code @} (needs the prior tree). */
   private static boolean phaseNeedsPriorTree(String raw) {
     int i = 0;
     int n = raw.length();
@@ -467,7 +1106,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
         i++;
         continue;
       }
-      if (c == '=' || c == '!') return true;
+      if (c == '=' || c == '!' || c == '&' || c == '@') return true;
       while (i < n) {
         char ch = raw.charAt(i);
         if (ch == '\n') {
@@ -485,10 +1124,88 @@ public final class DotCheckpointEngine implements AutoCloseable {
     return false;
   }
 
+  private static boolean isEmptyPhaseWire(String raw) {
+    int start = 0;
+    int end = raw.length();
+    if (start < end && raw.charAt(start) == '.') {
+      start++;
+      if (start < end && raw.charAt(start) == '\r') start++;
+      if (start < end && raw.charAt(start) == '\n') start++;
+    }
+    if (end > start) {
+      int e = end;
+      if (e > start && raw.charAt(e - 1) == '\n') e--;
+      if (e > start && raw.charAt(e - 1) == '\r') e--;
+      if (e > start && raw.charAt(e - 1) == '.') {
+        e--;
+        if (e > start && raw.charAt(e - 1) == '\n') e--;
+        if (e > start && raw.charAt(e - 1) == '\r') e--;
+        end = e;
+      }
+    }
+    while (start < end) {
+      char c = raw.charAt(start);
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+        start++;
+        continue;
+      }
+      break;
+    }
+    while (end > start) {
+      char c = raw.charAt(end - 1);
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+        end--;
+        continue;
+      }
+      break;
+    }
+    return start >= end;
+  }
+
   private static Object normalizeEmptyPhase(String raw, Object value) {
-    String body =
-        raw.replaceFirst("^\\.\\r?\\n?", "").replaceFirst("\\r?\\n?\\.\\r?\\n?$", "").strip();
-    return body.isEmpty() ? null : value;
+    return isEmptyPhaseWire(raw) ? null : value;
+  }
+
+  private static boolean isAmpLine(String line) {
+    return line != null && !line.isEmpty() && line.charAt(0) == '&';
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> buildDeleteTombstone(List<String> amps) {
+    Map<String, Object> root = new LinkedHashMap<>();
+    for (String line : amps) {
+      String path = line.substring(1);
+      String[] segments = path.split(">");
+      List<String> segs = new ArrayList<>();
+      for (String s : segments) {
+        if (!s.isEmpty()) segs.add(s);
+      }
+      if (segs.isEmpty()) continue;
+      Map<String, Object> cur = root;
+      for (int i = 0; i < segs.size() - 1; i++) {
+        String seg = segs.get(i);
+        Object existing = cur.get(seg);
+        if (!(existing instanceof Map<?, ?>)) {
+          Map<String, Object> next = new LinkedHashMap<>();
+          cur.put(seg, next);
+          cur = next;
+        } else {
+          cur = (Map<String, Object>) existing;
+        }
+      }
+      cur.put(segs.get(segs.size() - 1), null);
+    }
+    return root;
+  }
+
+  private static String linesToWire(List<String> lines) {
+    if (lines.isEmpty()) return "";
+    return String.join("\n", lines) + "\n";
+  }
+
+  private static List<String> uniqueEscape(List<String> paths) {
+    Set<String> seen = new LinkedHashSet<>(paths);
+    return new ArrayList<>(seen);
   }
 
   private static Line readLine(CharSequence text, int from, boolean atEof) {
@@ -516,9 +1233,16 @@ public final class DotCheckpointEngine implements AutoCloseable {
     private Object compat;
     private boolean symbolKeys;
     private boolean streamProcessing = true;
-    private Consumer<Object> onChunk;
+    private BiConsumer<Object, ChunkMeta> onChunk;
     private boolean emitDiff = true;
     private boolean mergeChunkWindow = true;
+    private boolean cover;
+    private boolean historySnapshot;
+    private boolean historyRealtime;
+    private boolean retainWireHistory = true;
+    private boolean phaseSeq = true;
+    private List<LineIntercept.Handler> lineIntercept;
+    private List<AnnotationSpan.Handler> annotationSpan;
 
     public static Options builder() {
       return new Options();
@@ -559,8 +1283,17 @@ public final class DotCheckpointEngine implements AutoCloseable {
       return this;
     }
 
-    /** Receives the phase Diff (or {@code null} for an empty phase). Required. */
+    /**
+     * Receives the phase Diff (or {@code null} for an empty phase). Optional — omitted / {@code
+     * null} → Diff delivery no-ops (Commit still runs).
+     */
     public Options onChunk(Consumer<Object> sink) {
+      this.onChunk = sink == null ? null : (diff, meta) -> sink.accept(diff);
+      return this;
+    }
+
+    /** Same as {@link #onChunk(Consumer)} but also receives seq / escape metadata when present. */
+    public Options onChunkWithMeta(BiConsumer<Object, ChunkMeta> sink) {
       this.onChunk = sink;
       return this;
     }
@@ -574,6 +1307,66 @@ public final class DotCheckpointEngine implements AutoCloseable {
     /** {@code true} (default) batches every complete {@code .} in one buffer window. */
     public Options mergeChunkWindow(boolean enabled) {
       this.mergeChunkWindow = enabled;
+      return this;
+    }
+
+    /** Cover-mode Diff for {@code &} (default {@code false}). */
+    public Options cover(boolean enabled) {
+      this.cover = enabled;
+      return this;
+    }
+
+    /** Opt-in read-only history (default {@code false}). */
+    public Options historySnapshot(boolean enabled) {
+      this.historySnapshot = enabled;
+      return this;
+    }
+
+    /** Opt-in realtime forward-jump history (default {@code false}). */
+    public Options historyRealtime(boolean enabled) {
+      this.historyRealtime = enabled;
+      return this;
+    }
+
+    /** Retain per-node wire when history on (default {@code true}). */
+    public Options retainWireHistory(boolean enabled) {
+      this.retainWireHistory = enabled;
+      return this;
+    }
+
+    /** Allocate monotonic phase seq in onChunk meta (default {@code true}). */
+    public Options phaseSeq(boolean enabled) {
+      this.phaseSeq = enabled;
+      return this;
+    }
+
+    /** Initial line interceptors (registration order). */
+    public Options lineIntercept(LineIntercept.Handler... handlers) {
+      if (handlers == null || handlers.length == 0) {
+        this.lineIntercept = null;
+      } else {
+        this.lineIntercept = List.of(handlers);
+      }
+      return this;
+    }
+
+    public Options lineIntercept(List<LineIntercept.Handler> handlers) {
+      this.lineIntercept = handlers;
+      return this;
+    }
+
+    /** Initial annotation-span handlers (registration order). */
+    public Options annotationSpan(AnnotationSpan.Handler... handlers) {
+      if (handlers == null || handlers.length == 0) {
+        this.annotationSpan = null;
+      } else {
+        this.annotationSpan = List.of(handlers);
+      }
+      return this;
+    }
+
+    public Options annotationSpan(List<AnnotationSpan.Handler> handlers) {
+      this.annotationSpan = handlers;
       return this;
     }
 

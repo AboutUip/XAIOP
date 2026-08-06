@@ -6,9 +6,10 @@
 | --- | --- |
 | Document ID | `SDK-BEHAVE` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-06 |
 | Normative | **No** — SDK product catalog (not protocol conformance) |
-| Reference implementation (primary) | Node.js `xaiop` **0.15.0** (`xaiop-sdk/nodejs/`) |
+| Reference implementation (primary) | Node.js `xaiop` **0.15.1** (`xaiop-sdk/nodejs/`) |
+| Official Java port | `io.xaiop:xaiop` **0.15.1** — fully aligned ([java/ALIGNMENT.md](java/ALIGNMENT.md)) |
 | Protocol wire | Frozen **v0.6.0** |
 
 **Isolation:** Protocol = **cursor IR** wire only · Practice = writers & transport · This page = **what an SDK must match for official parity** — [../SEPARATION.md](../SEPARATION.md).  
@@ -178,7 +179,7 @@ Parity-minded ports **SHOULD** expose equivalents of:
 
 API: [nodejs/API.md](nodejs/API.md) §6 · [nodejs/notes/streaming-parse.md](nodejs/notes/streaming-parse.md).
 
-**Java (`io.xaiop:xaiop` 0.5.0):** implements this consumer surface for **HTTP / SSE / RAW** (status machine, modes, `mergeChunkWindow`, listener isolation, UTF-8 decoder, SSE join). Gaps vs Node: **no WebSocket**, no `cover` Diff, no line intercept / Annotation Span / Control Root, wire remains protocol **0.4.0**. Guide: [java/README.md](java/README.md).
+**Java (`io.xaiop:xaiop` 0.15.1):** fully aligned official port of the Node **0.15.1** product surface (protocol **0.6.0**). `XaiopStream` wires **all** consumer options (cover · history · typeCheck · line intercept · Annotation Span · Control Root session/autoAck · `chunks()`) across **HTTP / SSE / RAW / WebSocket**, plus `XaiopWs` listen/connect, phase encode, and `symbolKeys`. Parity matrix: [java/ALIGNMENT.md](java/ALIGNMENT.md) · Guide: [java/README.md](java/README.md).
 
 ---
 
@@ -212,6 +213,8 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 - [ ] Final Snapshot ≡ one-shot parse of full buffer (under same compat)  
 - [ ] WS phase `.\n` / `final` / close codes if offering skeleton sessions  
 
+**Official Java port (`io.xaiop:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port).
+
 **Golden suites (Node):** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`.
 
 ---
@@ -220,4 +223,5 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 
 - Cross-stack principles: [notes/principles.md](notes/principles.md)  
 - Separation: [../SEPARATION.md](../SEPARATION.md)  
-- Node guide: [nodejs/README.md](nodejs/README.md)
+- Node guide: [nodejs/README.md](nodejs/README.md)  
+- Java parity matrix: [java/ALIGNMENT.md](java/ALIGNMENT.md)

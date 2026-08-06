@@ -4,23 +4,24 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 产物 | `io.xaiop:xaiop` **0.5.0**（JAR） |
-| 协议 | v0.4.0 Frozen（`Xaiop.PROTOCOL_VERSION`） |
-| SDK 版本常量 | `Xaiop.SDK_VERSION` = `0.5.0` |
-| 运行时 | Java 17+ |
+| 产物 | `io.xaiop:xaiop` **0.15.1**（JAR） |
+| 协议 | v0.6.0 Frozen（`Xaiop.PROTOCOL_VERSION`） |
+| SDK 版本常量 | `Xaiop.SDK_VERSION` = `0.15.1` |
+| 运行时 | Java 17+（零 runtime 依赖） |
 | 代码 | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-仓库 **SDK 重心在 Node.js**（`xaiop` **0.14.0** ↔ 协议 **0.6.0**）；本 Java 包实现协议 **0.4.0** 线子集，并提供与 Node 对齐的 **流式消费端**（HTTP / SSE / RAW）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。
+本包在**可观测语义**上对齐 Node.js 参考实现（`xaiop` **0.15.1** ↔ 协议 **0.6.0**）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
 
-**隔离：** 协议 = 仅线格式 · 实践 = 模型与流式传输 · 本包 = API — [../../SEPARATION.md](../../SEPARATION.md)。  
-**一致性：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（协议合规 ≠ 与本 SDK 等价）。  
-**参考实现：** [Node.js](../nodejs/README.zh-CN.md) — Java 移植对齐其可观测语义。
+**对等矩阵（Java ↔ Node）：** **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** — 功能表 · 惯用法 · 包映射 · 测试映射 · 可接受差异 · §8 清单。  
+**隔离：** 协议 = 仅线格式 · 实践 = 模型与流式传输 · 本包 = API — [../../SEPARATION.zh-CN.md](../../SEPARATION.zh-CN.md)。  
+**契约：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（协议合规 ≠ 官方 SDK 等价）。  
+**参考实现：** [Node.js](../nodejs/README.zh-CN.md) — Java 移植追踪其可观测语义。
 
 ---
 
 ## 状态
 
-**已启用** — parse · encode · merge · checkpoint · **stream（消费端）**。
+**已启用** — 与 Node 对齐的完整产品面（协议 **0.6.0**）。
 
 | 能力 | 状态 |
 | --- | --- |
@@ -28,34 +29,67 @@
 | `CompatPolicy`（8 项修复，可逐项开关） | 已完成 |
 | `Encode`（全部 `dotPolicy` 模式，含路径数组） | 已完成 |
 | `Merge` / inject（`overwrite` / `keep`） | 已完成 |
-| `DotCheckpointEngine`（`.` 相 Diff、窗口批量） | 已完成 |
-| `XaiopStream`（HTTP / SSE / RAW 消费端） | **已完成**（0.5.0） |
-| `XaiopWs` / hub / connection、单相推送辅助 | **尚未提供** |
-| cover Diff · typeCheck · 行拦截 · Annotation Span | **尚未提供**（随协议 / 产品层后续） |
+| `&` 删除 · `#` 注释忽略 | 已完成 |
+| `DotCheckpointEngine`（`.` Diff · cover · history · Diff 隔离 · `@` Diff · buffer compact） | 已完成 |
+| `XaiopStream`（HTTP / SSE / RAW / WebSocket；接线 cover · history · typeCheck · intercept · annotationSpan · 控制 demux · `chunks()`） | 已完成 |
+| typeCheck / TypeRegistry / TypeFreezeSession | 已完成 |
+| 行拦截 · Annotation Span | 已完成 |
+| 控制根（`#!` session / ack / resume / snapshot / seq） | 已完成 |
+| `XaiopWs` listen + connect（零依赖 RFC6455 + JDK 客户端） | 已完成 |
+| 相位编码 · `symbolKeys` | 已完成 |
+
+完整矩阵与可接受差异：**[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)**。
 
 ### 一致性是如何验证的
 
-Java 单元测试套件移植了 Node 参考套件中关于 parse、`@` / `!` / `=` 定位、八项兼容修复、编码选项
-矩阵、merge / inject、checkpoint 分相，以及 **stream**（`StreamTest` · `StreamConsistencyTest` · `StreamHttpTest`：分相 Diff、窗口合并、asyncParse、busy/abort、promise/events、UTF-8 分片、HTTP/SSE 烟测、与一次性 parse 一致）的场景，另加一个定长种子随机 JSON 语料库，以及对
-[../../examples/complex.xaiop](../../examples/complex.xaiop) 的分片回放。浮点 token 严格遵循
-ECMAScript `Number::toString` 语义 —— 即可无损回读的最短十进制表示，且不依赖 JDK 版本 ——
-因此在这些共享样例上，编码输出与 Node 逐字节一致。
+Java 单元测试套件移植了 Node 参考套件场景。浮点 token 严格遵循 ECMAScript `Number::toString`
+语义 —— 即可无损回读的最短十进制表示，且不依赖 JDK 版本 —— 因此在共享样例上编码输出与 Node
+逐字节一致。断言为从 Node 套件转写的 Java 侧期望值。**CI 中并没有 Node↔Java 自动黄金比对** —
+声明强度为「由已移植的套件验证」。完整映射：[ALIGNMENT.zh-CN.md §5–§7](ALIGNMENT.zh-CN.md#5-测试映射node--java)。
 
-该一致性由 Java 侧测试断言，期望值从 Node 套件转写而来。**CI 中并没有 Node↔Java 自动黄金比对**，
-因此请将其理解为"由已移植的套件验证"，而不是"持续逐字节比对"。已移植场景之外仍可能出现偏差；
-如遇到请对照 [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) 反馈。
+| 领域 | 代表性测试 |
+| --- | --- |
+| Parse / fragment / live | `ParseTest` · `LiveParseTest` · `XaiopTest` |
+| Compat ×8 | `CompatTest` |
+| Encode / `symbolKeys` | `EncodeTest` · `EncodeRobustTest` · `SymbolKeysTest` |
+| Merge / engine | `MergeTest` · `MergeRobustTest` · `EngineTest` |
+| `@` / `!` / `&` / `#` | `BangAtTest` · `AmpDeleteTest` · `HashAnnotationTest` |
+| Checkpoint（窗口 · cover · history · Diff 隔离 · `@` Diff · compact） | `CheckpointTest` · `CheckpointRobustTest` · `HistoryTest` · `CheckpointDiffIsolationTest` · `CheckpointBufferCompactTest` |
+| Stream（HTTP/SSE/RAW/WS · 高级选项） | `StreamTest` · `StreamHttpTest` · `StreamConsistencyTest` · `StreamAdvancedTest` |
+| typeCheck · 行拦截 · Annotation Span | `TypeCheckTest` · `LineInterceptTest` · `AnnotationSpanTest` |
+| 控制根 · 续传 | `ControlPlaneTest` · `ControlResumeTest` |
+| WebSocket · 相位编码 | `WsSessionTest` · `PhaseEncodeTest` |
+
+另有：定长种子随机 JSON 语料库与 [../../examples/complex.xaiop](../../examples/complex.xaiop) 分片回放。
 
 ---
 
+## 布局
+
+```text
+io.xaiop/                 门面 · Parse · Encode · Merge · Engine · 选项 · 错误
+  compat/                 CompatPolicy · CompatFixId（×8）
+  types/                  TYPE · TypeRegistry · TypeFreezeSession · XaiopTypeError
+  control/                ControlDemux · ControlPlaneHost · ResumeWireLog · …
+  stream/                 DotCheckpointEngine · ParseHistory · XaiopStream · LineIntercept
+                          AnnotationSpan · PhaseEncode · Materialize · Transport
+  ws/                     XaiopWs · XaiopWsConnection · XaiopWsHub · Rfc6455*
+  internal/               Parser · Encoder · LabelEscape
+```
+
+---
 ## Java 惯例
 
-移植保持可观测语义，而非照搬 JavaScript 形态。
+移植保持可观测语义，而非照搬 JavaScript 形态。另见 [ALIGNMENT.zh-CN.md §3](ALIGNMENT.zh-CN.md#3-api-惯用法对照node--java)。
 
 | Node.js | Java |
 | --- | --- |
 | 以 `async` 为主，附 `*Sync` | **以同步为主**；`Parse.parseAsync` / `Encode.encodeAsync` 返回 `CompletableFuture`，`DotCheckpointEngine` 另提供真正合并调度的 `pushAsync` / `finishAsync` |
 | 普通对象 / 数组 | `LinkedHashMap<String,Object>` / `ArrayList<Object>` 树；标量为 `String`、`Integer` / `Long` / `Double`、`Boolean`、`null` |
 | `undefined` 与 `null` 之分 | Java **没有 `undefined`**，只有 `null`，因此 `undefinedPolicy` 不会触发（仅为选项表对齐而保留） |
+| Annotation Span 保留（`return undefined`） | 返回 **`AnnotationSpan.KEEP`**（哨兵）；`null` 表示丢弃 / 替换为 JSON null |
+| `for await (... of stream.chunks())` | 阻塞式 **`ChunkPull`** / `for (Object d : stream.chunks())` |
+| `AbortSignal` | `stream.abort()` · `SendOptions.timeoutMs` |
 | 字符串联合类型（`root`、`style`、`keyOrder`、`nullPolicy`） | `EncodeOptions` 上的枚举 |
 | `DOT_POLICY` 常量 | `DotPolicy` **字符串**常量（该选项同时可传路径数组） |
 | 选项对象 | 不可变 builder（`EncodeOptions.builder()`、`MergeOptions.builder()`、`DotCheckpointEngine.Options`） |
@@ -72,7 +106,7 @@ ECMAScript `Number::toString` 语义 —— 即可无损回读的最短十进制
 <dependency>
   <groupId>io.xaiop</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.5.0</version>
+  <version>0.15.1</version>
 </dependency>
 ```
 
@@ -112,11 +146,12 @@ String cut = Encode.encode(value, EncodeOptions.builder()
 
 ### 流式消费（`XaiopStream`）
 
-对齐 Node `XaiopStream` 的消费端：状态机 `idle → connecting → streaming → completing → completed`（另有 `aborted` / `error`）；默认 `mergeChunkWindow=true`、`streamProcessing=true`。
+对齐 Node `XaiopStream` 的消费端：状态机 `idle → connecting → streaming → completing → completed`（另有 `aborted` / `error`）；默认 `mergeChunkWindow=true`、`streamProcessing=true`。选项透传到每次 `send` 的 `DotCheckpointEngine` 与 `ControlPlaneHost`：`cover`、`historySnapshot` / `historyRealtime`、`typeCheck` / `typeSchema`、`lineIntercept`、`annotationSpan`、`session` / `autoAck` 及控制回调。入站文本先经控制面 demux，再进入 checkpoint。
 
 ```java
 XaiopStream stream = Xaiop.stream("https://example.com/feed.xaiop");
 stream.onChunk(diff -> { /* 相位 Diff；空相为 null */ });
+stream.onChunkWithMeta((diff, meta) -> { /* 可选 ChunkMeta（seq / escapes） */ });
 stream.onDone(snapshot -> { /* 全缓冲 Snapshot */ });
 stream.onError(err -> { /* ... */ });
 stream.send(new XaiopStream.SendOptions().transport(TransportKind.HTTP));
@@ -130,6 +165,12 @@ XaiopStream once = new XaiopStream("raw://x",
 Object jsonDone = once.send(new XaiopStream.SendOptions()
     .transport(TransportKind.RAW)
     .source(List.of(">\nz:9\n.\n"))).get();
+
+// Async-iterator 拉取（阻塞 ChunkPull；无额外依赖）
+XaiopStream pull = new XaiopStream("raw://x",
+    XaiopStream.Options.defaults().modes(StreamMode.ASYNC_ITERATOR));
+pull.sendRaw(List.of(">\na:1\n.\n"));
+for (Object diff : pull.chunks()) { /* ... */ }
 ```
 
 | 传输 | 说明 |
@@ -137,8 +178,79 @@ Object jsonDone = once.send(new XaiopStream.SendOptions()
 | `HTTP` | `java.net.http.HttpClient` 流式读 body（默认） |
 | `SSE` | `Accept: text/event-stream`；多行 `data:` 用 `\n` 拼接，块末自动补换行以免粘连下一相 |
 | `RAW` | `Iterable` 的 `CharSequence`/`byte[]`，或 `InputStream`（跨块 UTF-8） |
+| `WEBSOCKET` | 经 `Transport` / `XaiopStream`；长会话优先用 `XaiopWs` |
 
-**未包含：** WebSocket 消费 / listen·hub、`cover`、typeCheck、行拦截、Annotation Span。
+### WebSocket 会话（`XaiopWs`）
+
+```java
+import io.xaiop.ws.*;
+
+XaiopWsHub hub = XaiopWs.listen(new XaiopWsHub.ListenOptions().port(0).host("127.0.0.1")).join();
+hub.onConnection(conn -> {
+  conn.pushJson("title", "hello", false);
+  conn.end();
+});
+XaiopWs.ConnectOptions opts = new XaiopWs.ConnectOptions();
+opts.onPhase(diff -> { /* 相位 Diff */ });
+XaiopWsConnection client = XaiopWs.connect(hub.url(), opts).join();
+hub.close().join();
+```
+
+零 runtime 依赖：listen 使用精简 RFC6455 `ServerSocket` 栈；connect 使用 JDK `HttpClient` WebSocket。处理器须在 connect 选项中注册（打开后锁定）。相位推送使用 `PhaseEncode`（强制 `dotPolicy: none`；非 `final` 追加 `.\n`）。
+
+### 流式高级选项
+
+```java
+XaiopStream.Options opts = XaiopStream.Options.defaults()
+    .cover(true)
+    .historySnapshot(true)
+    .historyRealtime(false)
+    .typeCheck(true)
+    .typeSchema(schema)          // CanonicalType / Map / 表面字符串
+    .session(true)               // 或 Map 会话初始化
+    .autoAck(true)
+    .symbolKeys(false)
+    .lineIntercept((line, ctx) -> line)           // 返回 null 丢弃
+    .annotationSpan((cap, view) -> AnnotationSpan.KEEP);  // KEEP ↔ Node undefined
+
+XaiopStream stream = new XaiopStream("raw://x", opts);
+stream.send(new XaiopStream.SendOptions()
+    .transport(TransportKind.RAW)
+    .source(List.of(">\na:1\n.\n"))
+    .timeoutMs(15_000L));
+stream.abort();   // AbortSignal 等价
+```
+
+| 选项 | 默认 | 作用 |
+| --- | --- | --- |
+| `cover` | `false` | 连续 `&` 时的 Cover Diff |
+| `historySnapshot` / `historyRealtime` | `false` | 可选解析历史 |
+| `typeCheck` / `typeSchema` | 关 | 冻结 / 注册表检查（兼容模式开启时强制关闭） |
+| `lineIntercept` | 无 | 解析前按行改写 / 丢弃 |
+| `annotationSpan` | 无 | `#` 区间捕获 → JSON / `KEEP` / `null` |
+| `session` / `autoAck` | 关 | 控制根 demux + ack |
+| `symbolKeys` | `false` | U+001F 标签转义方言 |
+| `modes` | callback | 另有 `PROMISE` · `ASYNC_ITERATOR`（`chunks()`） |
+
+### 类型（`io.xaiop.types`）
+
+```java
+import io.xaiop.types.*;
+
+CanonicalType schema = Types.objectType(Map.of(
+    "id", Types.TYPE.INT,
+    "name", Types.TYPE.STRING));
+TypeFreezeSession session = new TypeFreezeSession(schema);
+session.observeTree(Map.of("id", 1, "name", "a"), true, List.of());
+```
+
+规范叶类型遵循 PROT-CONTENT（`int` · `float` · `bool` · `null` · `string`）；结构类型 `object` / `array`；元类型 `any`。Schema 帧使用 `Types.TYPE_SCHEMA_FRAME_PREFIX`（`#!xaiop/types/v1`）。
+
+### 控制根（`io.xaiop.control`）
+
+`ControlPlaneHost` 在 checkpoint 摄入前 demux `#!` 帧（session / ack / resume / snapshot / seq / types）。经 `XaiopStream.Options.session(...)` / 控制回调接线，或对自定义传输直接托管。续传回放使用 `ResumeWireLog`。
+
+### 编码选项
 
 | 选项 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -238,7 +350,7 @@ Object tree = Materialize.materializeSnapshot(live.value());
 
 ```bash
 cd xaiop-sdk/java
-mvn test                  # 221 项测试
-mvn -DskipTests package   # target/xaiop-0.5.0.jar
-mvn test                  # 含 StreamTest / StreamConsistencyTest / StreamHttpTest
+mvn test                  # 全量（含 StreamAdvancedTest）
+mvn -DskipTests package   # target/xaiop-0.15.1.jar
+mvn test                  # 含 StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```

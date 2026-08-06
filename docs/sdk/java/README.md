@@ -4,25 +4,26 @@
 
 | Field | Value |
 | --- | --- |
-| Artifact | `io.xaiop:xaiop` **0.5.0** (JAR) |
-| Protocol | v0.4.0 Frozen (`Xaiop.PROTOCOL_VERSION`) |
-| SDK version constant | `Xaiop.SDK_VERSION` = `0.5.0` |
-| Runtime | Java 17+ |
+| Artifact | `io.xaiop:xaiop` **0.15.1** (JAR) |
+| Protocol | v0.6.0 Frozen (`Xaiop.PROTOCOL_VERSION`) |
+| SDK version constant | `Xaiop.SDK_VERSION` = `0.15.1` |
+| Runtime | Java 17+ (zero runtime dependencies) |
 | Code | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-This repository’s **SDK focus is Node.js** (`xaiop` **0.14.0** ↔ protocol **0.6.0**); this Java
-package implements a **0.4.0** wire subset plus a Node-aligned **stream consumer** (HTTP / SSE / RAW). Pin the artifact version; read
-`Xaiop.PROTOCOL_VERSION` when you need the wire version.
+This package tracks the Node.js reference (`xaiop` **0.15.1** ↔ protocol **0.6.0**) at the
+**observable-semantics** level. Pin the artifact version; read `Xaiop.PROTOCOL_VERSION` for the
+wire version. Java has no `xaiop/browser` subpath — listen and connect share one JDK package.
 
+**Parity matrix (Java ↔ Node):** **[ALIGNMENT.md](ALIGNMENT.md)** — feature table · idiom map · package map · test map · acceptable differences · §8 checklist.  
 **Isolation:** Protocol = wire only · Practice = model & streaming transport · This package = APIs — [../../SEPARATION.md](../../SEPARATION.md).  
-**Parity:** [../behavioral-contract.md](../behavioral-contract.md) (protocol conformant ≠ this SDK).  
+**Contract:** [../behavioral-contract.md](../behavioral-contract.md) (protocol conformant ≠ official-SDK-equivalent).  
 **Reference implementation:** [Node.js](../nodejs/README.md) — the Java port tracks its observable semantics.
 
 ---
 
 ## Status
 
-**Active** — parse · encode · merge · checkpoint · **stream (consumer)**.
+**Active** — Node-aligned full product surface (protocol **0.6.0**).
 
 | Area | State |
 | --- | --- |
@@ -30,36 +31,68 @@ package implements a **0.4.0** wire subset plus a Node-aligned **stream consumer
 | `CompatPolicy` (8 fixes, individually toggleable) | Done |
 | `Encode` (all `dotPolicy` modes incl. path arrays) | Done |
 | `Merge` / inject (`overwrite` / `keep`) | Done |
-| `DotCheckpointEngine` (`.` phase Diff, window batching) | Done |
-| `XaiopStream` (HTTP / SSE / RAW consumer) | **Done** (0.5.0) |
-| `XaiopWs` / hub / connection, phase-push helpers | **Not yet** |
-| cover Diff · typeCheck · line intercept · Annotation Span | **Not yet** |
+| `&` delete · `#` annotation ignore | Done |
+| `DotCheckpointEngine` (`.` Diff · cover · history · Diff isolation · `@` Diff · buffer compact) | Done |
+| `XaiopStream` (HTTP / SSE / RAW / WebSocket; wires cover · history · typeCheck · intercept · annotationSpan · control demux · `chunks()`) | Done |
+| typeCheck / TypeRegistry / TypeFreezeSession | Done |
+| Line intercept · Annotation Span | Done |
+| Control Root (`#!` session / ack / resume / snapshot / seq) | Done |
+| `XaiopWs` listen + connect (zero-dep RFC6455 + JDK client) | Done |
+| Phase encode · `symbolKeys` | Done |
+
+Full matrix + acceptable differences: **[ALIGNMENT.md](ALIGNMENT.md)**.
 
 ### How parity is verified
 
-The Java unit suite ports the Node reference suite's scenarios for parse, `@` / `!` / `=`
-addressing, the eight compatibility fixes, the encode option matrix, merge / inject, checkpoint
-phasing, and **stream** (`StreamTest` · `StreamConsistencyTest` · `StreamHttpTest`: phase Diff, window merge, asyncParse, busy/abort, promise/events, UTF-8 splits, HTTP/SSE smoke, one-shot identity), plus a seeded random JSON corpus and a chunked replay of
-[../../examples/complex.xaiop](../../examples/complex.xaiop). Float tokens follow the ECMAScript
+The Java unit suite ports the Node reference suite's scenarios. Float tokens follow the ECMAScript
 `Number::toString` surface exactly — the shortest decimal that round-trips, on any JDK — so encode
-output for the shared fixtures is byte-for-byte what Node emits.
+output for shared fixtures is byte-for-byte what Node emits. Assertions are Java-side expectations
+transcribed from Node. There is **no automated Node↔Java golden comparison in CI** — claim strength
+is "verified by the ported suite". Full map: [ALIGNMENT.md §5–§7](ALIGNMENT.md#5-test-map-node--java).
 
-That parity is asserted by Java-side tests against expectations transcribed from the Node suite.
-There is **no automated Node↔Java golden comparison in CI**, so treat the claim as "verified by the
-ported suite" rather than "continuously diffed". Divergence outside the ported scenarios is
-possible; report it against [../behavioral-contract.md](../behavioral-contract.md).
+| Area | Representative tests |
+| --- | --- |
+| Parse / fragment / live | `ParseTest` · `LiveParseTest` · `XaiopTest` |
+| Compat ×8 | `CompatTest` |
+| Encode / `symbolKeys` | `EncodeTest` · `EncodeRobustTest` · `SymbolKeysTest` |
+| Merge / engine | `MergeTest` · `MergeRobustTest` · `EngineTest` |
+| `@` / `!` / `&` / `#` | `BangAtTest` · `AmpDeleteTest` · `HashAnnotationTest` |
+| Checkpoint (window · cover · history · Diff isolation · `@` Diff · compact) | `CheckpointTest` · `CheckpointRobustTest` · `HistoryTest` · `CheckpointDiffIsolationTest` · `CheckpointBufferCompactTest` |
+| Stream (HTTP/SSE/RAW/WS · advanced options) | `StreamTest` · `StreamHttpTest` · `StreamConsistencyTest` · `StreamAdvancedTest` |
+| typeCheck · intercept · Annotation Span | `TypeCheckTest` · `LineInterceptTest` · `AnnotationSpanTest` |
+| Control Root · resume | `ControlPlaneTest` · `ControlResumeTest` |
+| WebSocket · phase encode | `WsSessionTest` · `PhaseEncodeTest` |
+
+Also: seeded random JSON corpus + chunked replay of [../../examples/complex.xaiop](../../examples/complex.xaiop).
 
 ---
 
+## Layout
+
+```text
+io.xaiop/                 facade · Parse · Encode · Merge · Engine · options · errors
+  compat/                 CompatPolicy · CompatFixId (×8)
+  types/                  TYPE · TypeRegistry · TypeFreezeSession · XaiopTypeError
+  control/                ControlDemux · ControlPlaneHost · ResumeWireLog · …
+  stream/                 DotCheckpointEngine · ParseHistory · XaiopStream · LineIntercept
+                          AnnotationSpan · PhaseEncode · Materialize · Transport
+  ws/                     XaiopWs · XaiopWsConnection · XaiopWsHub · Rfc6455*
+  internal/               Parser · Encoder · LabelEscape
+```
+
+---
 ## Java idioms
 
-The port keeps observable semantics, not JavaScript shapes.
+The port keeps observable semantics, not JavaScript shapes. See also [ALIGNMENT.md §3](ALIGNMENT.md#3-api-idiom-mapping-node--java).
 
 | Node.js | Java |
 | --- | --- |
 | `async` first, `*Sync` mirrors | **Sync first**; `Parse.parseAsync` / `Encode.encodeAsync` return `CompletableFuture`, and `DotCheckpointEngine` adds real (coalescing) `pushAsync` / `finishAsync` |
 | Plain objects / arrays | `LinkedHashMap<String,Object>` / `ArrayList<Object>` trees; scalars are `String`, `Integer` / `Long` / `Double`, `Boolean`, `null` |
 | `undefined` vs `null` | Java has **no `undefined`** — only `null` exists, so `undefinedPolicy` is inert (kept for option-table parity) |
+| Annotation Span keep (`return undefined`) | Return **`AnnotationSpan.KEEP`** (sentinel); `null` means drop / replace with null JSON |
+| `for await (... of stream.chunks())` | Blocking **`ChunkPull`** / `for (Object d : stream.chunks())` |
+| `AbortSignal` | `stream.abort()` · `SendOptions.timeoutMs` |
 | String unions (`root`, `style`, `keyOrder`, `nullPolicy`) | Enums on `EncodeOptions` |
 | `DOT_POLICY` constants | `DotPolicy` **string** constants (the option doubles as a path array) |
 | Options objects | Immutable builders (`EncodeOptions.builder()`, `MergeOptions.builder()`, `DotCheckpointEngine.Options`) |
@@ -76,7 +109,7 @@ The port keeps observable semantics, not JavaScript shapes.
 <dependency>
   <groupId>io.xaiop</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.5.0</version>
+  <version>0.15.1</version>
 </dependency>
 ```
 
@@ -118,11 +151,15 @@ String cut = Encode.encode(value, EncodeOptions.builder()
 
 Aligns with Node `XaiopStream` as a **consumer**: status machine
 `idle → connecting → streaming → completing → completed` (plus `aborted` / `error`); defaults
-`mergeChunkWindow=true`, `streamProcessing=true`.
+`mergeChunkWindow=true`, `streamProcessing=true`. Options pass through to the per-`send`
+`DotCheckpointEngine` and `ControlPlaneHost`: `cover`, `historySnapshot` / `historyRealtime`,
+`typeCheck` / `typeSchema`, `lineIntercept`, `annotationSpan`, `session` / `autoAck`, and control
+callbacks. Inbound text is control-demuxed before checkpoint push.
 
 ```java
 XaiopStream stream = Xaiop.stream("https://example.com/feed.xaiop");
 stream.onChunk(diff -> { /* phase Diff; empty phase → null */ });
+stream.onChunkWithMeta((diff, meta) -> { /* optional ChunkMeta (seq / escapes) */ });
 stream.onDone(snapshot -> { /* full-buffer Snapshot */ });
 stream.onError(err -> { /* ... */ });
 stream.send(new XaiopStream.SendOptions().transport(TransportKind.HTTP));
@@ -136,6 +173,12 @@ XaiopStream once = new XaiopStream("raw://x",
 Object jsonDone = once.send(new XaiopStream.SendOptions()
     .transport(TransportKind.RAW)
     .source(List.of(">\nz:9\n.\n"))).get();
+
+// Async-iterator pull (blocking ChunkPull; no extra deps)
+XaiopStream pull = new XaiopStream("raw://x",
+    XaiopStream.Options.defaults().modes(StreamMode.ASYNC_ITERATOR));
+pull.sendRaw(List.of(">\na:1\n.\n"));
+for (Object diff : pull.chunks()) { /* ... */ }
 ```
 
 | Transport | Notes |
@@ -143,8 +186,81 @@ Object jsonDone = once.send(new XaiopStream.SendOptions()
 | `HTTP` | `java.net.http.HttpClient` streaming body (default) |
 | `SSE` | `Accept: text/event-stream`; multi-line `data:` joined with `\n`; trailing newline appended so phases do not glue |
 | `RAW` | `Iterable` of `CharSequence`/`byte[]`, or `InputStream` (UTF-8 across reads) |
+| `WEBSOCKET` | Via `Transport` / `XaiopStream`; long-lived sessions prefer `XaiopWs` |
 
-**Not included:** WebSocket consume / listen·hub, `cover`, typeCheck, line intercept, Annotation Span.
+### WebSocket sessions (`XaiopWs`)
+
+```java
+import io.xaiop.ws.*;
+
+XaiopWsHub hub = XaiopWs.listen(new XaiopWsHub.ListenOptions().port(0).host("127.0.0.1")).join();
+hub.onConnection(conn -> {
+  conn.pushJson("title", "hello", false);
+  conn.end();
+});
+XaiopWs.ConnectOptions opts = new XaiopWs.ConnectOptions();
+opts.onPhase(diff -> { /* phase Diff */ });
+XaiopWsConnection client = XaiopWs.connect(hub.url(), opts).join();
+hub.close().join();
+```
+
+Zero runtime deps: listen uses a minimal RFC6455 `ServerSocket` stack; connect uses JDK
+`HttpClient` WebSocket. Handlers must be registered in connect options (locked after open).
+Phase push uses `PhaseEncode` (force `dotPolicy: none`; non-`final` appends `.\n`).
+
+### Stream advanced options
+
+```java
+XaiopStream.Options opts = XaiopStream.Options.defaults()
+    .cover(true)
+    .historySnapshot(true)
+    .historyRealtime(false)
+    .typeCheck(true)
+    .typeSchema(schema)          // CanonicalType / Map / surface string
+    .session(true)               // or Map session-init
+    .autoAck(true)
+    .symbolKeys(false)
+    .lineIntercept((line, ctx) -> line)           // return null to drop
+    .annotationSpan((cap, view) -> AnnotationSpan.KEEP);  // KEEP ↔ Node undefined
+
+XaiopStream stream = new XaiopStream("raw://x", opts);
+stream.send(new XaiopStream.SendOptions()
+    .transport(TransportKind.RAW)
+    .source(List.of(">\na:1\n.\n"))
+    .timeoutMs(15_000L));
+stream.abort();   // AbortSignal equivalent
+```
+
+| Option | Default | Role |
+| --- | --- | --- |
+| `cover` | `false` | Cover Diff on consecutive `&` runs |
+| `historySnapshot` / `historyRealtime` | `false` | Opt-in parse history |
+| `typeCheck` / `typeSchema` | off | Freeze / registry checks (forced off while compat on) |
+| `lineIntercept` | none | Per-line rewrite / drop before parse |
+| `annotationSpan` | none | `#` span capture → JSON / `KEEP` / `null` |
+| `session` / `autoAck` | off | Control Root demux + ack |
+| `symbolKeys` | `false` | U+001F label-escape dialect |
+| `modes` | callback | Also `PROMISE` · `ASYNC_ITERATOR` (`chunks()`) |
+
+### Types (`io.xaiop.types`)
+
+```java
+import io.xaiop.types.*;
+
+CanonicalType schema = Types.objectType(Map.of(
+    "id", Types.TYPE.INT,
+    "name", Types.TYPE.STRING));
+TypeFreezeSession session = new TypeFreezeSession(schema);
+session.observeTree(Map.of("id", 1, "name", "a"), true, List.of());
+```
+
+Canonical leaf kinds follow PROT-CONTENT (`int` · `float` · `bool` · `null` · `string`); structural `object` / `array`; meta `any`. Schema frames use `Types.TYPE_SCHEMA_FRAME_PREFIX` (`#!xaiop/types/v1`).
+
+### Control Root (`io.xaiop.control`)
+
+`ControlPlaneHost` demuxes `#!` frames (session / ack / resume / snapshot / seq / types) ahead of checkpoint ingest. Wire through `XaiopStream.Options.session(...)` / control callbacks, or host directly for custom transports. Resume replay uses `ResumeWireLog`.
+
+### Encode options
 
 | Option | Default | Notes |
 | --- | --- | --- |
@@ -249,7 +365,7 @@ All of these are unchecked, so call sites mirror the JavaScript throw-anywhere b
 
 ```bash
 cd xaiop-sdk/java
-mvn test                  # 221 tests
-mvn -DskipTests package   # target/xaiop-0.5.0.jar
-mvn test                  # includes StreamTest / StreamConsistencyTest / StreamHttpTest
+mvn test                  # full suite incl. StreamAdvancedTest
+mvn -DskipTests package   # target/xaiop-0.15.1.jar
+mvn test                  # includes StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```

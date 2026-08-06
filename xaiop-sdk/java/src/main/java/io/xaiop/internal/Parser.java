@@ -12,13 +12,14 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Deterministic XAIOP parser (protocol v0.4.0 Frozen).
+ * Deterministic XAIOP parser (protocol v0.6.0 Frozen).
  * Silent repair exists only under an explicit compatibility policy.
  *
  * <p>Faithful port of the internal {@code class Parser} from the Node.js SDK's
- * {@code parse.js}, including broadcast (multi-cursor) mode, exact/fuzzy path location,
- * compat line rewriting and pop-and-retry recovery. Objects are {@link LinkedHashMap}
- * (insertion order preserved); arrays are {@link ArrayList}.
+ * {@code parse.ts}, including broadcast (multi-cursor) mode, exact/fuzzy path location,
+ * {@code &} delete, {@code #} annotation ignore, compat line rewriting and pop-and-retry
+ * recovery. Objects are {@link LinkedHashMap} (insertion order preserved); arrays are
+ * {@link ArrayList}.
  */
 public final class Parser {
 
@@ -41,14 +42,24 @@ public final class Parser {
     ACTIVE
   }
 
-  /** One Cursor stack frame: a container kind plus the live container reference. */
+  /**
+   * One Cursor stack frame: a container kind plus the live container reference.
+   * {@code viaKey} is the named key used to enter this frame ({@code null} for anonymous /
+   * root / array-element frames). Used by {@link #cursorRestoreLines()}.
+   */
   static final class Frame {
     final NodeKind kind;
     final Object value;
+    final String viaKey;
 
     Frame(NodeKind kind, Object value) {
+      this(kind, value, null);
+    }
+
+    Frame(NodeKind kind, Object value, String viaKey) {
       this.kind = kind;
       this.value = value;
+      this.viaKey = viaKey;
     }
   }
 
@@ -297,6 +308,11 @@ public final class Parser {
   }
 
   private void handleLine(String line) {
+    // Protocol 0.6.0+: standalone custom-annotation line — no Cursor / tree effect.
+    if (line.startsWith("#")) {
+      return;
+    }
+
     if (line.equals(".")) {
       resetToRoot();
       return;
@@ -334,6 +350,11 @@ public final class Parser {
     if (line.startsWith("!")) {
       requireNotBroadcast("!");
       broadcastEnter(line.substring(1));
+      return;
+    }
+
+    if (line.startsWith("&")) {
+      deleteAtPath(line.substring(1));
       return;
     }
 
@@ -564,12 +585,12 @@ public final class Parser {
     Map<String, Object> obj = (Map<String, Object>) cur.value;
     Object existing = obj.get(name);
     if (existing instanceof Map<?, ?> existingMap) {
-      stack.add(new Frame(NodeKind.OBJECT, existingMap));
+      stack.add(new Frame(NodeKind.OBJECT, existingMap, name));
       return;
     }
     LinkedHashMap<String, Object> next = new LinkedHashMap<>();
     obj.put(name, next);
-    stack.add(new Frame(NodeKind.OBJECT, next));
+    stack.add(new Frame(NodeKind.OBJECT, next, name));
   }
 
   @SuppressWarnings("unchecked")
@@ -587,12 +608,12 @@ public final class Parser {
     Object existing = obj.get(name);
     // Align with >name objects: re-enter existing array (append); otherwise create.
     if (existing instanceof List<?> existingList) {
-      stack.add(new Frame(NodeKind.ARRAY, existingList));
+      stack.add(new Frame(NodeKind.ARRAY, existingList, name));
       return;
     }
     ArrayList<Object> next = new ArrayList<>();
     obj.put(name, next);
-    stack.add(new Frame(NodeKind.ARRAY, next));
+    stack.add(new Frame(NodeKind.ARRAY, next, name));
   }
 
   @SuppressWarnings("unchecked")
@@ -721,23 +742,195 @@ public final class Parser {
           // Need named children further down -- replace array with object.
           LinkedHashMap<String, Object> next = new LinkedHashMap<>();
           obj.put(seg, next);
-          stack.add(new Frame(NodeKind.OBJECT, next));
+          stack.add(new Frame(NodeKind.OBJECT, next, seg));
         } else {
-          stack.add(new Frame(NodeKind.ARRAY, existingList));
+          stack.add(new Frame(NodeKind.ARRAY, existingList, seg));
         }
         continue;
       }
 
       if (existing instanceof Map<?, ?> existingMap) {
-        stack.add(new Frame(NodeKind.OBJECT, existingMap));
+        stack.add(new Frame(NodeKind.OBJECT, existingMap, seg));
         continue;
       }
 
       // Missing or scalar -> create empty object and enter.
       LinkedHashMap<String, Object> next = new LinkedHashMap<>();
       obj.put(seg, next);
-      stack.add(new Frame(NodeKind.OBJECT, next));
+      stack.add(new Frame(NodeKind.OBJECT, next, seg));
     }
+  }
+
+  /**
+   * {@code &path} — delete deepest key. Single Cursor: absolute from Root.
+   * Broadcast: relative to each Cursor. Does not move Cursor.
+   */
+  private void deleteAtPath(String path) {
+    List<String> segments = splitPathSegments(path, lineNo, "&");
+
+    if (broadcastStacks != null) {
+      precheckBroadcastDelete(segments);
+      runOnCursors(() -> deleteRelative(segments));
+      return;
+    }
+
+    deleteAbsolute(segments);
+  }
+
+  private void precheckBroadcastDelete(List<String> segments) {
+    if (broadcastStacks == null) return;
+    List<List<Frame>> stacks = broadcastStacks;
+    for (int i = 0; i < stacks.size(); i++) {
+      stack = new ArrayList<>(stacks.get(i));
+      precheckRelativeDelete(segments);
+    }
+    stack = new ArrayList<>(stacks.get(0));
+  }
+
+  /** Absolute delete from document Root (single Cursor). */
+  @SuppressWarnings("unchecked")
+  private void deleteAbsolute(List<String> segments) {
+    if (docKind == DocKind.NONE) {
+      return; // no-op: nothing to delete
+    }
+    if (docKind == DocKind.FRAGMENT) {
+      throw new XaiopSyntaxError(
+          "&path requires an object document root (fragment root is not allowed)", lineNo);
+    }
+    if (docKind == DocKind.ARRAY || root instanceof List) {
+      throw new XaiopSyntaxError("&path requires an object document root", lineNo);
+    }
+    Map<String, Object> rootMap = (Map<String, Object>) root;
+    deleteFromObject(rootMap, segments);
+  }
+
+  /** Relative delete from current Cursor (broadcast). */
+  @SuppressWarnings("unchecked")
+  private void deleteRelative(List<String> segments) {
+    Frame cur = current();
+    if (cur.kind != NodeKind.OBJECT && cur.kind != NodeKind.FRAGMENT) {
+      throw new XaiopSyntaxError(
+          "&path relative delete requires an object Cursor", lineNo);
+    }
+    Map<String, Object> obj = (Map<String, Object>) cur.value;
+    deleteFromObject(obj, segments);
+  }
+
+  /**
+   * Fail before mutate if relative delete would remove a node on the Cursor chain.
+   * Missing target is allowed (no-op) — only chain conflicts error.
+   */
+  @SuppressWarnings("unchecked")
+  private void precheckRelativeDelete(List<String> segments) {
+    Frame cur = current();
+    if (cur.kind != NodeKind.OBJECT && cur.kind != NodeKind.FRAGMENT) {
+      throw new XaiopSyntaxError(
+          "&path relative delete requires an object Cursor", lineNo);
+    }
+    Map<String, Object> obj = (Map<String, Object>) cur.value;
+    for (int i = 0; i < segments.size(); i++) {
+      String seg = segments.get(i);
+      if (obj == null) {
+        return;
+      }
+      if (!obj.containsKey(seg)) {
+        return; // no-op
+      }
+      Object next = obj.get(seg);
+      if (i == segments.size() - 1) {
+        assertDeleteNotOnCursorChain(next);
+        return;
+      }
+      if (!(next instanceof Map)) {
+        return;
+      }
+      obj = (Map<String, Object>) next;
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void deleteFromObject(Map<String, Object> start, List<String> segments) {
+    Map<String, Object> obj = start;
+    for (int i = 0; i < segments.size() - 1; i++) {
+      String seg = segments.get(i);
+      if (obj == null || !obj.containsKey(seg)) {
+        return;
+      }
+      Object next = obj.get(seg);
+      if (!(next instanceof Map)) {
+        return; // cannot descend further — no-op
+      }
+      obj = (Map<String, Object>) next;
+    }
+
+    String last = segments.get(segments.size() - 1);
+    if (obj == null || !obj.containsKey(last)) {
+      return; // no-op
+    }
+
+    Object target = obj.get(last);
+    assertDeleteNotOnCursorChain(target);
+    obj.remove(last);
+  }
+
+  /**
+   * Deleting a value that is the current Cursor node or any ancestor on the stack
+   * is a syntax error (all modes).
+   */
+  private void assertDeleteNotOnCursorChain(Object target) {
+    if (target == null || (!(target instanceof Map) && !(target instanceof List))) {
+      return; // scalars / null cannot be stack frames
+    }
+    List<List<Frame>> stacks =
+        broadcastStacks != null ? broadcastStacks : List.of(stack);
+    for (List<Frame> st : stacks) {
+      for (Frame frame : st) {
+        if (frame.value == target) {
+          throw new XaiopSyntaxError(
+              "&path deletes a node on the Cursor chain", lineNo);
+        }
+      }
+    }
+  }
+
+  /**
+   * Lines to re-enter current Cursor after {@code .} (cover-mode restore).
+   * Named object/array keys only; anonymous / array-element frames → error.
+   */
+  /**
+   * Live document root kind for Diff isolation ({@code "object"} / {@code "array"} /
+   * {@code "fragment"}), or {@code null} when unset.
+   */
+  public String docKind() {
+    return switch (docKind) {
+      case OBJECT -> "object";
+      case ARRAY -> "array";
+      case FRAGMENT -> "fragment";
+      case NONE -> null;
+    };
+  }
+
+  public List<String> cursorRestoreLines() {
+    if (broadcastStacks != null) {
+      throw new XaiopSyntaxError(
+          "cursor restore is not available while broadcast mode is active", lineNo);
+    }
+    List<String> lines = new ArrayList<>();
+    for (int i = 1; i < stack.size(); i++) {
+      Frame frame = stack.get(i);
+      String via = frame.viaKey;
+      if (via == null || via.isEmpty()) {
+        throw new XaiopSyntaxError(
+            "cannot restore Cursor after . (anonymous or array-element frame on stack)",
+            lineNo);
+      }
+      if (frame.kind == NodeKind.ARRAY) {
+        lines.add(">" + via + "-");
+      } else {
+        lines.add(">" + via);
+      }
+    }
+    return lines;
   }
 
   /**

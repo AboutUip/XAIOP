@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Network transports for {@link XaiopStream}: HTTP body stream, SSE, and caller-supplied RAW
- * chunks (Node {@code transport.ts}, without WebSocket).
+ * Network transports for {@link XaiopStream}: HTTP body stream, SSE, WebSocket, and caller-supplied
+ * RAW chunks (Node {@code transport.ts}).
  */
 public final class Transport {
   private Transport() {}
@@ -82,6 +82,7 @@ public final class Transport {
                 switch (kind) {
                   case RAW -> runRaw(req, handlers, aborted);
                   case SSE -> runSse(req, handlers, aborted);
+                  case WEBSOCKET -> runWebSocket(req, handlers, aborted);
                   case HTTP -> runHttp(req, handlers, aborted);
                 }
                 if (!aborted.get()) handlers.onDone();
@@ -148,6 +149,115 @@ public final class Transport {
       b.connectTimeout(Duration.ofMillis(req.timeoutMs));
     }
     return b.build();
+  }
+
+  /**
+   * Consume a WebSocket as a text stream until the peer closes (Node {@code runWebSocket}).
+   *
+   * <p>For bidirectional XAIOP sessions prefer {@link io.xaiop.ws.XaiopWs}.
+   */
+  private static void runWebSocket(Options req, Handlers handlers, AtomicBoolean aborted)
+      throws IOException, InterruptedException {
+    if (req.url == null || req.url.isBlank()) {
+      throw new IllegalArgumentException("transport url is required");
+    }
+    HttpClient http = client(req);
+    java.util.concurrent.CompletableFuture<Void> done =
+        new java.util.concurrent.CompletableFuture<>();
+    StringBuilder textCarry = new StringBuilder();
+    Utf8StreamDecoder binaryDec = new Utf8StreamDecoder();
+
+    var builder = http.newWebSocketBuilder();
+    if (req.timeoutMs != null && req.timeoutMs > 0) {
+      builder.connectTimeout(Duration.ofMillis(req.timeoutMs));
+    }
+    if (req.headers != null) {
+      for (Map.Entry<String, String> e : req.headers.entrySet()) {
+        builder.header(e.getKey(), e.getValue());
+      }
+    }
+
+    java.net.http.WebSocket.Listener listener =
+        new java.net.http.WebSocket.Listener() {
+          @Override
+          public void onOpen(java.net.http.WebSocket webSocket) {
+            webSocket.request(1);
+          }
+
+          @Override
+          public java.util.concurrent.CompletionStage<?> onText(
+              java.net.http.WebSocket webSocket, CharSequence data, boolean last) {
+            if (aborted.get()) {
+              done.complete(null);
+              return null;
+            }
+            textCarry.append(data);
+            if (last) {
+              emitText(handlers, textCarry.toString());
+              textCarry.setLength(0);
+            }
+            webSocket.request(1);
+            return null;
+          }
+
+          @Override
+          public java.util.concurrent.CompletionStage<?> onBinary(
+              java.net.http.WebSocket webSocket, java.nio.ByteBuffer data, boolean last) {
+            if (aborted.get()) {
+              done.complete(null);
+              return null;
+            }
+            byte[] bytes = new byte[data.remaining()];
+            data.get(bytes);
+            emitText(handlers, binaryDec.push(bytes));
+            if (last) {
+              emitText(handlers, binaryDec.flush());
+            }
+            webSocket.request(1);
+            return null;
+          }
+
+          @Override
+          public java.util.concurrent.CompletionStage<?> onClose(
+              java.net.http.WebSocket webSocket, int statusCode, String reason) {
+            emitText(handlers, binaryDec.flush());
+            if (textCarry.length() > 0) {
+              emitText(handlers, textCarry.toString());
+              textCarry.setLength(0);
+            }
+            done.complete(null);
+            return null;
+          }
+
+          @Override
+          public void onError(java.net.http.WebSocket webSocket, Throwable error) {
+            done.completeExceptionally(error);
+          }
+        };
+
+    java.net.http.WebSocket ws =
+        builder.buildAsync(URI.create(req.url), listener).join();
+
+    while (!done.isDone()) {
+      if (aborted.get()) {
+        try {
+          ws.abort();
+        } catch (Exception ignored) {
+          /* ignore */
+        }
+        throw new IOException("aborted");
+      }
+      try {
+        done.get(50, java.util.concurrent.TimeUnit.MILLISECONDS);
+      } catch (java.util.concurrent.TimeoutException ignored) {
+        /* poll abort */
+      } catch (java.util.concurrent.ExecutionException e) {
+        Throwable c = e.getCause() == null ? e : e.getCause();
+        if (c instanceof IOException ioe) throw ioe;
+        if (c instanceof RuntimeException re) throw re;
+        throw new IOException(c);
+      }
+    }
   }
 
   private static HttpRequest buildRequest(Options req, Map<String, String> extraHeaders) {

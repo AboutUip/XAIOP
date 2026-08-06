@@ -18,8 +18,8 @@ class XaiopTest {
 
   @Test
   void protocolAndSdkVersions() {
-    assertEquals("0.4.0", Xaiop.PROTOCOL_VERSION);
-    assertEquals("0.5.0", Xaiop.SDK_VERSION);
+    assertEquals("0.6.0", Xaiop.PROTOCOL_VERSION);
+    assertEquals("0.15.1", Xaiop.SDK_VERSION);
   }
 
   @Test

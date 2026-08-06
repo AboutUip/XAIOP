@@ -4,6 +4,7 @@ package io.xaiop.stream;
 public enum TransportKind {
   HTTP("http"),
   SSE("sse"),
+  WEBSOCKET("websocket"),
   RAW("raw");
 
   private final String wire;

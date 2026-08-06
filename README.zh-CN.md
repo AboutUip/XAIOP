@@ -94,12 +94,12 @@ name:alice
 - **协议（仅线格式）** — [docs/protocol/](docs/protocol/) · [隔离说明](docs/SEPARATION.zh-CN.md) · [发布索引](docs/meta/releases.zh-CN.md) · [META-VER](docs/meta/status-and-versioning.zh-CN.md)
 - **实践** — [docs/practice/](docs/practice/) · [流式传输](docs/practice/streaming-transport.zh-CN.md) · [骨架 WS](docs/practice/skeleton-stream.zh-CN.md)
 - **Node.js SDK** — **[docs/sdk/nodejs/API.zh-CN.md](docs/sdk/nodejs/API.zh-CN.md)**（§6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根） · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [对等](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [SDK 对比耗时](dev/sdk-timing/)
-- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [代码](xaiop-sdk/java/)
+- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
 - **文档预览** — 与实验 UI 同站：`cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/)（Docsify 读 `docs/`；深色主题与 Lab 共用）
 - **实验 UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / 直播流 / API 正文渲染
 - **目标封存** — [docs/archive/](docs/archive/)（LLM 发射 / 评测口径刻意不放进现行枢纽）
 
-Java SDK 已启用（`io.xaiop:xaiop` **0.5.0** — parse · encode · merge · checkpoint · **XaiopStream** HTTP/SSE/RAW；协议线仍 **0.4.0**；WS / cover / typeCheck 等后续）。Node.js `xaiop` **0.15.0** 实现协议 **0.6.0**。Python 仍待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。
+Java SDK 已启用（`io.xaiop:xaiop` **0.15.1** — 与 Node 对齐的完整产品面 — 协议 **0.6.0**：parse · stream · encode · merge · history · WS · 控制根 · typeCheck · 行拦截 / Annotation Span）。Node.js `xaiop` **0.15.1** 实现协议 **0.6.0**。Python 仍待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。对等矩阵：[docs/sdk/java/ALIGNMENT.zh-CN.md](docs/sdk/java/ALIGNMENT.zh-CN.md)。
 
 **公告（2026-08-04）：** Skill **不再**以官方产品形态继续提供；源码仍可从 [`skills/`](skills/) 下载。完整说明：[docs/meta/release-notes-2026-08-04.zh-CN.md](docs/meta/release-notes-2026-08-04.zh-CN.md)。
 

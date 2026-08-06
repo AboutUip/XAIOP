@@ -19,7 +19,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * JSON &rarr; XAIOP encoder engine (protocol v0.4.0 wire), faithful port of the Node.js SDK's
+ * JSON &rarr; XAIOP encoder engine (protocol v0.6.0 wire), faithful port of the Node.js SDK's
  * {@code encode.js}. Internal: use {@link io.xaiop.Encode} instead.
  *
  * <p>Emits strict wire only (no compatibility-mode shapes). {@code .} frequency comes from

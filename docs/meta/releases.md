@@ -58,10 +58,12 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Protocol implemented | Notes |
 | --- | --- | --- |
+| `0.15.1` | `0.6.0` | Stream consumer wires cover/history/typeCheck/control/intercept/Annotation Span + `chunks()`; lockstep with Node tip. Living parity matrix: [../sdk/java/ALIGNMENT.md](../sdk/java/ALIGNMENT.md) |
+| `0.15.0` | `0.6.0` | Full Node-aligned surface: WS · Control Root · cover · typeCheck · intercept / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` consumer (HTTP / SSE / RAW); still wire **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
 
-Other languages: declare their own sealed mapping in language READMEs. A language that has not implemented `0.5.0` **MUST** continue to cite the protocol version it actually implements (e.g. Java may still cite `0.4.0`).
+Other languages: declare their own sealed mapping in language READMEs.
 
 ---
 
@@ -69,6 +71,8 @@ Other languages: declare their own sealed mapping in language READMEs. A languag
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-06 | [release-notes-2026-08-06-java-0.15.1.md](release-notes-2026-08-06-java-0.15.1.md) — Java `0.15.1` `XaiopStream` full option wiring |
+| 2026-08-06 | [release-notes-2026-08-06-java-0.15.0.md](release-notes-2026-08-06-java-0.15.0.md) — Java `0.15.0` full Node parity (protocol **0.6.0**) |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.1.md](release-notes-2026-08-05-0.15.1.md) — Node `0.15.1` Diff/Commit perf (single materialize) |
 | 2026-08-05 | [release-notes-2026-08-05-0.15.0.md](release-notes-2026-08-05-0.15.0.md) — Node `0.15.0` `bufferStats` / `compactCommitted` |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.3.md](release-notes-2026-08-05-0.14.3.md) — Node `0.14.3` `@` cumulative Diff (D2) / optional `onChunk` |

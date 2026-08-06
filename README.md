@@ -94,12 +94,12 @@ Materializes as:
 - **Protocol (wire only)** — [docs/protocol/](docs/protocol/) · [separation](docs/SEPARATION.md) · [releases](docs/meta/releases.md) · [META-VER](docs/meta/status-and-versioning.md)
 - **Practice** — [docs/practice/](docs/practice/) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
 - **Node.js SDK** — **[docs/sdk/nodejs/API.md](docs/sdk/nodejs/API.md)** (§6.4 line intercept · §6.5 Annotation Span · §7.7 Control Root) · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [parity](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/nodejs/) · [SDK timing](dev/sdk-timing/)
-- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [code](xaiop-sdk/java/)
+- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
 - **Preview docs** — same origin as lab: `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) (Docsify over `docs/`; shared dark theme)
 - **Lab UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / live stream / API markdown render
 - **Sealed archives** — [docs/archive/](docs/archive/) (LLM emit / metrics recipes deliberately out of live hubs)
 
-Java SDK is active (`io.xaiop:xaiop` **0.5.0** — parse · encode · merge · checkpoint · **XaiopStream** HTTP/SSE/RAW; wire still **0.4.0**; WS / cover / typeCheck later). Node.js `xaiop` **0.15.0** implements protocol **0.6.0**. Python is still pending. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout.
+Java SDK is active (`io.xaiop:xaiop` **0.15.1** — Node-aligned full surface — protocol **0.6.0**: parse · stream · encode · merge · history · WS · Control Root · typeCheck · intercept / Annotation Span). Node.js `xaiop` **0.15.1** implements protocol **0.6.0**. Python is still pending. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout. Parity matrix: [docs/sdk/java/ALIGNMENT.md](docs/sdk/java/ALIGNMENT.md).
 
 **Announcement (2026-08-04):** Skills are **no longer provided** as an official product; source remains downloadable from [`skills/`](skills/). Full notes: [docs/meta/release-notes-2026-08-04.md](docs/meta/release-notes-2026-08-04.md).
 

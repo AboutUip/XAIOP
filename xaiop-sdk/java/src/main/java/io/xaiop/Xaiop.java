@@ -4,12 +4,16 @@ import io.xaiop.compat.CompatFixId;
 import io.xaiop.compat.CompatPolicy;
 import io.xaiop.stream.DotCheckpointEngine;
 import io.xaiop.stream.XaiopStream;
+import io.xaiop.ws.XaiopWs;
+import io.xaiop.ws.XaiopWsConnection;
+import io.xaiop.ws.XaiopWsHub;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- * XAIOP Java SDK entry (artifact 0.5.0 · protocol wire 0.4.0 Frozen).
+ * XAIOP Java SDK entry (artifact 0.15.1 · protocol wire 0.6.0 Frozen).
  *
  * <p>Convenience facade over {@link Parse}, {@link Encode}, {@link Merge},
  * {@link DotCheckpointEngine}, and {@link XaiopStream}. Every method here is a thin delegate —
@@ -17,9 +21,9 @@ import java.util.function.Consumer;
  */
 public final class Xaiop {
   /** Wire protocol package implemented by this artifact. */
-  public static final String PROTOCOL_VERSION = "0.4.0";
+  public static final String PROTOCOL_VERSION = "0.6.0";
   /** Maven / JAR artifact version. */
-  public static final String SDK_VERSION = "0.5.0";
+  public static final String SDK_VERSION = "0.15.1";
 
   private Xaiop() {}
 
@@ -109,5 +113,23 @@ public final class Xaiop {
 
   public static XaiopStream stream(String url, XaiopStream.Options options) {
     return new XaiopStream(url, options);
+  }
+
+  /** WebSocket session entry — see {@link XaiopWs}. */
+  public static CompletableFuture<XaiopWsHub> wsListen(XaiopWsHub.ListenOptions options) {
+    return XaiopWs.listen(options);
+  }
+
+  public static CompletableFuture<XaiopWsHub> wsListen() {
+    return XaiopWs.listen();
+  }
+
+  public static CompletableFuture<XaiopWsConnection> wsConnect(String url) {
+    return XaiopWs.connect(url);
+  }
+
+  public static CompletableFuture<XaiopWsConnection> wsConnect(
+      String url, XaiopWs.ConnectOptions options) {
+    return XaiopWs.connect(url, options);
   }
 }

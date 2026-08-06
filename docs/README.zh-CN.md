@@ -54,7 +54,7 @@ LLM 发射 / 评测口径已迁入目标封存：[archive/practice-llm-emit-2026
 | 技术栈 | 文档 | 代码 |
 | --- | --- | --- |
 | **Node.js** | **[sdk/nodejs/API.zh-CN.md](sdk/nodejs/API.zh-CN.md)**（主入口 · §6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根；Node ≥ 18；浏览器相位消费用 `xaiop/browser`） · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.15.1** ↔ 协议 **0.6.0** |
-| Java | [sdk/java/](sdk/java/) | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.5.0**（stream 消费端）· 协议 **0.4.0** 子集 |
+| Java | [sdk/java/](sdk/java/) · **[ALIGNMENT](sdk/java/ALIGNMENT.zh-CN.md)** | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.15.1** — 协议 **0.6.0** |
 | Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — 待更新 |
 
 ---
