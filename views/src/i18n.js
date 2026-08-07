@@ -63,7 +63,7 @@ const messages = {
     "home.exploreOps": "Explore operators →",
     "home.sdkTitle": "SDK",
     "home.sdkBody":
-      "Node.js is the reference implementation; Java / Python are placeholders. API page renders the live docs/sdk/nodejs/API.md.",
+      "Node.js is the reference; Java 0.15.1 and Python 0.15.0a1 are official ports. Each stack renders its live docs/sdk/*/API.md.",
     "home.openApi": "Open API reference →",
     "home.tryTitle": "Try it",
     "home.tryBody":
@@ -72,21 +72,27 @@ const messages = {
     "home.stacks": "SDK stacks",
     "stack.active": "Active",
     "stack.pending": "Pending",
+    "stack.core": "Core-wire",
 
     "protocol.title": "Protocol reference",
     "protocol.lead":
-      "Frozen v0.4.0 wire grammar. Select an operator for semantics and a minimal sample. Authoritative text remains in docs/protocol.",
+      "Frozen v0.6.0 wire grammar. Select an operator for semantics and a minimal sample. Authoritative text remains in docs/protocol.",
     "protocol.example": "Example",
 
     "sdk.title": "{name} API reference",
     "sdk.leadActive":
-      "Renders the authoritative markdown from docs/sdk/nodejs (API.md). Filter sections below; open Docsify for the full docs tree.",
+      "Renders the authoritative markdown from docs/sdk/<stack>/API.md. Filter sections below; open Docsify for the full docs tree.",
     "sdk.leadPending":
-      "Updates after the Node.js surface stabilizes. Placeholder for now.",
+      "Updates after the reference surface stabilizes. Placeholder for now.",
+    "sdk.leadCore":
+      "Go remains on the core-protocol track (STRICT wire only). See docs/sdk/go and core-sdk-track notes — not a full product API surface.",
+    "sdk.coreNote":
+      "Protocol-conformant wire (parse/encode/Live). Product stream/WS/Control are out of scope for this track.",
     "sdk.source": "Source of truth",
     "sdk.liveHint":
       "Content comes from docs/ via Vite ?raw import — edit the markdown and refresh to see updates.",
     "sdk.openDocsify": "Open full docs tree (/docs) →",
+    "sdk.openAlignment": "Open ALIGNMENT matrix →",
     "sdk.notes": "Deep-dive notes",
     "sdk.search": "Filter sections",
     "sdk.searchPh": "Filter ## sections by keyword…",
@@ -224,7 +230,7 @@ const messages = {
     "home.exploreOps": "浏览算子 →",
     "home.sdkTitle": "SDK",
     "home.sdkBody":
-      "Node.js 为权威实现；Java / Python 占位。API 页直接渲染 docs/sdk/nodejs/API.zh-CN.md。",
+      "Node.js 为参考实现；Java 0.15.1 与 Python 0.15.0a1 为官方端口。各栈渲染对应 docs/sdk/*/API.md。",
     "home.openApi": "打开 API 参考 →",
     "home.tryTitle": "试用",
     "home.tryBody":
@@ -233,20 +239,26 @@ const messages = {
     "home.stacks": "SDK 栈",
     "stack.active": "进行中",
     "stack.pending": "待更新",
+    "stack.core": "核心线文",
 
     "protocol.title": "协议参考",
     "protocol.lead":
-      "Frozen v0.4.0 线文法。选择算子查看语义与最小样例。权威条文仍以 docs/protocol 为准。",
+      "Frozen v0.6.0 线文法。选择算子查看语义与最小样例。权威条文仍以 docs/protocol 为准。",
     "protocol.example": "示例",
 
     "sdk.title": "{name} API 参考",
     "sdk.leadActive":
-      "直接渲染 docs/sdk/nodejs/API.zh-CN.md 权威正文。下方可按章节过滤；完整文档树请打开 Docsify。",
-    "sdk.leadPending": "对齐 Node.js 稳定后更新。当前为占位。",
+      "直接渲染 docs/sdk/<栈>/API.md 权威正文。下方可按章节过滤；完整文档树请打开 Docsify。",
+    "sdk.leadPending": "对齐参考实现稳定后更新。当前为占位。",
+    "sdk.leadCore":
+      "Go 仍在核心协议轨（仅 STRICT 线文）。见 docs/sdk/go 与 core-sdk-track —— 非完整产品 API 面。",
+    "sdk.coreNote":
+      "协议符合的线文（parse/encode/Live）。产品流 / WS / Control 不在本轨范围。",
     "sdk.source": "权威来源",
     "sdk.liveHint":
       "内容来自 docs/ 的 Vite ?raw 导入——改 markdown 后刷新即可看到更新。",
     "sdk.openDocsify": "打开完整文档树（/docs）→",
+    "sdk.openAlignment": "打开 ALIGNMENT 矩阵 →",
     "sdk.notes": "专题笔记",
     "sdk.search": "过滤章节",
     "sdk.searchPh": "按关键词过滤 ## 章节…",

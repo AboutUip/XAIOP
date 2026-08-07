@@ -6,6 +6,7 @@
 
 | 文档 | 链接 |
 | --- | --- |
+| 发行说明（2026-08-07 · Python 0.15.0a1） | [../docs/meta/release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](../docs/meta/release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) |
 | 发行说明（2026-08-06 · 核心 SDK） | [../docs/meta/release-notes-2026-08-06-core-sdk.zh-CN.md](../docs/meta/release-notes-2026-08-06-core-sdk.zh-CN.md) |
 | 发行说明（2026-08-05 · 0.15.1） | [../docs/meta/release-notes-2026-08-05-0.15.1.zh-CN.md](../docs/meta/release-notes-2026-08-05-0.15.1.zh-CN.md) |
 | 发行说明（2026-08-05 · 0.14.3） | [../docs/meta/release-notes-2026-08-05-0.14.3.zh-CN.md](../docs/meta/release-notes-2026-08-05-0.14.3.zh-CN.md) |
@@ -24,5 +25,5 @@
 | --- | --- |
 | [nodejs/](nodejs/) | **进行中** — `xaiop` **0.15.1** <-> 协议 **0.6.0**（parse · stream · encode · merge · history · WS · 控制根 / logSeq · Diff 隔离 / `@` Diff · buffer compact） |
 | [java/](java/) | **进行中** — `io.xaiop:xaiop` **0.15.1** — 协议 **0.6.0**（与 Node 对齐的完整产品面；[ALIGNMENT](../docs/sdk/java/ALIGNMENT.zh-CN.md)） |
-| [python/](python/) | **核心协议线文完成** — `PROTOCOL_VERSION` **0.6.0** · 包 `0.6.0a1`（[轨道说明](../docs/sdk/notes/core-sdk-track.zh-CN.md)） |
+| [python/](python/) | **官方 alpha** — `xaiop` **0.15.0a1** — 协议 **0.6.0**（[ALIGNMENT](../docs/sdk/python/ALIGNMENT.zh-CN.md)） |
 | [go/](go/) | **核心协议线文完成** — `ProtocolVersion` **0.6.0** · module `0.6.0-alpha.1`（[轨道说明](../docs/sdk/notes/core-sdk-track.zh-CN.md)） |

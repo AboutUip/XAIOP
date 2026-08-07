@@ -1,4 +1,4 @@
-"""STRICT XAIOP wire parser (protocol v0.6.0 Frozen)."""
+"""XAIOP wire parser (protocol v0.6.0 Frozen)."""
 
 from __future__ import annotations
 
@@ -6,8 +6,10 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from .compat import CompatPolicy, resolve_compat_options
 from .errors import XaiopSyntaxError
 from .fragment import XaiopFragment
+from .label_escape import decode_wire_label
 
 NodeKind = Literal["object", "array", "fragment"]
 DocKind = Literal["none", "object", "array", "fragment"]
@@ -26,18 +28,47 @@ class Frame:
     via_key: str | None = None
 
 
-def parse_sync(source: str) -> Any | XaiopFragment:
-    """Parse a complete XAIOP wire document (STRICT mode only)."""
+def resolve_parse_options(
+    second: bool | CompatPolicy | dict[str, bool] | dict[str, Any] | Any = False,
+) -> tuple[dict[str, bool] | None, bool]:
+    if (
+        second
+        and isinstance(second, dict)
+        and not isinstance(second, CompatPolicy)
+        and (
+            "symbolKeys" in second
+            or "symbol_keys" in second
+            or (
+                "compat" in second
+                and not any(k in second for k in CompatPolicy().snapshot())
+            )
+        )
+    ):
+        compat_arg = second.get("compat", second.get("compat_mode", False))
+        symbol_keys = bool(second.get("symbolKeys", second.get("symbol_keys", False)))
+        return resolve_compat_options(compat_arg), symbol_keys
+    return resolve_compat_options(second), False
+
+
+def parse_sync(
+    source: str,
+    compat_or_options: bool | CompatPolicy | dict[str, bool] | dict[str, Any] | Any = False,
+) -> Any | XaiopFragment:
     if not isinstance(source, str):
         raise TypeError("XAIOP source must be a string")
-    return Parser(source).parse()
+    compat, symbol_keys = resolve_parse_options(compat_or_options)
+    return Parser(source, compat=compat, symbol_keys=symbol_keys).parse()
 
 
 class LiveParser:
     """Incremental parser: feed complete lines while keeping one live tree."""
 
-    def __init__(self) -> None:
-        self._p = Parser.create_live()
+    def __init__(
+        self,
+        compat_or_options: bool | CompatPolicy | dict[str, bool] | dict[str, Any] | Any = False,
+    ) -> None:
+        compat, symbol_keys = resolve_parse_options(compat_or_options)
+        self._p = Parser.create_live(compat=compat, symbol_keys=symbol_keys)
 
     def feed_line(self, line: str) -> LiveParser:
         if not isinstance(line, str):
@@ -54,6 +85,11 @@ class LiveParser:
             self._p.feed_line_fast(line)
         return self
 
+    def feed_lines(self, lines: list[str]) -> LiveParser:
+        for line in lines:
+            self.feed_line(line)
+        return self
+
     def value(self) -> Any | XaiopFragment:
         return self._p.result()
 
@@ -62,30 +98,58 @@ class LiveParser:
 
 
 class Parser:
-    def __init__(self, source: str) -> None:
+    def __init__(
+        self,
+        source: str,
+        *,
+        compat: dict[str, bool] | None = None,
+        symbol_keys: bool = False,
+    ) -> None:
         self.lines = split_lines(source)
         self.line_no = 0
         self._fed = 0
+        self._compat_root_ready = False
         self.root: Any = None
         self.fragment_entries: dict[str, Any] | None = None
         self.doc_kind: DocKind = "none"
         self.stack: list[Frame] = []
         self.broadcast_stacks: list[list[Frame]] | None = None
         self.phase: Literal["init", "active"] = "init"
+        self.compat = compat
+        self.symbol_keys = symbol_keys
 
     @staticmethod
-    def create_live() -> Parser:
-        return Parser("")
+    def create_live(
+        compat: dict[str, bool] | None = None,
+        symbol_keys: bool = False,
+    ) -> Parser:
+        return Parser("", compat=compat, symbol_keys=symbol_keys)
+
+    def _logical_name(self, wire_name: str) -> str:
+        return decode_wire_label(wire_name, self.symbol_keys)
 
     def feed_line_fast(self, line: str) -> None:
         self._fed += 1
         self.line_no = self._fed
         logical = strip_bom(line) if self._fed == 1 else line
+        if self.fix_enabled("forcedRoot") and not self._compat_root_ready:
+            self._compat_root_ready = True
+            self._inject_compat_root_if_needed(logical)
         if len(logical) == 0:
             raise XaiopSyntaxError(
                 "empty line is a Content syntax error", line=self.line_no
             )
-        self.handle_line(logical)
+        self.handle_line_compat(logical)
+
+    def _inject_compat_root_if_needed(self, first_line: str) -> None:
+        first = self.rewrite_compat_line(first_line)
+        if first in (">", "-"):
+            return
+        self.root = {}
+        self.doc_kind = "object"
+        self.fragment_entries = None
+        self.stack = [Frame("object", self.root)]
+        self.phase = "active"
 
     def result(self) -> Any | XaiopFragment:
         if self.doc_kind == "fragment":
@@ -94,7 +158,13 @@ class Parser:
             return {}
         return self.root
 
+    def fix_enabled(self, fix_id: str) -> bool:
+        return bool(self.compat and self.compat.get(fix_id))
+
     def parse(self) -> Any | XaiopFragment:
+        if self.fix_enabled("forcedRoot"):
+            self.ensure_compat_root_opener()
+            self._compat_root_ready = True
         for i, raw in enumerate(self.lines):
             self.line_no = i + 1
             line = strip_bom(raw) if i == 0 else raw
@@ -102,8 +172,90 @@ class Parser:
                 raise XaiopSyntaxError(
                     "empty line is a Content syntax error", line=self.line_no
                 )
-            self.handle_line(line)
+            self.handle_line_compat(line)
         return self.result()
+
+    def ensure_compat_root_opener(self) -> None:
+        if not self.lines:
+            return
+        first = self.rewrite_compat_line(strip_bom(self.lines[0]))
+        if first in (">", "-"):
+            return
+        self.root = {}
+        self.doc_kind = "object"
+        self.fragment_entries = None
+        self.stack = [Frame("object", self.root)]
+        self.phase = "active"
+
+    def rewrite_compat_line(self, line: str) -> str:
+        bare_array = self.fix_enabled("rewriteBareNameArray")
+        enter_line = self.fix_enabled("rewriteEnterLine")
+        if not bare_array and not enter_line:
+            return line
+
+        s = line.rstrip() if enter_line else line
+        if not s:
+            return line
+
+        if bare_array and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*-", s):
+            return f">{s}"
+
+        if enter_line and s.startswith(">") and len(s) > 1:
+            rest = s[1:]
+            trimmed_rest = rest.strip()
+            if not trimmed_rest:
+                return ">"
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*-", trimmed_rest):
+                return f">{trimmed_rest}"
+            if ":" in trimmed_rest:
+                return trimmed_rest
+            if trimmed_rest != rest:
+                return f">{trimmed_rest}"
+
+        return s
+
+    def handle_line_compat(self, line: str) -> None:
+        if not self.compat:
+            self.handle_line(line)
+            return
+
+        effective = self.rewrite_compat_line(line)
+        if not effective:
+            raise XaiopSyntaxError(
+                "empty line is a Content syntax error", line=self.line_no
+            )
+
+        if (
+            self.fix_enabled("ignoreBareLeaveAtRoot")
+            and effective == "<"
+            and self.is_at_document_root()
+        ):
+            return
+
+        try:
+            self.handle_line(effective)
+        except XaiopSyntaxError as err:
+            if not self.fix_enabled("popAndRetry"):
+                raise
+            self.recover_by_popping(effective, err)
+
+    def is_at_document_root(self) -> bool:
+        return len(self.stack) <= 1
+
+    def recover_by_popping(self, line: str, original_err: XaiopSyntaxError) -> None:
+        original_key = syntax_error_key(original_err)
+        while len(self.stack) > 1:
+            try:
+                self.pop_only()
+            except XaiopSyntaxError:
+                raise original_err from None
+            try:
+                self.handle_line(line)
+                return
+            except XaiopSyntaxError as err2:
+                if syntax_error_key(err2) != original_key:
+                    raise
+        raise original_err
 
     def handle_line(self, line: str) -> None:
         if line.startswith("#"):
@@ -119,14 +271,14 @@ class Parser:
             return
 
         if line.startswith("<") and len(line) > 1:
-            name = line[1:]
-            assert_name(name, self.line_no)
-            self.precheck_broadcast_pop()
+            name = self._logical_name(line[1:])
+            assert_name(name, self.line_no, self.symbol_keys)
 
             def op() -> None:
                 self.pop_only()
                 self.create_enter_named_object(name)
 
+            self.precheck_broadcast_pop()
             self.run_on_cursors(op)
             return
 
@@ -157,8 +309,8 @@ class Parser:
             return
 
         if line.startswith(">") and line.endswith("-") and len(line) > 2:
-            name = line[1:-1]
-            assert_name(name, self.line_no)
+            name = self._logical_name(line[1:-1])
+            assert_name(name, self.line_no, self.symbol_keys)
             self.run_on_cursors(lambda: self.create_enter_named_array(name))
             return
 
@@ -169,9 +321,9 @@ class Parser:
                 )
             name = line[1:]
             if ">" in name:
-                parts = name.split(">")
+                parts = [self._logical_name(p) for p in name.split(">")]
                 for p in parts:
-                    assert_name(p, self.line_no)
+                    assert_name(p, self.line_no, self.symbol_keys)
 
                 def op_multi() -> None:
                     for p in parts:
@@ -179,8 +331,9 @@ class Parser:
 
                 self.run_on_cursors(op_multi)
                 return
-            assert_name(name, self.line_no)
-            self.run_on_cursors(lambda: self.create_enter_named_object(name))
+            logical = self._logical_name(name)
+            assert_name(logical, self.line_no, self.symbol_keys)
+            self.run_on_cursors(lambda: self.create_enter_named_object(logical))
             return
 
         colon = line.find(":")
@@ -188,7 +341,7 @@ class Parser:
             raise XaiopSyntaxError(
                 f"Bare Label or unknown line form: {line!r}", line=self.line_no
             )
-        key = line[:colon]
+        key = self._logical_name(line[:colon])
         raw_value = line[colon + 1 :]
         value = parse_value(raw_value)
         self.run_on_cursors(lambda: self.write_content(key, value))
@@ -383,9 +536,40 @@ class Parser:
         tree = self.fragment_entries if self.doc_kind == "fragment" else self.root
 
         def segs_of(p: str) -> list[str]:
-            return [x for x in p.split(">") if x]
+            return [self._logical_name(x) for x in p.split(">") if x]
 
         found = fuzzy_find(tree, segs_of(path))
+        if not found and self.compat:
+            trimmed = path.strip()
+            cleared = re.sub(r"\s+", "", path)
+
+            if self.fix_enabled("locatePathTrim") and trimmed and trimmed != path:
+                found = fuzzy_find(tree, segs_of(trimmed))
+
+            if (
+                not found
+                and self.fix_enabled("locatePathStripSpaces")
+                and cleared
+                and cleared != path
+                and cleared != trimmed
+            ):
+                found = fuzzy_find(tree, segs_of(cleared))
+
+            if not found and self.fix_enabled("locatePathArraySuffix"):
+                for_suffix = (
+                    cleared
+                    if self.fix_enabled("locatePathStripSpaces") and cleared
+                    else trimmed
+                    if self.fix_enabled("locatePathTrim") and trimmed
+                    else path
+                )
+                if any(
+                    len(s) > 1 and s.endswith("-") for s in for_suffix.split(">")
+                ):
+                    found = fuzzy_find_compat_array_create_suffix(
+                        tree, segs_of(for_suffix)
+                    )
+
         if not found:
             raise XaiopSyntaxError(f"=path not found: {path}", line=self.line_no)
         self.stack = found
@@ -393,7 +577,7 @@ class Parser:
 
     def exact_enter(self, path: str) -> None:
         self.require_not_broadcast("@")
-        segments = split_path_segments(path, self.line_no, "@")
+        segments = split_path_segments(path, self.line_no, "@", self.symbol_keys)
         if self.doc_kind == "none":
             self.ensure_document_object_root()
         self.broadcast_stacks = None
@@ -436,7 +620,7 @@ class Parser:
     def broadcast_enter(self, path: str) -> None:
         if self.doc_kind == "none":
             raise XaiopSyntaxError("!path before any tree exists", line=self.line_no)
-        segments = split_path_segments(path, self.line_no, "!")
+        segments = split_path_segments(path, self.line_no, "!", self.symbol_keys)
         matches: list[list[Frame]] = []
         tree = self.fragment_entries if self.doc_kind == "fragment" else self.root
         if self.doc_kind == "fragment":
@@ -453,7 +637,7 @@ class Parser:
         self.phase = "active"
 
     def delete_at_path(self, path: str) -> None:
-        segments = split_path_segments(path, self.line_no, "&")
+        segments = split_path_segments(path, self.line_no, "&", self.symbol_keys)
         if self.broadcast_stacks:
             self.precheck_broadcast_delete(segments)
             self.run_on_cursors(lambda: self.delete_relative(segments))
@@ -599,20 +783,29 @@ def strip_bom(s: str) -> str:
     return s[1:] if s and ord(s[0]) == 0xFEFF else s
 
 
-def assert_name(name: str, line_no: int) -> None:
+def syntax_error_key(err: XaiopSyntaxError) -> str:
+    msg = str(err)
+    return re.sub(r"^line \d+:\s*", "", msg)
+
+
+def assert_name(name: str, line_no: int, symbol_keys: bool = False) -> None:
     if (
         not name
-        or any(c.isspace() for c in name)
+        or any(c.isspace() and ord(c) != 0x1F for c in name)
         or ":" in name
-        or name.endswith("-")
-        or (name and name[0] in _OPERATOR_HEADS)
-        or "@" in name
-        or "&" in name
+        or (not symbol_keys and name.endswith("-"))
+        or (not symbol_keys and name and name[0] in _OPERATOR_HEADS)
+        or (not symbol_keys and ("@" in name or "&" in name))
     ):
         raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
 
 
-def split_path_segments(path: str, line_no: int, op: str) -> list[str]:
+def split_path_segments(
+    path: str,
+    line_no: int,
+    op: str,
+    symbol_keys: bool = False,
+) -> list[str]:
     if not path:
         raise XaiopSyntaxError(f"empty {op} path", line=line_no)
     if (
@@ -622,9 +815,9 @@ def split_path_segments(path: str, line_no: int, op: str) -> list[str]:
         or any(len(s) == 0 for s in path.split(">"))
     ):
         raise XaiopSyntaxError(f"invalid {op} path: {path!r}", line=line_no)
-    segments = path.split(">")
+    segments = [decode_wire_label(s, symbol_keys) for s in path.split(">")]
     for s in segments:
-        assert_name(s, line_no)
+        assert_name(s, line_no, symbol_keys)
     return segments
 
 
@@ -734,8 +927,23 @@ def fuzzy_find(
     segments: list[str],
     trail: list[Frame] | None = None,
 ) -> list[Frame] | None:
-    if trail is None:
-        trail = []
+    return _fuzzy_find_inner(node, segments, trail or [], False)
+
+
+def fuzzy_find_compat_array_create_suffix(
+    node: Any,
+    segments: list[str],
+    trail: list[Frame] | None = None,
+) -> list[Frame] | None:
+    return _fuzzy_find_inner(node, segments, trail or [], True)
+
+
+def _fuzzy_find_inner(
+    node: Any,
+    segments: list[str],
+    trail: list[Frame],
+    allow_array_create_suffix: bool,
+) -> list[Frame] | None:
     if not segments:
         return trail if trail else None
     if node is None or not isinstance(node, (dict, list)):
@@ -744,7 +952,7 @@ def fuzzy_find(
     if isinstance(node, list):
         frame = Frame("array", node)
         for el in node:
-            hit = fuzzy_find(el, segments, [*trail, frame])
+            hit = _fuzzy_find_inner(el, segments, [*trail, frame], allow_array_create_suffix)
             if hit:
                 return hit
         return None
@@ -760,17 +968,23 @@ def fuzzy_find(
                 return [*trail, frame, Frame(kind, child)]
             return [*trail, frame]
         if child is not None and isinstance(child, (dict, list)):
-            return fuzzy_find(child, rest, [*trail, frame])
+            return _fuzzy_find_inner(child, rest, [*trail, frame], allow_array_create_suffix)
         return None
 
     if head in obj:
         hit = try_child(obj[head])
         if hit:
             return hit
+    elif allow_array_create_suffix and len(head) > 1 and head.endswith("-"):
+        base = head[:-1]
+        if base in obj and isinstance(obj[base], list):
+            hit = try_child(obj[base])
+            if hit:
+                return hit
 
     for child in obj.values():
         if child is not None and isinstance(child, (dict, list)):
-            hit = fuzzy_find(child, segments, [*trail, frame])
+            hit = _fuzzy_find_inner(child, segments, [*trail, frame], allow_array_create_suffix)
             if hit:
                 return hit
     return None

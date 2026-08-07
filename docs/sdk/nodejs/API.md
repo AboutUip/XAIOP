@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.6.0 Frozen (sealed)  
-**SDK**: 0.15.0 (TypeScript)  
+**SDK**: 0.15.1 (TypeScript)  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
 **Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`)  
 **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
@@ -106,7 +106,7 @@ Primary methods are **async**, with matching **sync** variants (parse / encode /
 
 ## 2. Core concepts
 
-**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.15.0**).
+**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.15.1**).
 
 - Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 - Seal and release index: [../../meta/releases.md](../../meta/releases.md)
@@ -894,7 +894,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.15.0"` |
+| `SDK_VERSION` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.6.0 Frozen（已封存）  
-**SDK 版本**: 0.15.0（TypeScript）
+**SDK 版本**: 0.15.1（TypeScript）
 **运行时**: 默认入口 **Node.js ≥ 18（ESM）**；浏览器用子路径（见 §0）  
 **代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）  
 **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -106,7 +106,7 @@ await client.done;
 
 ## 2. 核心概念
 
-**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.15.0**）。
+**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.15.1**）。
 
 - 完整文法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)
 - 封存与发行索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -893,7 +893,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.15.0"` |
+| `SDK_VERSION` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

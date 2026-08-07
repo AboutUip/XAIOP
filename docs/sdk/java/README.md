@@ -14,6 +14,7 @@ This package tracks the Node.js reference (`xaiop` **0.15.1** ↔ protocol **0.6
 **observable-semantics** level. Pin the artifact version; read `Xaiop.PROTOCOL_VERSION` for the
 wire version. Java has no `xaiop/browser` subpath — listen and connect share one JDK package.
 
+**API reference (authoritative):** **[API.md](API.md)** — full surface (§0–§11): Parse · Encode · Engine · Stream · WS · Control · Compat · types · errors.  
 **Parity matrix (Java ↔ Node):** **[ALIGNMENT.md](ALIGNMENT.md)** — feature table · idiom map · package map · test map · acceptable differences · §8 checklist.  
 **Isolation:** Protocol = wire only · Practice = model & streaming transport · This package = APIs — [../../SEPARATION.md](../../SEPARATION.md).  
 **Contract:** [../behavioral-contract.md](../behavioral-contract.md) (protocol conformant ≠ official-SDK-equivalent).  
@@ -47,8 +48,11 @@ Full matrix + acceptable differences: **[ALIGNMENT.md](ALIGNMENT.md)**.
 The Java unit suite ports the Node reference suite's scenarios. Float tokens follow the ECMAScript
 `Number::toString` surface exactly — the shortest decimal that round-trips, on any JDK — so encode
 output for shared fixtures is byte-for-byte what Node emits. Assertions are Java-side expectations
-transcribed from Node. There is **no automated Node↔Java golden comparison in CI** — claim strength
-is "verified by the ported suite". Full map: [ALIGNMENT.md §5–§7](ALIGNMENT.md#5-test-map-node--java).
+transcribed from Node. **Node↔Java golden comparison also runs in CI** (encode / parse / stream Diff
+NDJSON dumps under [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/); see
+[`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) job `golden`). Claim strength:
+"verified by the ported suite **and** continuously golden-diffed against Node in CI". Full map:
+[ALIGNMENT.md §5–§7](ALIGNMENT.md#5-test-map-node--java).
 
 | Area | Representative tests |
 | --- | --- |

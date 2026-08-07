@@ -11,5 +11,12 @@
   { "deep": { "a": { "b": { "c": 1 } } } },
   { "emptyObj": {}, "emptyArr": [] },
   { "f": 0.1, "g": 1e-6 },
-  { "root": { "left": 1, "right": [2, 3] } }
+  { "root": { "left": 1, "right": [2, 3] } },
+  { "asciiLabel": { "hello": "world", "emojiTag": "ok" } },
+  { "forced": { "a": "5", "b": "true", "c": "null" } },
+  { "named": { "items": [{ "id": 1 }, { "id": 2 }], "meta": { "n": 2 } } },
+  { "emptyRoot": {} },
+  [],
+  { "long": { "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" } },
+  { "mixDepth": { "a": { "b": [1, { "c": null }, true] }, "z": 0 } }
 ]

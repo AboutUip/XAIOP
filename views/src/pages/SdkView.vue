@@ -6,8 +6,12 @@ import { useI18n } from "@/i18n.js";
 import { sdkStacks } from "@/data/xaiop-catalog.js";
 import { extractToc, renderMarkdown } from "@/lib/md-docs.js";
 
-import apiEn from "@docs/sdk/nodejs/API.md?raw";
-import apiZh from "@docs/sdk/nodejs/API.zh-CN.md?raw";
+import apiNodeEn from "@docs/sdk/nodejs/API.md?raw";
+import apiNodeZh from "@docs/sdk/nodejs/API.zh-CN.md?raw";
+import apiJavaEn from "@docs/sdk/java/API.md?raw";
+import apiJavaZh from "@docs/sdk/java/API.zh-CN.md?raw";
+import apiPythonEn from "@docs/sdk/python/API.md?raw";
+import apiPythonZh from "@docs/sdk/python/API.zh-CN.md?raw";
 
 const props = defineProps({
   stack: { type: String, default: "nodejs" },
@@ -22,11 +26,21 @@ const current = computed(
   () => sdkStacks.find((s) => s.id === stackId.value) ?? sdkStacks[0],
 );
 
+const apiByStack = {
+  nodejs: { en: apiNodeEn, zh: apiNodeZh },
+  java: { en: apiJavaEn, zh: apiJavaZh },
+  python: { en: apiPythonEn, zh: apiPythonZh },
+};
+
 watch(stackId, (id) => {
   if (!sdkStacks.some((s) => s.id === id)) {
     router.replace({ name: "sdk-stack", params: { stack: "nodejs" } });
   }
 });
+
+const hasApiDoc = computed(
+  () => current.value.status === "active" && Boolean(apiByStack[current.value.id]),
+);
 
 const toc = computed(() =>
   sdkStacks.map((s) => ({
@@ -42,15 +56,15 @@ const toc = computed(() =>
 );
 
 const sourceMd = computed(() => {
-  if (current.value.status !== "active") return "";
-  return locale.value === "zh" ? apiZh : apiEn;
+  if (!hasApiDoc.value) return "";
+  const pack = apiByStack[current.value.id];
+  return locale.value === "zh" ? pack.zh : pack.en;
 });
 
 const filteredMd = computed(() => {
   const md = sourceMd.value;
   const q = query.value.trim();
   if (!q) return md;
-  // Keep front matter / title, filter ## sections that match
   const parts = md.split(/(?=^## )/m);
   if (parts.length <= 1) return md;
   const head = parts[0];
@@ -61,14 +75,16 @@ const filteredMd = computed(() => {
   return head + kept.join("");
 });
 
+const docsRelDir = computed(() => `sdk/${current.value.id}`);
+
 const html = computed(() =>
-  current.value.status === "active"
-    ? renderMarkdown(filteredMd.value, { docsRelDir: "sdk/nodejs" })
+  hasApiDoc.value
+    ? renderMarkdown(filteredMd.value, { docsRelDir: docsRelDir.value })
     : "",
 );
 
 const rail = computed(() =>
-  current.value.status === "active"
+  hasApiDoc.value
     ? extractToc(filteredMd.value).map((r) => ({
         href: r.href,
         label: r.label,
@@ -77,21 +93,30 @@ const rail = computed(() =>
 );
 
 const pageTitle = computed(() =>
-  current.value.status === "active"
+  hasApiDoc.value
     ? t("sdk.title", { name: current.value.name })
     : current.value.name,
 );
 
-const pageLead = computed(() =>
-  current.value.status === "active" ? t("sdk.leadActive") : t("sdk.leadPending"),
-);
+const pageLead = computed(() => {
+  if (hasApiDoc.value) return t("sdk.leadActive");
+  if (current.value.status === "core") return t("sdk.leadCore");
+  return t("sdk.leadPending");
+});
 
 const docsifyUrl = computed(() => {
-  const page = locale.value === "zh" ? "sdk/nodejs/API.zh-CN" : "sdk/nodejs/API";
+  if (!hasApiDoc.value) {
+    return `/docs/#/${current.value.docs.replace(/^docs\//, "").replace(/\/$/, "")}/`;
+  }
+  const page =
+    locale.value === "zh"
+      ? `sdk/${current.value.id}/API.zh-CN`
+      : `sdk/${current.value.id}/API`;
   return `/docs/#/${page}`;
 });
 
 const noteLinks = computed(() => {
+  if (current.value.id !== "nodejs") return [];
   const zh = locale.value === "zh";
   const suf = zh ? ".zh-CN" : "";
   const base = "/docs/#/sdk/nodejs/notes/";
@@ -103,6 +128,17 @@ const noteLinks = computed(() => {
     { label: zh ? "流式解析" : "Streaming parse", href: `${base}streaming-parse${suf}` },
   ];
 });
+
+const alignmentUrl = computed(() => {
+  if (current.value.id === "java" || current.value.id === "python") {
+    const page =
+      locale.value === "zh"
+        ? `sdk/${current.value.id}/ALIGNMENT.zh-CN`
+        : `sdk/${current.value.id}/ALIGNMENT`;
+    return `/docs/#/${page}`;
+  }
+  return null;
+});
 </script>
 
 <template>
@@ -111,12 +147,23 @@ const noteLinks = computed(() => {
       <div class="side-note">
         <p>{{ t("sdk.source") }}</p>
         <code>docs/sdk/{{ current.id }}/</code>
+        <p v-if="current.sdkVersion" class="side-ver">
+          SDK {{ current.sdkVersion }}
+        </p>
         <p class="side-sub">{{ t("sdk.liveHint") }}</p>
         <a class="docsify-link" :href="docsifyUrl" target="_blank" rel="noopener">{{
           t("sdk.openDocsify")
         }}</a>
+        <a
+          v-if="alignmentUrl"
+          class="docsify-link"
+          :href="alignmentUrl"
+          target="_blank"
+          rel="noopener"
+          >{{ t("sdk.openAlignment") }}</a
+        >
       </div>
-      <div v-if="current.status === 'active'" class="side-notes">
+      <div v-if="noteLinks.length" class="side-notes">
         <p>{{ t("sdk.notes") }}</p>
         <a
           v-for="n in noteLinks"
@@ -130,7 +177,7 @@ const noteLinks = computed(() => {
       </div>
     </template>
 
-    <template v-if="current.status === 'active'">
+    <template v-if="hasApiDoc">
       <div class="toolbar">
         <label class="search">
           <span class="sr-only">{{ t("sdk.search") }}</span>
@@ -150,7 +197,11 @@ const noteLinks = computed(() => {
       <p>
         {{ t("sdk.docs") }}: <code>{{ current.docs }}</code><br />
         {{ t("sdk.code") }}: <code>{{ current.code }}</code>
+        <template v-if="current.sdkVersion">
+          <br />SDK: <code>{{ current.sdkVersion }}</code>
+        </template>
       </p>
+      <p v-if="current.status === 'core'" class="core-note">{{ t("sdk.coreNote") }}</p>
       <RouterLink to="/sdk/nodejs">{{ t("sdk.viewNode") }}</RouterLink>
     </section>
   </DocsShell>
@@ -172,6 +223,15 @@ const noteLinks = computed(() => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+.side-ver {
+  margin-top: 0.45rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--ink-2) !important;
+  font-size: 0.82rem !important;
 }
 
 .side-sub {
@@ -328,5 +388,11 @@ const noteLinks = computed(() => {
 
 .pending p {
   margin-bottom: 1rem;
+}
+
+.core-note {
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 </style>

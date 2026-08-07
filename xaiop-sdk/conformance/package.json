@@ -2,7 +2,7 @@
   "name": "xaiop-conformance",
   "private": true,
   "type": "module",
-  "description": "Node↔Java golden dumps, Python↔Go core-wire, compare, and fuzz orchestration for XAIOP",
+  "description": "Node\u2194Java / Node\u2194Python golden dumps, Python\u2194Go core-wire, fuzz",
   "scripts": {
     "build:node": "npm run build:ts --prefix ../nodejs",
     "dump:node": "node node/dump-goldens.mjs --out out/node.ndjson",
@@ -14,6 +14,9 @@
     "compare:core": "node core-wire/compare-core.mjs out/python.ndjson out/go.ndjson",
     "core-wire": "npm run dump:python && npm run dump:go && npm run compare:core",
     "fuzz:node": "node fuzz/fuzz-node.mjs --max=200",
-    "fuzz:java": "node fuzz/fuzz-java/run-fuzz.mjs --max=200"
+    "fuzz:java": "node fuzz/fuzz-java/run-fuzz.mjs --max=200",
+    "dump:python-product": "python python/dump-goldens.py --out out/python-product.ndjson",
+    "compare:python": "node compare.mjs out/node.ndjson out/python-product.ndjson",
+    "golden:python": "npm run build:node && npm run dump:node && npm run dump:python-product && npm run compare:python"
   }
 }

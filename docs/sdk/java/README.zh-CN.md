@@ -12,6 +12,7 @@
 
 本包在**可观测语义**上对齐 Node.js 参考实现（`xaiop` **0.15.1** ↔ 协议 **0.6.0**）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
 
+**API 参考（权威）：** **[API.zh-CN.md](API.zh-CN.md)** — 完整表面（§0–§11）：Parse · Encode · Engine · Stream · WS · Control · Compat · 类型 · 错误。  
 **对等矩阵（Java ↔ Node）：** **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** — 功能表 · 惯用法 · 包映射 · 测试映射 · 可接受差异 · §8 清单。  
 **隔离：** 协议 = 仅线格式 · 实践 = 模型与流式传输 · 本包 = API — [../../SEPARATION.zh-CN.md](../../SEPARATION.zh-CN.md)。  
 **契约：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（协议合规 ≠ 官方 SDK 等价）。  

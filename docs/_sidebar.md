@@ -27,10 +27,9 @@
 
 * **SDK**
   * [Index](/sdk/README.md)
-  * **java**
-    * [Index](/sdk/java/README.md)
   * **nodejs**
     * [Index](/sdk/nodejs/README.md)
+    * [API](/sdk/nodejs/API.md)
     * **notes**
       * [Index](/sdk/nodejs/notes/README.md)
       * [adjustment policy](/sdk/nodejs/notes/adjustment-policy.md)
@@ -41,18 +40,28 @@
       * [streaming parse](/sdk/nodejs/notes/streaming-parse.md)
       * [typecheck](/sdk/nodejs/notes/typecheck.md)
       * [ws session](/sdk/nodejs/notes/ws-session.md)
-    * [API](/sdk/nodejs/API.md)
+  * **java**
+    * [Index](/sdk/java/README.md)
+    * [API](/sdk/java/API.md)
+    * [ALIGNMENT](/sdk/java/ALIGNMENT.md)
+  * **python**
+    * [Index](/sdk/python/README.md)
+    * [API](/sdk/python/API.md)
+    * [ALIGNMENT](/sdk/python/ALIGNMENT.md)
+  * **go**
+    * [Index](/sdk/go/README.md)
   * **notes**
     * [Index](/sdk/notes/README.md)
     * [principles](/sdk/notes/principles.md)
-  * **python**
-    * [Index](/sdk/python/README.md)
+    * [core-sdk-track](/sdk/notes/core-sdk-track.md)
   * [behavioral contract](/sdk/behavioral-contract.md)
 
 * **Meta**
   * [document conventions](/meta/document-conventions.md)
   * [releases](/meta/releases.md)
   * [release notes 2026-08-04](/meta/release-notes-2026-08-04.md)
+  * [release notes · Python 0.15.0a1](/meta/release-notes-2026-08-07-python-0.15.0a1.md)
+  * [release notes · core SDK 2026-08-06](/meta/release-notes-2026-08-06-core-sdk.md)
   * [revisions](/meta/revisions.md)
   * [status and versioning](/meta/status-and-versioning.md)
 

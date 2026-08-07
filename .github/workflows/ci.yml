@@ -42,7 +42,7 @@ jobs:
       - name: Python SDK tests
         working-directory: xaiop-sdk/python
         run: |
-          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[dev,http,ws]"
           python -m pytest -q
 
   go:
@@ -113,6 +113,36 @@ jobs:
       - name: Compare Python ↔ Go
         working-directory: xaiop-sdk/conformance
         run: node core-wire/compare-core.mjs out/python.ndjson out/go.ndjson
+
+
+  golden-python:
+    needs: [node, python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: xaiop-sdk/nodejs/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build Node SDK
+        working-directory: xaiop-sdk/nodejs
+        run: npm ci && npm run build:ts
+      - name: Install Python SDK
+        working-directory: xaiop-sdk/python
+        run: python -m pip install -e ".[dev,http,ws]"
+      - name: Dump Node goldens
+        working-directory: xaiop-sdk/conformance
+        run: node node/dump-goldens.mjs --out out/node.ndjson
+      - name: Dump Python goldens
+        working-directory: xaiop-sdk/conformance
+        run: python python/dump-goldens.py --out out/python-product.ndjson
+      - name: Compare Node ↔ Python
+        working-directory: xaiop-sdk/conformance
+        run: node compare.mjs out/node.ndjson out/python-product.ndjson
 
   fuzz:
     runs-on: ubuntu-latest

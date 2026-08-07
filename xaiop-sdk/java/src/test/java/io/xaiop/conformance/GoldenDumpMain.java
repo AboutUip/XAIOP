@@ -25,15 +25,27 @@ import java.util.Map;
  * Or via {@code xaiop-sdk/conformance/java/run-dump.mjs}.
  */
 public final class GoldenDumpMain {
+  private static final String[] PARSE_STREAM = {
+    "complex",
+    "stream-phases",
+    "overwrite-id",
+    "delete-phases",
+    "at-array-d2",
+    "bang-broadcast",
+  };
+
   private GoldenDumpMain() {}
 
   public static void main(String[] args) throws Exception {
     Path fixtures = resolveFixtures(args);
     dumpEncode(fixtures);
-    dumpParse(fixtures, "complex");
-    dumpParse(fixtures, "stream-phases");
-    dumpStream(fixtures, "complex", "complex");
-    dumpStream(fixtures, "stream-phases", "phases");
+    for (String name : PARSE_STREAM) {
+      dumpParse(fixtures, name);
+    }
+    for (String name : PARSE_STREAM) {
+      String caseSuffix = "stream-phases".equals(name) ? "phases" : name;
+      dumpStream(fixtures, name, caseSuffix);
+    }
   }
 
   private static Path resolveFixtures(String[] args) {

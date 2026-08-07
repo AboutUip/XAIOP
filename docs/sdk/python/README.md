@@ -5,39 +5,47 @@
 | Field | Value |
 | --- | --- |
 | Package | `xaiop` |
-| Track | **Core protocol** (not full product SDK) |
+| Track | **Official product SDK** (alpha) |
 | Protocol | **0.6.0** Frozen (`PROTOCOL_VERSION`) |
-| SDK | `0.6.0a1` (`SDK_VERSION`, PEP 440) |
+| SDK | `0.15.0a1` (`SDK_VERSION`) |
 | Code | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
+| **API reference** | **[API.md](API.md)** (authoritative surface) |
+| Parity | **[ALIGNMENT.md](ALIGNMENT.md)** |
 
-**Implemented:** STRICT `parse_sync` · `LiveParser` · `encode_sync` · `materialize` · Fragment / Content / `&` `#` `.` `=` `@` `!`.  
-**Out of scope:** Node/`0.15.1` product surface (stream · WS · history · Control Root · typeCheck · ...).
+Official port of Node `xaiop` **0.15.1** product surface (no browser). Protocol wire remains **0.6.0**.
 
-Peer: [../go/](../go/). Policy: [../notes/core-sdk-track.md](../notes/core-sdk-track.md).  
-Fixtures: [../../../xaiop-sdk/conformance/core-wire/](../../../xaiop-sdk/conformance/core-wire/).
+For the full Python API (parse / encode / engine / stream / WS / control / types), see **[API.md](API.md)**.
 
 ## Status
 
-**Wire-complete** on the core-protocol track — protocol-conformant, not Node product parity.
+**0.15.0a1 alpha** — full surface implemented; soak then bump to **0.15.1**. Do not claim full Node **0.15.1** release parity until that bump (see [ALIGNMENT.md](ALIGNMENT.md)).
 
-## Public API
+## Public API (selected)
 
 ```python
-from xaiop import parse_sync, encode_sync, LiveParser, materialize, XaiopFragment
+from xaiop import (
+    parse_sync, encode_sync, LiveParser, materialize,
+    XaiopEngine, DotCheckpointEngine, XaiopStream, XaiopWs,
+    CompatPolicy, TypeRegistry, AnnotationSpan,
+)
 ```
+
+Optional extras: `pip install "xaiop[http,ws]"` (`httpx`, `websockets`).
 
 ## Verify
 
 ```bash
 cd xaiop-sdk/python
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-## Cross-check / CI
+≈ **296** unit tests under `tests/`. Parity matrix: [ALIGNMENT.md](ALIGNMENT.md).
+
+## Golden / CI
 
 ```bash
-cd xaiop-sdk/conformance && npm run core-wire
+cd xaiop-sdk/conformance && npm run golden:python
 ```
 
-CI jobs: see `.github/workflows/ci.yml` (`python` / `go` / `core-wire`).
+**32** Node↔Python golden cases (encode corpus + operator fixtures). Jobs: `python`, `golden-python` in `.github/workflows/ci.yml`.

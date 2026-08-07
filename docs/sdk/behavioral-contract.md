@@ -215,6 +215,8 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 
 **Official Java port (`io.xaiop:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port).
 
+**Official Python port (`xaiop` 0.15.0a1):** satisfies this checklist at alpha — see [python/ALIGNMENT.md §8](python/ALIGNMENT.md). Target release **0.15.1** after soak. Verification: expanded pytest (~296) + `golden-python` (**32** NDJSON cases).
+
 **Golden suites (Node):** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`.
 
 ---
@@ -225,3 +227,4 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 - Separation: [../SEPARATION.md](../SEPARATION.md)  
 - Node guide: [nodejs/README.md](nodejs/README.md)  
 - Java parity matrix: [java/ALIGNMENT.md](java/ALIGNMENT.md)
+- Python parity matrix: [python/ALIGNMENT.md](python/ALIGNMENT.md)

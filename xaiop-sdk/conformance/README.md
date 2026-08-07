@@ -1,4 +1,4 @@
-# XAIOP Node ↔ Java golden conformance
+# XAIOP golden conformance
 
 Cross-SDK golden dumps and comparison for encode / parse / stream Diff parity.  
 Fuzz harness: [`fuzz/`](fuzz/).  
@@ -8,9 +8,10 @@ Python ↔ Go **core-wire** (STRICT protocol track, **not** product golden): [`c
 
 | Path | Role |
 | --- | --- |
-| `fixtures/` | Shared `.xaiop` / JSON corpus (Node ↔ Java) |
+| `fixtures/` | Shared `.xaiop` / JSON corpus (Node ↔ Java ↔ Python) |
 | `node/dump-goldens.mjs` | Node NDJSON dump |
 | `java/run-dump.mjs` | Compiles Java test main and dumps NDJSON |
+| `python/dump-goldens.py` | Python product NDJSON dump |
 | `compare.mjs` | Deep-equal trees/diffs; byte-equal wire |
 | `core-wire/` | Python ↔ Go STRICT corpus (`cases.json`) + dump/compare |
 | `fuzz/` | Mutation fuzz (Node + Java) |
@@ -28,6 +29,8 @@ Each line:
 
 Case ids must match across runtimes. Stream cases use `DotCheckpointEngine` with `mergeChunkWindow: false`.
 
+**Product golden coverage:** encode corpus (**20**) + parse/stream for `complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast` → **32** cases.
+
 ## Run locally
 
 ### Node ↔ Java golden
@@ -38,13 +41,19 @@ npm run golden
 
 Prerequisites: Node ≥ 18, JDK 17+, Maven 3.9+, and a built Node SDK (`cd ../nodejs && npm run build:ts` — dump-goldens builds if `dist/` is missing).
 
+### Node ↔ Python golden
+
+```bash
+# once:
+cd ../python && python -m pip install -e ".[dev,http,ws]"
+
+cd ../conformance
+npm run golden:python
+```
+
 ### Python ↔ Go core-wire
 
 ```bash
-# from xaiop-sdk/python once:
-python -m pip install -e ".[dev]"
-
-cd xaiop-sdk/conformance
 npm run core-wire
 ```
 
@@ -61,4 +70,4 @@ Unexpected crashes (non-`XaiopSyntaxError`) fail the process.
 
 ## CI
 
-`.github/workflows/ci.yml` jobs: `node`, `java`, `python`, `go`, `golden` (Node↔Java), `core-wire` (Python↔Go), `fuzz`.
+`.github/workflows/ci.yml` jobs: `node`, `java`, `python`, `go`, `golden` (Node↔Java), `golden-python` (Node↔Python), `core-wire` (Python↔Go), `fuzz`.

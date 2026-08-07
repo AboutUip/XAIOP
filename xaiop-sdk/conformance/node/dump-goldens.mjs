@@ -64,7 +64,14 @@ function dumpEncode() {
 }
 
 function dumpParse() {
-  for (const name of ["complex", "stream-phases"]) {
+  for (const name of [
+    "complex",
+    "stream-phases",
+    "overwrite-id",
+    "delete-phases",
+    "at-array-d2",
+    "bang-broadcast",
+  ]) {
     const wire = readFileSync(join(FIXTURES, `${name}.xaiop`), "utf8");
     const tree = materializeSnapshot(parseSync(wire));
     emit({ case: `parse:${name}`, kind: "parse", tree });
@@ -80,8 +87,12 @@ function dumpStream(name) {
   });
   engine.push(wire);
   engine.finish();
+  const caseName =
+    name === "stream-phases"
+      ? "phases"
+      : name;
   emit({
-    case: `stream:${name === "stream-phases" ? "phases" : name}`,
+    case: `stream:${caseName}`,
     kind: "stream",
     diffs,
     snapshot: engine.snapshot ?? null,
@@ -90,8 +101,16 @@ function dumpStream(name) {
 
 dumpEncode();
 dumpParse();
-dumpStream("complex");
-dumpStream("stream-phases");
+for (const name of [
+  "complex",
+  "stream-phases",
+  "overwrite-id",
+  "delete-phases",
+  "at-array-d2",
+  "bang-broadcast",
+]) {
+  dumpStream(name);
+}
 
 const body = lines.join("\n") + "\n";
 const outPath = parseOutPath(process.argv);

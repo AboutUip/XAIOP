@@ -1,13 +1,15 @@
 /**
  * Shared catalog for docs alignment + Vue API / protocol preview.
- * Keep in sync with xaiop-sdk/nodejs/src/index.d.ts
+ * Keep versions in sync with sealed protocol 0.6.0 and tip SDKs
+ * (Node/Java 0.15.1 · Python 0.15.0a1).
  */
 
 export const meta = {
   protocolVersion: "0.6.0",
   packageName: "xaiop",
-  packageVersion: "0.13.0",
-  runtime: "Node.js ≥ 18 (ESM)",
+  packageVersion: "0.15.1",
+  pythonPackageVersion: "0.15.0a1",
+  runtime: "Node.js ≥ 18 (ESM) · Java 17+ · Python ≥ 3.10",
   previewApp: "views/",
 };
 
@@ -114,6 +116,16 @@ export const operators = [
     example: "!test\nz:1\n.",
   },
   {
+    id: "delete",
+    symbol: "&path",
+    kind: "Structure",
+    title: "Delete",
+    titleZh: "删除",
+    summary: "Delete deepest key; does not move Cursor (protocol 0.6.0)",
+    summaryZh: "删除最深键；不移动 Cursor（协议 0.6.0）",
+    example: ">\n>a\nx:1\n.\n>b\ny:2\n&a",
+  },
+  {
     id: "content",
     symbol: "key:value",
     kind: "Content",
@@ -122,6 +134,16 @@ export const operators = [
     summary: "First-`:` split; int→float→bool→null→string; leading space forces string",
     summaryZh: "按首个 `:` 分割；int→float→bool→null→string；`: ` 后空格强制字符串",
     example: "n:5\ns: 5\nok:true\nempty:null",
+  },
+  {
+    id: "annotation",
+    symbol: "#…",
+    kind: "Annotation",
+    title: "Annotation",
+    titleZh: "注解",
+    summary: "Line starting with # ignored by parse; Span / Control Root may consume",
+    summaryZh: "以 # 开头的行 parse 忽略；Span / Control Root 可消费",
+    example: ">\n# note\nx:1",
   },
   {
     id: "scalar",
@@ -144,7 +166,7 @@ export const nodeSdkApis = [
       {
         name: "PROTOCOL_VERSION",
         kind: "const",
-        signature: 'PROTOCOL_VERSION: "0.4.0"',
+        signature: 'PROTOCOL_VERSION: "0.6.0"',
         returns: "string",
         summary: "Frozen protocol version string",
         summaryZh: "冻结协议版本字符串",
@@ -376,8 +398,8 @@ export const nodeSdkApis = [
           "new XaiopStream(url, { streamProcessing?, mergeChunkWindow?, asyncParse?, historySnapshot?, historyRealtime?, modes? })",
         returns: "XaiopStream",
         summary:
-          "Independent stream client; history flags default off (0.7.0+)",
-        summaryZh: "独立流客户端；历史标志默认关（0.7.0+）",
+          "Independent stream client; cover/history/typeCheck/intercept/span/control (0.15.x)",
+        summaryZh: "独立流客户端；cover/history/typeCheck/拦截/Span/控制面（0.15.x）",
       },
       {
         name: "setUrl / setStreamProcessing / setModes",
@@ -542,10 +564,10 @@ export const nodeSdkApis = [
       {
         name: "SDK_VERSION / PROTOCOL_VERSION",
         kind: "const",
-        signature: 'SDK_VERSION "0.7.0" · PROTOCOL_VERSION "0.4.0"',
+        signature: 'SDK_VERSION "0.15.1" · PROTOCOL_VERSION "0.6.0"',
         returns: "string",
-        summary: "Package vs wire version (may diverge)",
-        summaryZh: "包版本 vs 线格式版本（可分离）",
+        summary: "Package vs wire version (may diverge across tips)",
+        summaryZh: "包版本 vs 线格式版本（各 tip 可分离）",
       },
       {
         name: "MERGE_CONFLICT / HISTORY_NODE_KIND",
@@ -564,25 +586,41 @@ export const sdkStacks = [
     id: "nodejs",
     name: "Node.js",
     status: "active",
-    statusZh: "进行中",
+    statusZh: "官方参考",
+    sdkVersion: "0.15.1",
     docs: "docs/sdk/nodejs/",
+    api: "docs/sdk/nodejs/API.md",
     code: "xaiop-sdk/nodejs/",
   },
   {
     id: "java",
     name: "Java",
     status: "active",
-    statusZh: "进行中",
+    statusZh: "官方端口",
+    sdkVersion: "0.15.1",
     docs: "docs/sdk/java/",
+    api: "docs/sdk/java/API.md",
     code: "xaiop-sdk/java/",
   },
   {
     id: "python",
     name: "Python",
-    status: "pending",
-    statusZh: "待更新",
+    status: "active",
+    statusZh: "官方 alpha",
+    sdkVersion: "0.15.0a1",
     docs: "docs/sdk/python/",
+    api: "docs/sdk/python/API.md",
     code: "xaiop-sdk/python/",
+  },
+  {
+    id: "go",
+    name: "Go",
+    status: "core",
+    statusZh: "核心线文轨",
+    sdkVersion: "0.6.0-alpha.1",
+    docs: "docs/sdk/go/",
+    api: null,
+    code: "xaiop-sdk/go/",
   },
 ];
 

@@ -6,6 +6,7 @@
 
 | Docs | Link |
 | --- | --- |
+| Release notes (2026-08-07 · Python 0.15.0a1) | [../docs/meta/release-notes-2026-08-07-python-0.15.0a1.md](../docs/meta/release-notes-2026-08-07-python-0.15.0a1.md) |
 | Release notes (2026-08-06 · core SDKs) | [../docs/meta/release-notes-2026-08-06-core-sdk.md](../docs/meta/release-notes-2026-08-06-core-sdk.md) |
 | Release notes (2026-08-05 · 0.15.1) | [../docs/meta/release-notes-2026-08-05-0.15.1.md](../docs/meta/release-notes-2026-08-05-0.15.1.md) |
 | Release notes (2026-08-05 · 0.14.3) | [../docs/meta/release-notes-2026-08-05-0.14.3.md](../docs/meta/release-notes-2026-08-05-0.14.3.md) |
@@ -24,5 +25,5 @@
 | --- | --- |
 | [nodejs/](nodejs/) | **Active** — `xaiop` **0.15.1** <-> protocol **0.6.0** (parse · stream · encode · merge · history · WS · Control Root / logSeq · Diff isolation / `@` Diff · buffer compact) |
 | [java/](java/) | **Active** — `io.xaiop:xaiop` **0.15.1** — protocol **0.6.0** (full Node-aligned surface; [ALIGNMENT](../docs/sdk/java/ALIGNMENT.md)) |
-| [python/](python/) | **Core-protocol wire-complete** — `PROTOCOL_VERSION` **0.6.0** · package `0.6.0a1` ([track](../docs/sdk/notes/core-sdk-track.md)) |
+| [python/](python/) | **Official alpha** — `xaiop` **0.15.0a1** — protocol **0.6.0** ([ALIGNMENT](../docs/sdk/python/ALIGNMENT.md)) |
 | [go/](go/) | **Core-protocol wire-complete** — `ProtocolVersion` **0.6.0** · module `0.6.0-alpha.1` ([track](../docs/sdk/notes/core-sdk-track.md)) |

@@ -1,26 +1,190 @@
-"""XAIOP Python SDK — core protocol track (wire v0.6.0 Frozen)."""
+"""XAIOP Python SDK — official SDK alpha (wire v0.6.0)."""
 
 from __future__ import annotations
 
-from .encode import encode_sync
+from .annotation_span import (
+    AnnotationSpan,
+    AnnotationSpanView,
+    apply_annotation_spans,
+    encode_as_sibling_lines,
+    path_escapes_type_check,
+)
+from .checkpoint import DotCheckpointEngine
+from .clone import clone_json
+from .compat import COMPAT_FIX_DEFAULTS, COMPAT_FIX_IDS, CompatPolicy, resolve_compat_options
+from .control import (
+    CONTROL_CAPABILITY,
+    CONTROL_NAME,
+    CONTROL_NS,
+    ControlDemux,
+    ControlFrame,
+    ControlIngest,
+    ControlPlaneHost,
+    ControlSessionState,
+    ResumeWireLog,
+    XaiopControlError,
+    XaiopResumeLogError,
+    create_session_id,
+    dispatch_control_frame,
+    encode_ack_frame,
+    encode_control_frame,
+    encode_resume_frame,
+    encode_seq_frame,
+    encode_session_frame,
+    encode_snapshot_frame,
+    is_sdk_control_line,
+    parse_control_body_json,
+    parse_control_header,
+    stamp_wire_with_log_seq,
+)
+from .encode import DOT_POLICY, encode_sync
+from .engine import PROTOCOL_VERSION, SDK_VERSION, XaiopEngine
 from .errors import XaiopEncodeError, XaiopSyntaxError
 from .fragment import XaiopFragment
-from .materialize import materialize
+from .history import HISTORY_NODE_KIND, ParseHistory, RangeError
+from .label_escape import (
+    LABEL_ESCAPE_INTRODUCER,
+    decode_wire_label,
+    encode_wire_label,
+    key_needs_symbol_escape,
+)
+from .line_intercept import LINE_KIND, LineView, classify_line, run_line_intercept_chain
+from .materialize import materialize, materialize_owned, materialize_snapshot
+from .merge import (
+    MERGE_CONFLICT,
+    format_inject_result,
+    merge_json,
+    merge_to_json,
+    merge_to_xaiop,
+    to_mergeable_json,
+)
+from .modes import ALL_STREAM_MODES, STREAM_MODES, normalize_modes
 from .parse import LiveParser, parse_sync
+from .phase_encode import encode_phase_json, encode_phase_object
+from .schedule import schedule_immediate
+from .states import STREAM_IDLE_LIKE, STREAM_STATUS, is_stream_busy
+from .stream import TRANSPORT_KIND, XaiopStream, chunks_of, open_transport
+from .types import (
+    TYPE,
+    TYPE_SCHEMA_FRAME_PREFIX,
+    TypeChecker,
+    TypeFreezeSession,
+    TypeRegistry,
+    XaiopTypeError,
+    array_type,
+    canonicalize_type,
+    classify_value,
+    clone_type,
+    encode_type_schema_frame,
+    object_type,
+    parse_type_surface,
+    try_parse_type_schema_frame,
+    type_compatible,
+    type_to_string,
+    value_matches_type,
+)
+from .ws import XaiopWs, XaiopWsConnection, XaiopWsHub, listen as ws_listen
 
-__version__ = "0.6.0a1"
-PROTOCOL_VERSION = "0.6.0"
-SDK_VERSION = __version__
+__version__ = "0.15.0a1"
 
 __all__ = [
+    "COMPAT_FIX_DEFAULTS",
+    "COMPAT_FIX_IDS",
+    "CONTROL_CAPABILITY",
+    "CONTROL_NAME",
+    "CONTROL_NS",
+    "DOT_POLICY",
+    "HISTORY_NODE_KIND",
+    "LABEL_ESCAPE_INTRODUCER",
+    "LINE_KIND",
+    "MERGE_CONFLICT",
     "PROTOCOL_VERSION",
     "SDK_VERSION",
-    "XaiopEncodeError",
-    "XaiopFragment",
-    "XaiopSyntaxError",
+    "TYPE",
+    "STREAM_MODES",
+    "STREAM_STATUS",
+    "STREAM_IDLE_LIKE",
+    "TRANSPORT_KIND",
+    "ALL_STREAM_MODES",
+    "AnnotationSpan",
+    "AnnotationSpanView",
+    "CompatPolicy",
+    "ControlDemux",
+    "ControlFrame",
+    "ControlIngest",
+    "ControlPlaneHost",
+    "ControlSessionState",
+    "DotCheckpointEngine",
     "LiveParser",
+    "LineView",
+    "ParseHistory",
+    "RangeError",
+    "ResumeWireLog",
+    "TypeChecker",
+    "TypeFreezeSession",
+    "TypeRegistry",
+    "XaiopControlError",
+    "XaiopEncodeError",
+    "TYPE_SCHEMA_FRAME_PREFIX",
+    "XaiopEngine",
+    "XaiopStream",
+    "XaiopWs",
+    "XaiopWsConnection",
+    "XaiopWsHub",
+    "XaiopFragment",
+    "XaiopResumeLogError",
+    "XaiopSyntaxError",
+    "XaiopTypeError",
     "__version__",
+    "apply_annotation_spans",
+    "array_type",
+    "canonicalize_type",
+    "chunks_of",
+    "classify_line",
+    "classify_value",
+    "clone_json",
+    "clone_type",
+    "create_session_id",
+    "decode_wire_label",
+    "dispatch_control_frame",
+    "encode_ack_frame",
+    "encode_as_sibling_lines",
+    "encode_control_frame",
+    "encode_phase_json",
+    "encode_phase_object",
+    "encode_resume_frame",
+    "encode_seq_frame",
+    "encode_session_frame",
+    "encode_snapshot_frame",
     "encode_sync",
+    "encode_type_schema_frame",
+    "encode_wire_label",
+    "format_inject_result",
+    "is_sdk_control_line",
+    "is_stream_busy",
+    "key_needs_symbol_escape",
     "materialize",
+    "materialize_owned",
+    "materialize_snapshot",
+    "merge_json",
+    "merge_to_json",
+    "merge_to_xaiop",
+    "normalize_modes",
+    "object_type",
+    "open_transport",
+    "parse_control_body_json",
+    "parse_control_header",
     "parse_sync",
+    "parse_type_surface",
+    "path_escapes_type_check",
+    "resolve_compat_options",
+    "run_line_intercept_chain",
+    "schedule_immediate",
+    "stamp_wire_with_log_seq",
+    "to_mergeable_json",
+    "try_parse_type_schema_frame",
+    "type_compatible",
+    "type_to_string",
+    "value_matches_type",
+    "ws_listen",
 ]

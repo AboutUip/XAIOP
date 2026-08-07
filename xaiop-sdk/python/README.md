@@ -1,40 +1,19 @@
 # XAIOP Python SDK
 
-Installable package `xaiop` on the **core protocol track** (wire **v0.6.0 Frozen**, STRICT).
+Official product SDK alpha (`xaiop` **0.15.0a1**, protocol **0.6.0**).
 
-Guide: [../../docs/sdk/python/README.md](../../docs/sdk/python/README.md) · Simplified Chinese: [../../docs/sdk/python/README.zh-CN.md](../../docs/sdk/python/README.zh-CN.md)  
-Shared scope: [../../docs/sdk/notes/core-sdk-track.md](../../docs/sdk/notes/core-sdk-track.md)
-
-## Status
-
-| Item | State |
-| --- | --- |
-| Layout / package | **Active** |
-| `PROTOCOL_VERSION` | **0.6.0** |
-| `SDK_VERSION` | **0.6.0a1** |
-| Parse / encode / Live / materialize | **Implemented** (STRICT) |
-| Product surface (stream · WS · control · ...) | **Out of scope** |
-
-Aligned peer: [../go/](../go/). Corpus: [../conformance/core-wire/](../conformance/core-wire/).
+Guide: [../../docs/sdk/python/README.md](../../docs/sdk/python/README.md)
+Parity: [../../docs/sdk/python/ALIGNMENT.md](../../docs/sdk/python/ALIGNMENT.md)
 
 ## Setup
 
 ```bash
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-## Cross-check (Python ↔ Go)
+## Golden
 
 ```bash
-cd ../conformance
-npm run core-wire
-```
-
-## Layout
-
-```text
-pyproject.toml
-src/xaiop/          # parse · encode · Live · materialize
-tests/              # includes cases.json corpus
+cd ../conformance && npm run golden:python
 ```

@@ -68,8 +68,8 @@
 
 | SDK | 协议 | 说明 |
 | --- | --- | --- |
-| Python **0.6.0a1** | `0.6.0` | 核心协议 STRICT 线文（parse / encode / Live / materialize）；非 Node 产品对等。轨道：[../sdk/notes/core-sdk-track.zh-CN.md](../sdk/notes/core-sdk-track.zh-CN.md) |
-| Go **0.6.0-alpha.1** | `0.6.0` | 与 Python 同一核心协议轨；CI 用 `cmd/dump-core-wire` |
+| Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha）；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
+| Go **0.6.0-alpha.1** | `0.6.0` | 核心协议轨（STRICT 线文）；`cmd/dump-core-wire` 用于 CI |
 
 其他语言：在各语言 README 中声明自身的封存映射。
 
@@ -79,6 +79,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-07 | [release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) — Python `0.15.0a1` 官方端口 alpha |
 | 2026-08-06 | [release-notes-2026-08-06-core-sdk.zh-CN.md](release-notes-2026-08-06-core-sdk.zh-CN.md) — Python `0.6.0a1` · Go `0.6.0-alpha.1` 核心线文 + CI |
 | 2026-08-06 | [release-notes-2026-08-06-java-0.15.1.zh-CN.md](release-notes-2026-08-06-java-0.15.1.zh-CN.md) — Java `0.15.1` `XaiopStream` 完整选项接线 |
 | 2026-08-06 | [release-notes-2026-08-06-java-0.15.0.zh-CN.md](release-notes-2026-08-06-java-0.15.0.zh-CN.md) — Java `0.15.0` 全面对齐 Node（协议 **0.6.0**） |

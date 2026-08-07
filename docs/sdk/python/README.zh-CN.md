@@ -5,39 +5,47 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `xaiop` |
-| 轨道 | **核心协议**（非完整产品 SDK） |
+| 轨道 | **官方产品 SDK**（alpha） |
 | 协议 | **0.6.0** Frozen（`PROTOCOL_VERSION`） |
-| SDK | `0.6.0a1`（`SDK_VERSION`，PEP 440） |
+| SDK | `0.15.0a1`（`SDK_VERSION`） |
 | 代码 | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
+| **API 参考** | **[API.zh-CN.md](API.zh-CN.md)**（权威表面） |
+| 对等 | **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** |
 
-**已实现：** STRICT `parse_sync` · `LiveParser` · `encode_sync` · `materialize` · Fragment / Content / `&` `#` `.` `=` `@` `!`。  
-**不在范围：** Node/`0.15.1` 产品面（stream · WS · history · Control Root · typeCheck · ...）。
+官方端口对齐 Node `xaiop` **0.15.1** 产品面（无 browser）。线文协议仍为 **0.6.0**。
 
-同伴：[../go/](../go/)。策略：[../notes/core-sdk-track.zh-CN.md](../notes/core-sdk-track.zh-CN.md)。  
-Fixture：[../../../xaiop-sdk/conformance/core-wire/](../../../xaiop-sdk/conformance/core-wire/)。
+完整 Python API（parse / encode / engine / stream / WS / control / types）见 **[API.zh-CN.md](API.zh-CN.md)**。
 
 ## 状态
 
-**线文完成**（核心协议轨）— 协议符合，非 Node 产品对等。
+**0.15.0a1 alpha** — 产品面已落地；浸泡后升至 **0.15.1**。在升版之前勿声称与 Node **0.15.1** 正式发布完全对等（见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
 
-## 公共 API
+## 公共 API（节选）
 
 ```python
-from xaiop import parse_sync, encode_sync, LiveParser, materialize, XaiopFragment
+from xaiop import (
+    parse_sync, encode_sync, LiveParser, materialize,
+    XaiopEngine, DotCheckpointEngine, XaiopStream, XaiopWs,
+    CompatPolicy, TypeRegistry, AnnotationSpan,
+)
 ```
+
+可选 extras：`pip install "xaiop[http,ws]"`（`httpx`、`websockets`）。
 
 ## 验证
 
 ```bash
 cd xaiop-sdk/python
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-## 交叉校验 / CI
+`tests/` 下约 **296** 单测。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
+
+## Golden / CI
 
 ```bash
-cd xaiop-sdk/conformance && npm run core-wire
+cd xaiop-sdk/conformance && npm run golden:python
 ```
 
-CI：.github/workflows/ci.yml（python / go / core-wire）。
+Node↔Python 黄金 **32** 例。CI 任务：`.github/workflows/ci.yml` 中的 `python`、`golden-python`。

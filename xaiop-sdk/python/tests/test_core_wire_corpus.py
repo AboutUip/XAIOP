@@ -69,6 +69,8 @@ def test_core_wire_case(case: dict) -> None:
             case["value"],
             root=case.get("root", "auto"),
             key_order=case.get("key_order", "sorted"),
+            dot_policy="none",
+            style="relative",
         )
         assert wire == case["expect_wire"]
         return
