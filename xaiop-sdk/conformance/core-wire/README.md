@@ -33,6 +33,7 @@ Unit tests in each SDK also load `cases.json` directly.
 | --- | --- |
 | Product parity | Does **not** claim Node/`0.15.1` or Java product equivalence |
 | Encode wire | Py ↔ Go must match under the same options; Node byte-identity is **not** required |
+| Encode options | Cross dumps use `key_order: sorted`, `dot_policy: none`, `style: relative` (Go STRICT defaults; product Python default is `perTopLevelKey`) |
 | Key order | Cross dumps / corpus encode cases use `key_order: sorted` so Go `map` JSON decode is deterministic |
 | Numbers | Compare with numeric equivalence (`1` ≡ `1.0`); Python may keep `int`, Go may keep `int64` / `float64` |
 | Empty source | Parses to `{}` |

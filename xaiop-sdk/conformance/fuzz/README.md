@@ -1,7 +1,8 @@
 # XAIOP fuzz harness
 
-Mutation fuzz for `parseSync` / `DotCheckpointEngine` (Node) and Java equivalents.
-Budgeted iterations; syntax errors are expected; process crash / unexpected Error fails.
+Mutation fuzz for `parseSync` / `DotCheckpointEngine` (Node), Java equivalents, and Python
+`parse_sync` / `DotCheckpointEngine`. Budgeted iterations; syntax errors are expected;
+process crash / unexpected Error fails.
 
 ## Run
 
@@ -9,10 +10,12 @@ Budgeted iterations; syntax errors are expected; process crash / unexpected Erro
 # from xaiop-sdk/conformance
 node fuzz/fuzz-node.mjs --max=200
 node fuzz/fuzz-java/run-fuzz.mjs --max=200
+python fuzz/fuzz-python.py --max=200
 
 # shorter CI budget
 node fuzz/fuzz-node.mjs --max=100
 node fuzz/fuzz-java/run-fuzz.mjs --max=100
+python fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
 Optional `--seed=N` for reproducibility.

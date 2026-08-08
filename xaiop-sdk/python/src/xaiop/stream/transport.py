@@ -212,13 +212,22 @@ def _run_sse(
         buf = parts.pop() if parts else ""
         for block in parts:
             data = _parse_sse_block(block, allow)
-            _emit_text(handlers, data)
+            _emit_sse_data(handlers, data)
 
     wrapped = TransportHandlers(on_text=on_chunk, on_done=lambda: None, on_error=handlers.on_error)
     _run_http(sse_req, wrapped, aborted)
     if buf.strip():
         data = _parse_sse_block(buf, allow)
-        _emit_text(handlers, data)
+        _emit_sse_data(handlers, data)
+
+
+def _emit_sse_data(handlers: TransportHandlers, data: str) -> None:
+    """Emit SSE payload as wire text; ensure a trailing LF so '.' does not glue to next '>'."""
+    if not data:
+        return
+    if not data.endswith("\n"):
+        data = data + "\n"
+    _emit_text(handlers, data)
 
 
 def _split_sse_blocks(buf: str) -> list[str]:

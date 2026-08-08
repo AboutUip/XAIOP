@@ -1,6 +1,6 @@
 # =============================================================================
 # XAIOP — repository .gitignore
-# Layout: docs/ (Docsify) · site/ (optional docs CLI) · views/ (lab) ·
+# Layout: docs/ (Docsify via views) · views/ (lab) ·
 #         xaiop-sdk/{nodejs,java,python,go} · skills/ (source-only, tracked) ·
 #         demos/ · resources/ · conformance/
 # Intentionally TRACKED (do not ignore): docs/vendor/, skills/, docs/themes/
@@ -15,6 +15,8 @@ dev/sdk-timing/node_modules/
 dev/sdk-timing/last-report.json
 dev/sdk-timing/last-bench.json
 dev/sdk-timing/baseline-bench.json
+dev/sdk-timing/last-bench-python.json
+dev/sdk-timing/baseline-bench-python.json
 .cursor/
 .vscode/
 .idea/
@@ -128,13 +130,6 @@ views/dist/
 views/node_modules/
 views/.vite/
 *.local
-
-# --- Optional docs CLI (site/) — preferred preview is views → /docs/ ----------
-site/node_modules/
-site/.vitepress/
-site/dist/
-site/.cache/
-site/*.local
 
 # --- Java / Maven / Gradle (xaiop-sdk/java) ----------------------------------
 # Pack output: xaiop-sdk/java/target/xaiop-*.jar (local only)

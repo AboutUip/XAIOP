@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Document | Living parity matrix (Python official port) |
-| Python package | `xaiop` **0.15.0a1** (alpha toward **0.15.1**) |
+| Python package | `xaiop` **0.15.1** |
 | Node package | `xaiop` **0.15.1** |
 | Protocol wire | **0.6.0** Frozen (`PROTOCOL_VERSION`) |
 | Normative | **No** — product parity inventory (not protocol conformance alone) |
@@ -25,7 +25,7 @@ This document is the **definitive parity matrix** for the Python official port a
 | --- | --- | --- | --- | --- |
 | Node.js (primary) | `xaiop` | **0.15.1** | **0.6.0** | Reference |
 | Java (official) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
-| Python (official port) | `xaiop` | **0.15.0a1** | **0.6.0** | **Alpha — surface complete; promote to 0.15.1 after soak** |
+| Python (official port) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
 
 ---
 
@@ -112,29 +112,31 @@ Legend: ✅ = present and aligned at observable-semantics level.
 
 | Node test | Python test module(s) |
 | --- | --- |
-| `engine.test.js` | `test_engine.py` · `test_compat.py` · `test_content.py` · `test_array.py` |
-| `encode.test.js` | `test_encode.py` · `test_encode_options.py` |
+| `engine.test.js` | `test_engine.py` · `test_compat.py` · `test_compat_fixes.py` · `test_content.py` · `test_array.py` |
+| `encode.test.js` | `test_encode.py` · `test_encode_options.py` · `test_encode_robust.py` |
 | `encode.stability.test.js` | `test_encode_stability.py` |
 | `merge.test.js` | `test_merge.py` |
 | `bang.at.test.js` | `test_bang_at.py` · `test_ops.py` |
 | `amp.delete.test.js` | `test_amp_delete.py` · `test_ops.py` |
 | `hash.annotation.test.js` | `test_hash_annotation.py` |
 | `live.parse.test.js` | `test_live.py` |
-| `checkpoint.window.test.js` · `checkpoint.opt` · `diff-isolation` | `test_checkpoint.py` · `test_checkpoint_compact.py` |
+| `checkpoint.window` · `opt` · `diff-isolation` | `test_checkpoint.py` · `test_checkpoint_window.py` · `test_checkpoint_compact.py` |
 | `checkpoint.buffer-compact.test.js` | `test_checkpoint_compact.py` |
 | `history.test.js` | `test_history.py` |
-| `stream.test.js` | `test_stream.py` |
+| `stream.test.js` | `test_stream.py` · `test_stream_http.py` · `test_stream_advanced.py` |
 | `stream.consistency.test.js` | `test_stream_consistency.py` |
-| `typecheck.test.js` | `test_types.py` |
+| `typecheck.test.js` | `test_types.py` · `test_ws_typecheck.py` |
 | `line.intercept.test.js` | `test_line_intercept.py` |
 | `annotation.span.test.js` | `test_annotation_span.py` |
-| `control.plane` · `coverage` · `resume` | `test_control.py` · `test_control_resume.py` |
-| `ws.session.test.js` · `ws.phase-encode` | `test_ws.py` · `test_phase_encode.py` |
+| `control.plane` · `coverage` · `resume` | `test_control.py` · `test_control_resume.py` · `test_control_coverage.py` |
+| `ws.session.test.js` · `ws.phase-encode` | `test_ws.py` · `test_phase_encode.py` · `test_ws_typecheck.py` |
 | `symbol.keys.test.js` | `test_symbol_keys.py` |
 | *(core-wire STRICT)* | `test_core_wire_corpus.py` |
 | *(surface / fixtures)* | `test_complex.py` · `test_root_fragment.py` · `test_modes.py` · `test_version.py` |
 
-**Scale (local):** `pytest` ≈ **296** methods under `xaiop-sdk/python/tests/`. Parity is asserted by Python-side expectations transcribed from the Node suite, plus **Node↔Python golden** in CI.
+**Scale (local):** `pytest` ≈ **479** methods under `xaiop-sdk/python/tests/`. Parity is asserted by Python-side expectations transcribed from the Node suite, plus **Node↔Python golden** in CI.
+
+**Timing:** same stage names as Node — [`dev/sdk-timing/bench.py`](../../../dev/sdk-timing/bench.py) (`npm run bench:python`).
 
 ---
 
@@ -146,7 +148,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | No browser package | No `xaiop/browser`; WS under `xaiop.ws` |
 | `chunks()` | Sync iterator, not native async iterator |
 | Optional extras | `[http]`=`httpx`, `[ws]`=`websockets` |
-| Alpha version | **0.15.0a1** until post-soak bump to **0.15.1** |
+| Stream transports | `XaiopStream` is HTTP / SSE / RAW; WebSocket uses `XaiopWs` (not a stream transport kind) |
 | `undefined` | Absent; Annotation Span keep uses `AnnotationSpan.KEEP` |
 | Number width | Python `int`/`float`; wire float formatting still matches Node ES `Number#toString` |
 
@@ -160,11 +162,13 @@ Legend: ✅ = present and aligned at observable-semantics level.
 4. Review against [../behavioral-contract.md](../behavioral-contract.md).  
 5. **Golden CI** — Node and Python dump the same case ids to NDJSON; [`compare.mjs`](../../../xaiop-sdk/conformance/compare.mjs) deep-equals trees/diffs and byte-equals wire. Job: `golden-python` in [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml).
 
-**Claim strength:** “verified by the expanded pytest suite **and** continuously golden-diffed against Node in CI”. Do **not** claim full Node **0.15.1** release parity until soak → bump package to **0.15.1**.
+**Claim strength:** verified by the expanded pytest suite, continuously golden-diffed against Node in CI, plus Python ↔ Go STRICT core-wire and mutation fuzz.
 
 ```bash
 cd xaiop-sdk/python && python -m pip install -e ".[dev,http,ws]" && pytest
 cd xaiop-sdk/conformance && npm run golden:python
+cd xaiop-sdk/conformance && npm run core-wire
+python xaiop-sdk/conformance/fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
 **Golden coverage (product):** encode corpus (**20** values) + parse/stream for `complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast` → **32** NDJSON cases.

@@ -30,7 +30,7 @@
 
 - 此后项目**不**再交付、支持或推荐 Skill 作为产品表面。
 - 仓库内 [`skills/`](../../skills/)（`xaiop`、`xaiop-allowlist`）**源码仍保留**，任何人可从仓库**自行下载 / 拷贝**。
-- 该目录**不是**封存发行物，**不**随 SDK 版本号发版，也**不保证**跟踪协议 **0.6.0**（文件内摘要可能仍引用旧版）。
+- 该目录**不是**封存发行物，**不**随 SDK 版本号发版。保留摘要随后已刷新为对齐协议 **0.6.0**（见 [`skills/README.zh-CN.md`](../../skills/README.zh-CN.md)）；权威仍以 [`docs/protocol/`](../protocol/) 为准。
 - 优先使用程序化 Generator（`encode`、骨架 WS 推送、自有写者），而非依赖 Skill 驱动发射。LLM 发射配方仅留在封存归档：[../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/)。
 
 状态页：[../../skills/README.zh-CN.md](../../skills/README.zh-CN.md)。

@@ -1,4 +1,4 @@
-"""XAIOP Python SDK — official SDK alpha (wire v0.6.0)."""
+"""XAIOP Python SDK — official product SDK (wire v0.6.0)."""
 
 from __future__ import annotations
 
@@ -85,7 +85,7 @@ from .types import (
 )
 from .ws import XaiopWs, XaiopWsConnection, XaiopWsHub, listen as ws_listen
 
-__version__ = "0.15.0a1"
+__version__ = "0.15.1"
 
 __all__ = [
     "COMPAT_FIX_DEFAULTS",

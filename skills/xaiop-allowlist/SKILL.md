@@ -1,8 +1,10 @@
 ---
 name: xaiop-allowlist
 description: >-
-  XAIOP v0.4.0 generator Skill (ALLOWLIST scheme): emit only permitted line
-  forms. Cursor-IR writer for models. Use when producing allowlist / whitelist
+  XAIOP v0.6.0 generator Skill (ALLOWLIST scheme): emit only permitted line
+  forms. Retained source-only Generator digest (not an official product). Pin
+  sealed protocol package 0.6.0. Prefer programmatic Generators (encode,
+  skeleton WS) over Skill-driven emit. Use when producing allowlist / whitelist
   XAIOP, when this skill is attached, or when the user asks for allowlist output.
 ---
 
@@ -10,16 +12,26 @@ description: >-
 > Source remains in the repository for download only — see [../README.md](../README.md)
 > and [../../docs/meta/release-notes-2026-08-04.md](../../docs/meta/release-notes-2026-08-04.md).
 
-# XAIOP Allowlist Skill (`xaiop-allowlist`)
+> **Retained implementation / protocol digest:** This file is kept for download/copy.
+> Digests target the sealed protocol package **0.6.0**. Authoritative text is under
+> [`docs/protocol/`](../../docs/protocol/) — Skills are **not** sealed releases and are
+> **not** SDK-versioned. Prefer programmatic Generators (`encode`, skeleton WS) over
+> Skill-driven emit.
+
+# XAIOP Allowlist — retained Generator digest (`xaiop-allowlist`)
 
 **Scheme:** ALLOWLIST (closed world).  
-**Protocol:** XAIOP v0.4.0 Frozen. LLM writers are one Generator class on the cursor IR.
+**Protocol:** XAIOP v0.6.0 Frozen. LLM writers are one Generator class on the cursor IR.
 
 You may emit **only** lines and sequences described in this Skill.  
 Anything not listed here as **Allowed** is **forbidden** — including JSON, YAML, `key=value`, markdown, prose, checklists, indentation-as-structure, bracket lists (`[a,b]`), quoted attribute tags, and any line with spaces inside a Structure token.
 
 Output = contiguous XAIOP stream only (unless the user explicitly allows a wrapper).  
 When the payload is complete, **stop** on the last Allowed line — do not append extra Labels, prose, or random tokens.
+
+**Authoritative docs:** [syntax.md](../../docs/protocol/syntax.md) · [hierarchy.md](../../docs/protocol/hierarchy.md) · [content.md](../../docs/protocol/content.md) · [streaming.md](../../docs/protocol/streaming.md)
+
+Streaming Diff phases with `=` / `!` / `&` need a cumulative tree — see [streaming.md](../../docs/protocol/streaming.md).
 
 ---
 
@@ -29,8 +41,8 @@ When the payload is complete, **stop** on the last Allowed line — do not appen
 
 - The stream is a sequence of lines separated by **LF** (`\n`) or **CRLF** (`\r\n`). Both are equivalent.
 - A lone **CR** without LF is **not** a line ending.
-- Each line is **exactly one** of: an Allowed Structure Label, or Allowed Content, or (only where Allowed below) nothing else.
-- **One line = one Label or one Content.** Never two Labels on one line. Never Label+Content glued.
+- Each line is **exactly one** of: an Allowed Structure Label, Allowed Content, Allowed custom annotation transmission (`#…`), or (only where Allowed below) nothing else.
+- **One line = one Label or one Content or one annotation line.** Never two Labels on one line. Never Label+Content glued.
 
 ### 1.2 Empty / blank lines
 
@@ -42,15 +54,15 @@ When the payload is complete, **stop** on the last Allowed line — do not appen
 
 | Position | Allowed? |
 | --- | --- |
-| Leading spaces/tabs before a Label or Content | **No** — every Allowed line starts at column 0 with the first significant character |
+| Leading spaces/tabs before a Label, Content, or `#…` | **No** — every Allowed line starts at column 0 with the first significant character |
 | Trailing spaces after Content value | Avoid; not required. Prefer no trailing spaces |
 | Spaces **inside** an Allowed Content value (after the first `:`) | **Yes** — part of the value (see §3 typing) |
-| Spaces inside a Structure Label (`> meta`, `< 楚雄`, `= a>b`, `>  `) | **No** — Labels have no internal padding; A2/A5/A6/A8 are flush forms only |
+| Spaces inside a Structure Label (`> meta`, `< 楚雄`, `= a>b`, `>  `, `& a`) | **No** — Labels have no internal padding; A2/A5/A6/A8/A11 are flush forms only |
 
 ### 1.4 Newlines inside values
 
 - A Content value **MUST NOT** contain LF or CRLF.
-- The next line is always a **new** Label or Content attempt — never a continuation of the previous value.
+- The next line is always a **new** Label, Content, or annotation attempt — never a continuation of the previous value.
 
 ### 1.5 What does **not** create structure
 
@@ -58,9 +70,10 @@ These are **not** hierarchy mechanisms (do not use them to nest):
 
 - Indentation / column count  
 - `{` `}` `[` `]` `(` `)`  
-- Multi-character end markers (`---`, `<END>`, `###`, …)
+- Multi-character end markers (`---`, `<END>`, `###`, …)  
+- Custom annotation transmission (`#…`) — no Cursor / tree effect
 
-**Only** Allowed Structure Labels move the Cursor.
+**Only** Allowed Structure Labels move the Cursor (A1–A11). A12 does not.
 
 ---
 
@@ -70,9 +83,8 @@ These are **not** hierarchy mechanisms (do not use them to nest):
 2. If a character sequence is not in §3, **do not emit it**.  
 3. Prefer **create** (`>`, `>name`, `>name-`, Content) over relocate (`=`) when writing new data.  
 4. Self-checks from this Skill stay **silent** — never print Q&A, bullets, or “Yes/No” about the protocol.  
-5. **Flush-left only:** the first character of every line is `>`, `<`, `-`, `.`, `=`, `!`, or a Content key / `:` — never space or tab.  
+5. **Flush-left only:** the first character of every line is `>`, `<`, `-`, `.`, `=`, `!`, `@`, `&`, `#`, or a Content key / `:` — never space or tab.  
 6. **No glue:** never attach Content to a Structure character on the same line (`<id:1`, `>shard_index:1`, `<value:江辞` are all outside the allowlist).
-
 
 ---
 
@@ -94,12 +106,14 @@ Only these lines exist in legal output.
 | A8 | `=seg` or `=seg>seg>…` | Fuzzy **locate** existing node; segments join with `>` only; **no spaces**; **no values** | `=meta` · `=a>b` |
 | A9 | `@seg` or `@seg>seg>…` | **Exact** from Root; **create** missing object segments (本相) | `@a>b` |
 | A10 | `!seg` or `!seg>seg>…` | Broadcast all matches on **tree so far** (向前跨相; outer prune) until `.` | `!note` · `!a>b` |
+| A11 | `&seg` or `&seg>seg>…` | **Delete** deepest key; path absolute from Root (single Cursor); **no Cursor move**; segments join with `>`; **no bare `&`** | `&a` · `&a>b` |
+| A12 | `#…` | **Custom annotation transmission** — entire line starts with `#`; protocol does not interpret text after `#`; **no Cursor / tree effect** | `#run-id:demo` · `#` |
 
 **Name token (`name` / `seg`):** non-empty; **no whitespace**; no `:`; no `=`.  
 Prefer `[A-Za-z_][A-Za-z0-9_]*` for structure names (`>meta`, `>cast-`, `=siblings`).  
-CJK and spaces belong in **Content values** (`name:江辞`, `text:……`), not inside `>…` / `<…` / `=…` tokens.
+CJK and spaces belong in **Content values** (`name:江辞`, `text:……`), not inside `>…` / `<…` / `=…` / `&…` tokens.
 
-**A3:** trailing `-` is part of `>name-` (create/re-enter array). Locate the same array with A8 `=name` (e.g. `=tags`).
+**A3:** trailing `-` is part of `>name-` (create/re-enter array). Locate the same array with A8 `=name` (e.g. `=tags`). Delete the whole named array value with A11 `&name` (e.g. `&tags`).
 
 **A5 vs A6 vs C2 (cast / name lists / leave):**
 
@@ -137,6 +151,22 @@ text:一行对白
 **A8 path:** after `=` only segments joined by `>` — no value payload, no spaces  
 (`=meta` · `=a>b` Allowed; anything like `=title 剧本` is outside the allowlist).
 
+**A11 delete:**
+
+- Path after `&` uses the same segment form as `@` / `=` (`&a`, `&a>b`).
+- Bare `&` is **not Allowed**.
+- Single Cursor: absolute from Root; does **not** move Cursor; missing target = no-op.
+- Object document root only (not array / fragment root); may delete a whole named array value; no element index.
+- Cursor-chain delete → syntax error (outside safe emit).
+- Allowed during `!` broadcast (path relative to each Cursor).
+
+**A12 annotation:**
+
+- Official name: **custom annotation transmission** (not a “comment primitive”).
+- Whole line begins with `#` at column 0.
+- No Cursor / tree effect; parsers may ignore the line.
+- A `#` inside Content (`note:#x`) is still C1 — not A12.
+
 ### 3.2 Content
 
 | # | Exact form | Meaning | Minimal example |
@@ -153,6 +183,7 @@ total:3
 title:我真不是绝世神医
 kind:dialogue
 speaker:江辞
+note:#x
 ```
 
 Forms such as `index=1`, `kind=dialogue`, `title=…`, `characters=[]` are **not** C1 and are **not** on this allowlist.  
@@ -160,7 +191,8 @@ JSON array / object text as a value (e.g. `aliases:[a,b]`) is outside the allowl
 
 **Separator details:**  
 - Before first `:` → key (`C2` has empty key).  
-- After first `:` → raw value (may contain more `:` characters).
+- After first `:` → raw value (may contain more `:` characters, and may contain `#`).
+
 ### 3.3 Typing for `value` (Allowed interpretations)
 
 After optional forced-string mark:
@@ -547,6 +579,41 @@ z:3
 .
 ```
 
+### 4.19 Delete a key (A11)
+
+```text
+>
+>tmp
+v:1
+>keep
+v:2
+.
+&tmp
+```
+
+Delete a whole named array value:
+
+```text
+>
+>tags-
+:a
+:b
+.
+&tags
+```
+
+### 4.20 Annotation line between Content (A12)
+
+```text
+>
+a:1
+#run-id:demo
+b:2
+```
+
+A12 sits between Content lines; tree shape is still `{ "a": 1, "b": 2 }`.  
+Do **not** write trailing `# …` on the same line as Structure or Content.
+
 ---
 
 ## 5. Intent → Allowed choice (decision)
@@ -566,6 +633,8 @@ z:3
 | Jump to existing node (fuzzy) | A8 `=path` then C1/C2/A1… |
 | Jump exact from Root | A9 `@path` then C1/C2/A1… |
 | Broadcast update all matches | A10 `!path` … then A7 `.` |
+| Delete a key (absolute from Root; no Cursor move) | A11 `&path` (never bare `&`) |
+| Emit side-channel annotation | A12 `#…` as its own line |
 | Ascend one level | A5 `<` (entire line) |
 | Ascend and open sibling/new name | A6 `<name` (no space; name has no `:`) |
 | Nest scenes under episode | A3 `>scenes-` at column 0 (no indent) |
@@ -589,7 +658,7 @@ Starting with `>name` and **no** prior A1/A4 yields a **root fragment** (no oute
 
 Before sending, verify privately:
 
-1. Every line matches §3 exactly (A1–A10 or C1–C2).  
+1. Every line matches §3 exactly (A1–A12 or C1–C2).  
 2. No empty lines; **no leading spaces/tabs on any line**.  
 3. No newlines inside values.  
 4. First line is `>` or `-` for complete documents.  
@@ -597,9 +666,11 @@ Before sending, verify privately:
 6. After a finished array, next `>other` / `>other-` is preceded by `.` (or an Allowed leave).  
 7. Every field line uses **`key:value`** (colon).  
 8. Every `=` line is path-only (`=meta`, `=a>b`) with no spaces and no value.  
-9. After `>cast-` / `>tags-`, every member is `:name` — never bare `江辞`, never `<…`.  
-10. A5 lines are exactly `<`; never `<id:…` / `<value:…`.  
-11. No Structure+Content glue (`>key:value`, `<key:value`).  
-12. Structure names have **no spaces**; no `>tagger…` trailers; stream ends when data ends.
+9. Every `&` line is path-only (`&a`, `&a>b`) — never bare `&`.  
+10. Every annotation is a whole `#…` line (A12) — never trailing `#` on Structure/Content.  
+11. After `>cast-` / `>tags-`, every member is `:name` — never bare `江辞`, never `<…`.  
+12. A5 lines are exactly `<`; never `<id:…` / `<value:…`.  
+13. No Structure+Content glue (`>key:value`, `<key:value`).  
+14. Structure names have **no spaces**; no `>tagger…` trailers; stream ends when data ends.
 
 Then emit **only** the stream.

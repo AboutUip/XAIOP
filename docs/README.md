@@ -55,7 +55,7 @@ Index: [sdk/README.md](sdk/README.md) · catalog: [sdk/behavioral-contract.md](s
 | --- | --- | --- |
 | **Node.js** | **[sdk/nodejs/API.md](sdk/nodejs/API.md)** (primary · §6.4 line intercept · §6.5 Annotation Span · §7.7 Control Root; Node ≥ 18; browser phase consume via `xaiop/browser`) · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.15.1** ↔ protocol **0.6.0** |
 | Java | [sdk/java/](sdk/java/) · **[ALIGNMENT](sdk/java/ALIGNMENT.md)** | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.15.1** — protocol **0.6.0** |
-| Python | [sdk/python/](sdk/python/) | [../xaiop-sdk/python/](../xaiop-sdk/python/) — pending |
+| Python | [sdk/python/](sdk/python/) · **[ALIGNMENT](sdk/python/ALIGNMENT.md)** | [../xaiop-sdk/python/](../xaiop-sdk/python/) — `xaiop` **0.15.1** — protocol **0.6.0** |
 
 ---
 

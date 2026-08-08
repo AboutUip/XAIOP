@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `META-REL` |
 | Status | Informative |
-| Last updated | 2026-08-07 |
+| Last updated | 2026-08-08 |
 | Normative | **No** — release index; seal rules live in `META-VER` |
 | Depends on | `META-VER`, `META-REV` |
 
@@ -68,7 +68,8 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Protocol | Notes |
 | --- | --- | --- |
-| Python **0.15.0a1** | `0.6.0` | Official product port (alpha); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
+| Python **0.15.1** | `0.6.0` | Official product port (stable); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
+| Python **0.15.0a1** | `0.6.0` | Official product port (alpha archive); [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) |
 | Go **0.6.0-alpha.1** | `0.6.0` | Core-protocol track (STRICT wire); `cmd/dump-core-wire` for CI |
 
 Other languages: declare their own sealed mapping in language READMEs.
@@ -79,6 +80,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-08 | [release-notes-2026-08-08-python-0.15.1.md](release-notes-2026-08-08-python-0.15.1.md) — Python `0.15.1` stable (exit alpha) |
 | 2026-08-07 | [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) — Python `0.15.0a1` official port alpha |
 | 2026-08-06 | [release-notes-2026-08-06-core-sdk.md](release-notes-2026-08-06-core-sdk.md) — Python `0.6.0a1` · Go `0.6.0-alpha.1` core-wire + CI |
 | 2026-08-06 | [release-notes-2026-08-06-java-0.15.1.md](release-notes-2026-08-06-java-0.15.1.md) — Java `0.15.1` `XaiopStream` full option wiring |
@@ -89,7 +91,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 | 2026-08-05 | [release-notes-2026-08-05-0.14.2.md](release-notes-2026-08-05-0.14.2.md) — Node `0.14.2` Diff isolation (D1) / keyed modeling |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.1.md](release-notes-2026-08-05-0.14.1.md) — Node `0.14.1` `meta.logSeq` / seq stamp |
 | 2026-08-05 | [release-notes-2026-08-05.md](release-notes-2026-08-05.md) — Node `0.14.0` Control Root `#!` / session / resume / ack / snapshot |
-| 2026-08-04 | [release-notes-2026-08-04.md](release-notes-2026-08-04.md) — Node `0.13.0` · Java `0.5.0` · **Skills no longer provided** (source remains under [`skills/`](../../skills/)) |
+| 2026-08-04 | [release-notes-2026-08-04.md](release-notes-2026-08-04.md) — Node `0.13.0` · Java `0.5.0` · **Skills no longer provided** (retained digests under [`skills/`](../../skills/); later synced to protocol **0.6.0**) |
 
 ---
 

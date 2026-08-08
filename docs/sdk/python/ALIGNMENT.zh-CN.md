@@ -5,7 +5,7 @@
 | 字段 | 值 |
 | --- | --- |
 | 文档 | 官方 Python 端口对等矩阵（持续维护） |
-| Python 包 | `xaiop` **0.15.0a1**（向 **0.15.1** 迈进） |
+| Python 包 | `xaiop` **0.15.1** |
 | Node 包 | `xaiop` **0.15.1** |
 | 线文协议 | **0.6.0** Frozen（`PROTOCOL_VERSION`） |
 | 是否规范正文 | **否** — 产品可观察语义清单（≠ 仅协议符合） |
@@ -25,7 +25,7 @@
 | --- | --- | --- | --- | --- |
 | Node.js（主） | `xaiop` | **0.15.1** | **0.6.0** | 参考 |
 | Java（官方） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
-| Python（官方端口） | `xaiop` | **0.15.0a1** | **0.6.0** | **Alpha — 产品面已齐；浸泡后升 0.15.1** |
+| Python（官方端口） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
 
 ---
 
@@ -88,11 +88,15 @@
 | `hash.annotation.test.js` | `test_hash_annotation.py` |
 | `encode.stability.test.js` | `test_encode_stability.py` |
 | `stream.consistency.test.js` | `test_stream_consistency.py` |
-| `checkpoint.buffer-compact*` | `test_checkpoint_compact.py` |
-| `control.resume` / coverage | `test_control_resume.py` |
-| 其余 encode/merge/stream/ws/types… | 见英版完整表 |
+| `checkpoint.buffer-compact*` / window | `test_checkpoint_compact.py` · `test_checkpoint_window.py` |
+| `control.resume` / coverage | `test_control_resume.py` · `test_control_coverage.py` |
+| compat 线文矩阵 | `test_compat_fixes.py` |
+| encode 稳健 / stream HTTP·SSE | `test_encode_robust.py` · `test_stream_http.py` · `test_stream_advanced.py` |
+| typeCheck / WS typeCheck | `test_types.py` · `test_ws_typecheck.py` |
+| 其余 encode/merge/stream/ws… | 见英版完整表 |
 
-本地规模：`pytest` ≈ **296** 用例。另有 Node↔Python golden CI。
+本地规模：`pytest` ≈ **479** 用例。另有 Node↔Python golden CI。  
+计时：与 Node 同阶段名 — [`dev/sdk-timing/bench.py`](../../../dev/sdk-timing/bench.py)。
 
 ---
 
@@ -100,7 +104,7 @@
 
 - sync-first；无 browser；`chunks()` 为同步迭代器  
 - extras：`[http]` / `[ws]`  
-- Alpha **0.15.0a1**（浸泡前不宣称与 Node **0.15.1** 发行完全对等）  
+- `XaiopStream` 仅 HTTP / SSE / RAW；WebSocket 走 `XaiopWs`  
 - 无 JS `undefined`；Span keep 用 `AnnotationSpan.KEEP`
 
 ---
@@ -110,6 +114,8 @@
 ```bash
 cd xaiop-sdk/python && python -m pip install -e ".[dev,http,ws]" && pytest
 cd xaiop-sdk/conformance && npm run golden:python
+cd xaiop-sdk/conformance && npm run core-wire
+python xaiop-sdk/conformance/fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
 产品 golden：**32** 例（encode 语料 20 + parse/stream 各 6 套 fixture）。  
@@ -119,7 +125,7 @@ Python↔Go `core-wire` 仍为协议 STRICT 轨，**不能**代替 Node 产品 g
 
 ## 8. 行为契约 §8 checklist
 
-与英版相同，各项均已勾选（alpha 表面完成）。浸泡后升包版本 **0.15.1** 再强化「发行对等」表述。
+与英版相同，各项均已勾选。包版本 **0.15.1** 与 Node **0.15.1** 发行对等（无 browser）。
 
 ---
 

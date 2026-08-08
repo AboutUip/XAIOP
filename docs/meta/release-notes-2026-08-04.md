@@ -30,7 +30,7 @@ Artifacts are built from this repository (`npm pack` / Maven JAR). Published reg
 
 - The project **does not** ship, support, or recommend Skills as a product surface going forward.
 - Source under [`skills/`](../../skills/) (`xaiop`, `xaiop-allowlist`) **remains in the repository** for anyone who wants to **download / copy from source**.
-- That tree is **not** a sealed deliverable, **not** versioned with SDK releases, and **not** guaranteed to track protocol **0.6.0** (the files may still cite older digests).
+- That tree is **not** a sealed deliverable and **not** versioned with SDK releases. Retained digests were later refreshed to target protocol **0.6.0** (see [`skills/README.md`](../../skills/README.md)); authority remains [`docs/protocol/`](../protocol/).
 - Prefer programmatic Generators (`encode`, skeleton WS push, your own writers) over Skill-driven emit. LLM emit recipes stay in the sealed archive only: [../archive/practice-llm-emit-2026-08-04/](../archive/practice-llm-emit-2026-08-04/).
 
 Status page: [../../skills/README.md](../../skills/README.md).

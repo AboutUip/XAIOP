@@ -215,6 +215,8 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 
 **Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。
 
+**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：扩展 pytest（~**479**）+ `golden-python`（**32** NDJSON）+ `core-wire` + Python fuzz。计时：[`../../dev/sdk-timing/`](../../dev/sdk-timing/)（`bench.py`）。
+
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 
 ---

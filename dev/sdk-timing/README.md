@@ -2,13 +2,13 @@
 
 [English](#english) · [简体中文](#简体中文)
 
-Harness **0.2.0** · targets Node SDK **0.15.1+** / protocol **0.6.0**.
+Harness **0.2.0** · targets Node / Python SDK **0.15.1+** / protocol **0.6.0**.
 
 ---
 
 ## English
 
-**What this is:** wall-clock micro-benchmarks for the **Node.js XAIOP SDK**, plus a **cross-scheme** compare against other wire styles. Primary use: **same-machine before/after** after engine work (`emitDiff`, Diff isolation, `compactCommitted`, …).
+**What this is:** wall-clock micro-benchmarks for the **Node.js and Python XAIOP SDKs**, plus a **cross-scheme** compare (Node) against other wire styles. Primary use: **same-machine before/after** after engine work (`emitDiff`, Diff isolation, `compactCommitted`, …). Stage **names match** across `bench.mjs` and `bench.py` for cross-runtime comparison.
 
 **What this is not:** racing `JSON.parse`; LLM structured-output evaluation in [`docs/performance.md`](../../docs/performance.md).
 
@@ -18,24 +18,37 @@ Harness **0.2.0** · targets Node SDK **0.15.1+** / protocol **0.6.0**.
 cd dev/sdk-timing
 npm install
 
-# Regression harness (recommended for “faster than before”)
+# Node regression harness
 npm run bench:save-baseline   # once, before your change
 # … optimize …
 npm run bench                 # prints Δ% vs baseline-bench.json
 
 npm run bench:quick
-npm run compare               # five-scheme dimensional compare
+
+# Python (same stage names; separate baseline file)
+npm run bench:python:save-baseline
+npm run bench:python
+npm run bench:python:quick
+# or: python bench.py --quick
+
+npm run compare               # five-scheme dimensional compare (Node)
 ```
 
-From the SDK package: `npm run bench` / `npm run compare` in `xaiop-sdk/nodejs`.
+From the Node SDK package: `npm run bench` / `npm run compare` in `xaiop-sdk/nodejs`.
 
 Env: `BENCH_ITERS`, `BENCH_WARMUP`, `BENCH_LONG_PHASES`.  
 Flags: `--quick`, `--json`, `--save-baseline`, `--no-baseline`.  
 Optional: `BENCH_FAIL_SLOWER=1` exits non-zero if any stage is ≥3% slower than baseline.
 
-Artifacts (gitignored): `last-bench.json`, `baseline-bench.json`, `last-report.json`.
+Artifacts (gitignored):
 
-### Stage microbench (`bench.mjs`)
+| Runtime | Last run | Baseline |
+| --- | --- | --- |
+| Node | `last-bench.json` | `baseline-bench.json` |
+| Python | `last-bench-python.json` | `baseline-bench-python.json` |
+| Compare | `last-report.json` | — |
+
+### Stage microbench (`bench.mjs` / `bench.py`)
 
 | Area | Stages |
 | --- | --- |
@@ -47,7 +60,7 @@ Artifacts (gitignored): `last-bench.json`, `baseline-bench.json`, `last-report.j
 | Long session | grow buffer vs `compactCommitted` each phase |
 | Stream | PROMISE (no Diff) vs CALLBACK+`onChunk` (Diff on) |
 
-Same-run **ratios** and optional **vs baseline** table (negative % = faster).
+Same-run **totals** and optional **vs baseline** table (negative % = faster).
 
 ### Compare schemes (`compare.mjs`)
 
@@ -65,15 +78,17 @@ Parity checks rebuild the **same logical JSON tree**.
 
 ## 简体中文
 
-**本目录：** Node.js SDK 墙钟耗时 + 五方案横向对比。主用途：**同机优化前/后**对比（不是和 JSON 解析抢冠军）。
+**本目录：** Node.js / Python SDK 墙钟耗时 +（Node）五方案横向对比。主用途：**同机优化前/后**对比（不是和 JSON 解析抢冠军）。`bench.mjs` 与 `bench.py` **阶段名一致**，便于跨运行时对照。
 
 **不是：** [`docs/performance.md`](../../docs/performance.md) 的 LLM 评测。
 
 ```bash
 cd dev/sdk-timing
 npm install
-npm run bench:save-baseline   # 优化前存基线
-npm run bench                 # 改完后看 Δ%
+npm run bench:save-baseline        # Node 优化前基线
+npm run bench
+npm run bench:python:save-baseline # Python 基线
+npm run bench:python
 npm run compare
 ```
 
@@ -84,4 +99,4 @@ npm run compare
 | long grow / compact | 长会话缓冲 vs `compactCommitted` |
 | PROMISE vs CALLBACK+onChunk | Stream 是否跑相位 Diff |
 
-产物：`last-bench.json` · `baseline-bench.json`（均 gitignore）。
+产物：`last-bench.json` · `baseline-bench.json` · `last-bench-python.json` · `baseline-bench-python.json`（均 gitignore）。

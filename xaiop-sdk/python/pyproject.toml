@@ -4,16 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xaiop"
-version = "0.15.0a1"
-description = "XAIOP Python SDK — official SDK alpha (wire 0.6.0)"
+version = "0.15.1"
+description = "XAIOP Python SDK — official product SDK (wire 0.6.0)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "XAIOP Contributors" }]
 keywords = ["xaiop", "llm", "structured-output", "protocol"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: MIT License",
+  "Development Status :: 5 - Production/Stable",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -33,6 +33,9 @@ Documentation = "https://github.com/AboutUip/XAIOP/tree/main/docs/sdk/python"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+xaiop = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

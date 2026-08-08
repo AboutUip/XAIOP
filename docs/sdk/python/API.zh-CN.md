@@ -3,13 +3,13 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.6.0 Frozen（已封存）  
-**SDK 版本**: **0.15.0a1**（向 **0.15.1** 迈进的 alpha）  
+**SDK 版本**: **0.15.1**  
 **运行时**: **Python ≥ 3.10**  
 **包名**: `xaiop`  
 **代码**: [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/)（`src/xaiop/`）  
 **对等矩阵**: [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) · **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
 
-> **Alpha 说明：** 公共表面已**完整**（在可观察语义层面与 Node 对齐）。在包版本升至 **0.15.1**（浸泡之后）之前，**不要**声称已与 Node **0.15.1** *正式发布* 完全对等。见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
+> 稳定版，在可观察语义层面与 Node **0.15.1** 对齐（无 browser）。见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
 
 ---
 
@@ -131,7 +131,7 @@ hub.close()
 
 ## 2. 核心概念
 
-**XAIOP 线文**是流式、面向行的**游标构造协议**。旧称 “eXtensible AI Output Protocol” **不是**定义本身。本 SDK 文档描述的是**已封存协议包 0.6.0**（SDK **0.15.0a1** alpha）的 Python 实现。
+**XAIOP 线文**是流式、面向行的**游标构造协议**。旧称 “eXtensible AI Output Protocol” **不是**定义本身。本 SDK 文档描述的是**已封存协议包 0.6.0**（SDK **0.15.1**）的 Python 实现。
 
 - 完整语法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)（若无则见 [syntax.md](../../protocol/syntax.md)）
 - 封存与发布索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -944,8 +944,8 @@ engine.set_compat_forced_root(False)  # 模式关闭时返回 False
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.15.0a1"` |
-| `__version__` | `"0.15.0a1"` |
+| `SDK_VERSION` | `"0.15.1"` |
+| `__version__` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

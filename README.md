@@ -16,7 +16,8 @@
   <img alt="Cursor IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="Streaming" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
   <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
-  <img alt="Line-oriented" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
+  <img alt="Java SDK" src="https://img.shields.io/badge/SDK-Java_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Python SDK" src="https://img.shields.io/badge/SDK-Python_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
 </p>
 
 <p align="center">
@@ -29,7 +30,7 @@
   <a href="docs/overview/introduction.md"><img alt="Introduction" src="https://img.shields.io/badge/docs-Introduction-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/protocol/syntax.md"><img alt="Protocol docs" src="https://img.shields.io/badge/docs-Protocol-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/practice/"><img alt="Practice docs" src="https://img.shields.io/badge/docs-Practice-f59e0b?style=flat-square&labelColor=0b1220" /></a>
-  <a href="docs/sdk/nodejs/API.md"><img alt="SDK docs" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/sdk/"><img alt="SDK docs" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
 </p>
 
 ---
@@ -84,7 +85,7 @@ Materializes as:
 }
 ```
 
-[Syntax](docs/protocol/syntax.md) · [Full fixture](docs/examples/complex.xaiop) · [Node demo](demos/nodejs/)
+[Syntax](docs/protocol/syntax.md) · [Full fixture](docs/examples/complex.xaiop) · [Node demo](demos/nodejs/) · [Python demo](demos/python/)
 
 ---
 
@@ -93,15 +94,18 @@ Materializes as:
 - **Introduction** — [docs/overview/introduction.md](docs/overview/introduction.md)
 - **Protocol (wire only)** — [docs/protocol/](docs/protocol/) · [separation](docs/SEPARATION.md) · [releases](docs/meta/releases.md) · [META-VER](docs/meta/status-and-versioning.md)
 - **Practice** — [docs/practice/](docs/practice/) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
-- **Node.js SDK** — **[docs/sdk/nodejs/API.md](docs/sdk/nodejs/API.md)** (§6.4 line intercept · §6.5 Annotation Span · §7.7 Control Root) · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [parity](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/nodejs/) · [SDK timing](dev/sdk-timing/)
-- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
+- **SDKs** — [docs/sdk/](docs/sdk/) · [parity contract](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/) · [stage timing](dev/sdk-timing/)
+  - **Node.js** `xaiop` **0.15.1** — **[API](docs/sdk/nodejs/API.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [code](xaiop-sdk/nodejs/) · [demo](demos/nodejs/)
+  - **Java** `io.xaiop:xaiop` **0.15.1** — [API](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
+  - **Python** `xaiop` **0.15.1** — [API](docs/sdk/python/API.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.md) · [code](xaiop-sdk/python/) · [demo](demos/python/)
+  - **Go** (core-wire track) — [guide](docs/sdk/go/) · [code](xaiop-sdk/go/)
 - **Preview docs** — same origin as lab: `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) (Docsify over `docs/`; shared dark theme)
 - **Lab UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / live stream / API markdown render
 - **Sealed archives** — [docs/archive/](docs/archive/) (LLM emit / metrics recipes deliberately out of live hubs)
 
-Java SDK is active (`io.xaiop:xaiop` **0.15.1** — Node-aligned full surface — protocol **0.6.0**: parse · stream · encode · merge · history · WS · Control Root · typeCheck · intercept / Annotation Span). Node.js `xaiop` **0.15.1** implements protocol **0.6.0**. Python is still pending. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout. Parity matrix: [docs/sdk/java/ALIGNMENT.md](docs/sdk/java/ALIGNMENT.md).
+Official product SDKs (**Node · Java · Python** `0.15.1`, protocol **0.6.0**): parse · stream · encode · merge · history · WS · Control Root · typeCheck · intercept / Annotation Span (no browser package on Java/Python). Node remains the primary reference; Java/Python are aligned at observable-semantics level. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout. Parity: [java/ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [python/ALIGNMENT](docs/sdk/python/ALIGNMENT.md).
 
-**Announcement (2026-08-04):** Skills are **no longer provided** as an official product; source remains downloadable from [`skills/`](skills/). Full notes: [docs/meta/release-notes-2026-08-04.md](docs/meta/release-notes-2026-08-04.md).
+**Announcement (2026-08-04):** Skills are **no longer provided** as an official product; source remains downloadable from [`skills/`](skills/) as a **retained protocol digest** (aligned to **0.6.0**; not a sealed deliverable). Full notes: [docs/meta/release-notes-2026-08-04.md](docs/meta/release-notes-2026-08-04.md).
 
 ---
 

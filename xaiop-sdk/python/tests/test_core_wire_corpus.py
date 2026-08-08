@@ -81,7 +81,12 @@ def test_core_wire_case(case: dict) -> None:
         return
 
     if kind == "roundtrip":
-        wire = encode_sync(case["value"], key_order=case.get("key_order", "sorted"))
+        wire = encode_sync(
+            case["value"],
+            key_order=case.get("key_order", "sorted"),
+            dot_policy="none",
+            style="relative",
+        )
         assert _deep_eq(materialize(parse_sync(wire)), case["value"])
         return
 

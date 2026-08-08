@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `META-REL` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-05 |
+| 最近更新 | 2026-08-08 |
 | 规范性 | **否** — 发行索引；封存规则见 `META-VER` |
 | 依赖 | `META-VER`, `META-REV` |
 
@@ -68,7 +68,8 @@
 
 | SDK | 协议 | 说明 |
 | --- | --- | --- |
-| Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha）；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
+| Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
+| Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha 档案）；[release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) |
 | Go **0.6.0-alpha.1** | `0.6.0` | 核心协议轨（STRICT 线文）；`cmd/dump-core-wire` 用于 CI |
 
 其他语言：在各语言 README 中声明自身的封存映射。
@@ -79,6 +80,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-08 | [release-notes-2026-08-08-python-0.15.1.zh-CN.md](release-notes-2026-08-08-python-0.15.1.zh-CN.md) — Python `0.15.1` 稳定版（退出 alpha） |
 | 2026-08-07 | [release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) — Python `0.15.0a1` 官方端口 alpha |
 | 2026-08-06 | [release-notes-2026-08-06-core-sdk.zh-CN.md](release-notes-2026-08-06-core-sdk.zh-CN.md) — Python `0.6.0a1` · Go `0.6.0-alpha.1` 核心线文 + CI |
 | 2026-08-06 | [release-notes-2026-08-06-java-0.15.1.zh-CN.md](release-notes-2026-08-06-java-0.15.1.zh-CN.md) — Java `0.15.1` `XaiopStream` 完整选项接线 |
@@ -89,7 +91,7 @@
 | 2026-08-05 | [release-notes-2026-08-05-0.14.2.zh-CN.md](release-notes-2026-08-05-0.14.2.zh-CN.md) — Node `0.14.2` Diff 隔离（D1）/ 键控建模 |
 | 2026-08-05 | [release-notes-2026-08-05-0.14.1.zh-CN.md](release-notes-2026-08-05-0.14.1.zh-CN.md) — Node `0.14.1` `meta.logSeq` / seq 打戳 |
 | 2026-08-05 | [release-notes-2026-08-05.zh-CN.md](release-notes-2026-08-05.zh-CN.md) — Node `0.14.0` 控制根 `#!` / session / resume / ack / snapshot |
-| 2026-08-04 | [release-notes-2026-08-04.zh-CN.md](release-notes-2026-08-04.zh-CN.md) — Node `0.13.0` · Java `0.5.0` · **Skill 不再继续提供**（源码仍在 [`skills/`](../../skills/)） |
+| 2026-08-04 | [release-notes-2026-08-04.zh-CN.md](release-notes-2026-08-04.zh-CN.md) — Node `0.13.0` · Java `0.5.0` · **Skill 不再继续提供**（[`skills/`](../../skills/) 保留摘要；随后已对齐协议 **0.6.0**） |
 
 ---
 

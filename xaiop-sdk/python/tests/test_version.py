@@ -6,5 +6,5 @@ def test_protocol_version() -> None:
 
 
 def test_sdk_version() -> None:
-    assert SDK_VERSION == "0.15.0a1"
+    assert SDK_VERSION == "0.15.1"
     assert __version__ == SDK_VERSION

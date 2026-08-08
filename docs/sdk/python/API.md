@@ -3,13 +3,13 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.6.0 Frozen (sealed)  
-**SDK**: **0.15.0a1** (alpha toward **0.15.1**)  
+**SDK**: **0.15.1**  
 **Runtime**: **Python ≥ 3.10**  
 **Package**: `xaiop`  
 **Code**: [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) (`src/xaiop/`)  
 **Parity matrix**: [ALIGNMENT.md](ALIGNMENT.md) · **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
 
-> **Alpha note:** The public surface is **complete** (aligned at observable-semantics level with Node). Do **not** claim full Node **0.15.1** *release* parity until the package bumps to **0.15.1** after soak. See [ALIGNMENT.md](ALIGNMENT.md).
+> Stable release aligned with Node **0.15.1** at observable-semantics level (no browser). See [ALIGNMENT.md](ALIGNMENT.md).
 
 ---
 
@@ -131,7 +131,7 @@ Primary methods are **synchronous**. Network `send` / WS `done` / `closed` expos
 
 ## 2. Core concepts
 
-**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Python implementation of **sealed protocol package 0.6.0** (SDK **0.15.0a1** alpha).
+**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Python implementation of **sealed protocol package 0.6.0** (SDK **0.15.1**).
 
 - Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 - Seal and release index: [../../meta/releases.md](../../meta/releases.md)
@@ -944,8 +944,8 @@ Recovery does **not** invent field names; still raises `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.6.0"` |
-| `SDK_VERSION` | `"0.15.0a1"` |
-| `__version__` | `"0.15.0a1"` |
+| `SDK_VERSION` | `"0.15.1"` |
+| `__version__` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

@@ -74,7 +74,14 @@ def run_case(case: dict) -> dict:
         root = case.get("root", "auto")
         key_order = case.get("key_order", "sorted")
         try:
-            wire = encode_sync(case["value"], root=root, key_order=key_order)
+            # Core-wire track matches Go STRICT defaults (no per-key phase dots).
+            wire = encode_sync(
+                case["value"],
+                root=root,
+                key_order=key_order,
+                dot_policy="none",
+                style="relative",
+            )
         except XaiopEncodeError as e:
             return {**out, "error": str(e)}
         out["wire"] = wire
@@ -83,7 +90,7 @@ def run_case(case: dict) -> dict:
     if kind == "encode_error":
         root = case.get("root", "auto")
         try:
-            encode_sync(case["value"], root=root)
+            encode_sync(case["value"], root=root, dot_policy="none", style="relative")
             return {**out, "error": "expected encode error"}
         except XaiopEncodeError as e:
             return {**out, "ok": True, "message": str(e)}
@@ -91,7 +98,12 @@ def run_case(case: dict) -> dict:
     if kind == "roundtrip":
         value = case["value"]
         key_order = case.get("key_order", "sorted")
-        wire = encode_sync(value, key_order=key_order)
+        wire = encode_sync(
+            value,
+            key_order=key_order,
+            dot_policy="none",
+            style="relative",
+        )
         parsed = materialize(parse_sync(wire))
         out["wire"] = wire
         out["tree"] = parsed

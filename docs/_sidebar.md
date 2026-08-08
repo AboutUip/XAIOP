@@ -60,6 +60,7 @@
   * [document conventions](/meta/document-conventions.md)
   * [releases](/meta/releases.md)
   * [release notes 2026-08-04](/meta/release-notes-2026-08-04.md)
+  * [release notes · Python 0.15.1](/meta/release-notes-2026-08-08-python-0.15.1.md)
   * [release notes · Python 0.15.0a1](/meta/release-notes-2026-08-07-python-0.15.0a1.md)
   * [release notes · core SDK 2026-08-06](/meta/release-notes-2026-08-06-core-sdk.md)
   * [revisions](/meta/revisions.md)

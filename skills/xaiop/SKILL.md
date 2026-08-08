@@ -1,10 +1,11 @@
 ---
 name: xaiop
 description: >-
-  Teach sealed XAIOP protocol wire v0.5.0 (Frozen) — streaming, line-oriented
-  cursor construction. Project name XAIOP; “eXtensible AI Output Protocol” is
-  legacy naming only, not the definition. LLM emit is an optional Generator
-  scenario. Use when producing XAIOP, converting JSON↔XAIOP, or when the user
+  Teach sealed XAIOP protocol wire v0.6.0 (Frozen) — streaming, line-oriented
+  cursor construction. Retained source-only Generator digest (not an official
+  product). Project name XAIOP; “eXtensible AI Output Protocol” is legacy naming
+  only. Prefer programmatic Generators (encode, skeleton WS) over Skill-driven
+  emit. Use when producing XAIOP, converting JSON↔XAIOP, or when the user
   attaches this skill / mentions XAIOP, .xaiop, or structured cursor-IR output.
 ---
 
@@ -12,12 +13,20 @@ description: >-
 > Source remains in the repository for download only — see [../README.md](../README.md)
 > and [../../docs/meta/release-notes-2026-08-04.md](../../docs/meta/release-notes-2026-08-04.md).
 
-# XAIOP v0.5.0 Frozen — Generator Skill (Protocol Digest)
+> **Retained implementation / protocol digest:** This file is kept for download/copy.
+> Digests target the sealed protocol package **0.6.0**. Authoritative text is under
+> [`docs/protocol/`](../../docs/protocol/) — Skills are **not** sealed releases and are
+> **not** SDK-versioned. Prefer programmatic Generators (`encode`, skeleton WS) over
+> Skill-driven emit.
 
-This document teaches the **sealed protocol wire** (project name **XAIOP**; pin **protocol 0.5.0**).  
+# XAIOP v0.6.0 Frozen — retained Generator digest
+
+This document teaches the **sealed protocol wire** (project name **XAIOP**; pin **protocol 0.6.0**).  
 The historical expansion “eXtensible AI Output Protocol” is **legacy naming only**.  
 LLM emit is an **optional** Generator scenario — not the wire definition.  
 Emit **valid XAIOP only**. Prefer this Skill over inventing JSON-like habits.
+
+**Authoritative docs:** [syntax.md](../../docs/protocol/syntax.md) · [hierarchy.md](../../docs/protocol/hierarchy.md) · [content.md](../../docs/protocol/content.md) · [streaming.md](../../docs/protocol/streaming.md)
 
 **Non-negotiables**
 
@@ -39,8 +48,9 @@ XAIOP is a **Cursor** walking a tree while you emit lines:
 | Concept | Meaning |
 | --- | --- |
 | **Cursor** | Current write address (always an **object**, or an **array** if opened with `-` / `>name-`) |
-| **Structure Label** | Moves / creates addresses (`>`, `>name`, `>name-`, `-`, `<`, `<name`, `.`, `=path`, `@path`, `!path`) |
+| **Structure Label** | Moves / creates addresses, or deletes keys (`>`, `>name`, `>name-`, `-`, `<`, `<name`, `.`, `=path`, `@path`, `!path`, `&path`). `&path` does **not** move Cursor. |
 | **Content** | Writes data at Cursor (`key:value` or `:value`) |
+| **`#…`** | **Custom annotation transmission** — standalone line; **not** Structure that moves Cursor; protocol does not interpret text after `#` |
 | **Block** | Content after a Label until the next Label or EOF — **no** end marker |
 
 You do **not** close braces. You **leave** with `<` / `<name` / `.` / `=`.
@@ -78,10 +88,27 @@ You do **not** close braces. You **leave** with `<` / `<name` / `.` / `=`.
 | `=path` | Structure | Fuzzy locate (first match); path segments joined by `>` |
 | `@path` | Structure | Exact from Root; **create** missing object segments |
 | `!path` | Structure | Broadcast to all path-fragment matches until `.` |
+| `&path` | Structure | Delete deepest key (absolute from Root; no Cursor move) |
+| `#…` | Custom annotation transmission | Standalone line; protocol does not interpret text after `#`; no Cursor / tree effect |
 
-**Forbidden line forms:** Bare Label · `>>x` / same-symbol stacking · `<` at Root · multiline values · blank lines · `>  name` (spaces after `>`) · gluing Structure onto Content (`>key:value`).
+**Forbidden line forms:** Bare Label · bare `&` · `>>x` / same-symbol stacking · `<` at Root · multiline values · blank lines · `>  name` (spaces after `>`) · gluing Structure onto Content (`>key:value`).
 
 **Label names:** no whitespace, no `:` inside the name token.
+
+---
+
+## 2.1 Custom annotation transmission (`#…`)
+
+**Official name:** **custom annotation transmission** — **not** a “comment primitive”.
+
+- A standalone line whose **first** character is `#` (no leading whitespace).
+- Protocol does **not** interpret text after `#` (may be empty: a line that is only `#`).
+- **No** Cursor move, **no** tree write/delete, **no** Block end, **no** broadcast enter/exit.
+- Position unrestricted (anywhere as its own line).
+- A `#` **inside** a Content value remains Content — e.g. `note:#x` is still `key:value`, not annotation.
+- Parsers **MUST** recognize such lines and **MAY** ignore them entirely for tree construction.
+
+Do **not** put trailing `# …` “comments” on Structure/Content lines. Wire samples in this Skill are **pure XAIOP only**.
 
 ---
 
@@ -97,17 +124,20 @@ You do **not** close braces. You **leave** with `<` / `<name` / `.` / `=`.
 >
 >a
 ```
+
 → `{ "a": {} }` — outer anonymous root **exists**.
 
 ```text
 >a
 ```
+
 → fragment `"a":{}` — **no** outer object; not a normal standalone JSON document.
 
 ```text
 >
 x:1
 ```
+
 → `{ "x": 1 }`
 
 ```text
@@ -115,6 +145,7 @@ x:1
 :a
 :b
 ```
+
 → `[ "a", "b" ]`
 
 **Generator default for app payloads:** always open with `>` (object) or `-` (array). Do not emit fragments unless explicitly asked.
@@ -138,10 +169,9 @@ Bare `>` is **context-dependent**:
 ```text
 >
 >meta
-…
 ```
 
-not only `>meta` (that is a fragment).
+then Content — not only `>meta` (that is a fragment).
 
 ---
 
@@ -174,6 +204,7 @@ Split on the **first** `:`.
 | `flag:true` | `"flag": true` |
 | `flag: true` | `"flag": "true"` |
 | `url:https://a/b` | `"url": "https://a/b"` (later `:` kept in value) |
+| `note:#x` | `"note": "#x"` (`#` inside value is Content, not annotation) |
 
 ---
 
@@ -187,6 +218,7 @@ Named nest:
 >config
 version:1
 ```
+
 → `{ "data": { "config": { "version": 1 } } }`
 
 Content and children coexist:
@@ -197,6 +229,7 @@ Content and children coexist:
 a:b
 >c
 ```
+
 → `{ "data": { "a": "b", "c": {} } }` — Cursor ends inside `c`.
 
 Leave with `<` to write siblings at parent:
@@ -210,6 +243,7 @@ name:xuan
 <
 version:1
 ```
+
 → `{ "meta": { "name": "demo", "author": { "name": "xuan" }, "version": 1 } }`
 
 `<name` = pop then enter sibling/new name at parent (one line).
@@ -288,6 +322,7 @@ text:end
 a:solo
 a:solo
 ```
+
 → `[ { "a": "solo" }, { "a": "solo" } ]` — Cursor never entered those objects.
 
 Use `>` … `<` when the element needs **0, 2+, or nested** fields.
@@ -301,6 +336,7 @@ Use `>` … `<` when the element needs **0, 2+, or nested** fields.
 >
 <
 ```
+
 → `[ {}, {} ]` — empty elements **MUST** use `>`.
 
 ---
@@ -309,7 +345,7 @@ Use `>` … `<` when the element needs **0, 2+, or nested** fields.
 
 ### 8.1 `.` — reset to Root
 
-Clears relative position. Cursor sits on the **root value** (object or array root).
+Clears relative position. Cursor sits on the **root value** (object or array root). Also exits `!` broadcast.
 
 **When uncertain / deep / after a finished section:** emit `.`, then `>name` / `>name-` / `=path`.  
 **Do not** guess depth with stacked `<`.
@@ -351,26 +387,70 @@ After `=siblings` (array), write the next element with `>` / `:v` / one-line `k:
 
 ### 8.3 `=` / `@` / `!` / `&` — locate and delete
 
-- `@path` — exact path from Root; **create** missing object segments (本相); single Cursor.  
-- `!path` — all complete path-fragment matches on **tree so far** (向前跨相, outer prune); **broadcast** until `.`.  
-- `=path` — fuzzy locate on **tree so far** (向前跨相); first match; no create.  
-- `&path` — **delete** deepest key (path form like `@`, segments via `>`). Single Cursor: absolute from Root; **do not** move Cursor; missing = no-op. Object document root only. May delete a whole named array value; no element index. Cursor-chain delete → syntax error. Allowed under broadcast (relative to each Cursor). Later write recreates.
+- `@path` — exact path from Root; **create** missing object segments (本相); single Cursor.
+- `!path` — all complete path-fragment matches on **tree so far** (向前跨相, outer prune); **broadcast** until `.`.
+- `=path` — fuzzy locate on **tree so far** (向前跨相); first match; no create.
+- `&path` — **delete** deepest key (path form like `@`, segments via `>`). See §8.5.
 
 While broadcasting, do not emit another `!` / `@` / `=` — emit `.` first. **`&path` is allowed** during broadcast.  
 Prefer `@` to open/create a Root path; `=` to return to an existing node; `!` for multi-site updates; `&` to remove a key.
 
+Streaming Diff phases that use `=` / `!` / `&` need a **cumulative** tree — see [streaming.md](../../docs/protocol/streaming.md).
+
 ### 8.4 `=` vs `:` vs `>` (memorize)
 
+Create/enter named object, then write fields with **colon** Content. Locate is a separate path-only line:
+
 ```text
->meta                 # create/enter named object
-title:demo            # Content: write field (COLON)
-source:file.txt       # Content
+>
+>meta
+title:demo
+source:file.txt
 .
-=meta                 # locate existing meta (rare; only if already created)
-note:extra            # Content after locate
+=meta
+note:extra
 ```
 
+Explanation (outside the wire): `>meta` creates/enters; `title:demo` / `source:file.txt` are Content; `=meta` locates existing `meta`; `note:extra` is Content after locate.
+
 If you are about to type `=` and then a **field name + a value**, stop — you want `field:value`.
+
+### 8.5 `&path` — delete deepest key
+
+| Rule | Detail |
+| --- | --- |
+| Path | Segments joined by `>` (same form as `@`), e.g. `&a`, `&a>b` |
+| Bare `&` | **Illegal** (syntax error) |
+| Single Cursor | Path is **absolute from Root**; delete deepest key; **do not** move Cursor |
+| Missing target | Silent **no-op** |
+| Document root | **Object** document root only — forbidden on array root / fragment root; cannot delete the document root itself |
+| Arrays | **MAY** delete a whole named array value; **no** element-index delete |
+| Cursor chain | Deleting the current Cursor value or any ancestor on the stack → **syntax error** |
+| Broadcast (`!` active) | **Allowed**; path is **relative to each Cursor**; any Cursor-chain conflict fails the whole line |
+| After delete | Later write to the same address **creates** again |
+
+```text
+>
+>a
+x:1
+>b
+y:2
+.
+&a
+```
+
+→ after `&a`, key `a` is gone; Cursor position unchanged by the delete.
+
+```text
+>
+>tags-
+:a
+:b
+.
+&tags
+```
+
+→ deletes the whole `tags` array value.
 
 ---
 
@@ -406,7 +486,9 @@ Use this table when two habits collide:
 | Glue Content onto `<` / `>` | `<id:1` · `>key:value` | separate lines: `<` or `>` · then `key:value` |
 | Trailing junk after long array | `>tagger…` / tool prose / JSON dump | stop on last real element; then `.` or EOF |
 | Quoted names as lines | `"江辞"` alone | `:江辞` (array scalar) or `name:江辞` |
-| Want to remove a key | `delete a` / omit | `&a` (object root; Cursor stays) |
+| Want to remove a key | `delete a` / omit / bare `&` | `&a` (object root; Cursor stays) |
+| Side-channel metadata | trailing `# comment` on a Content line | standalone `#…` line (custom annotation transmission) |
+| `#` inside a field value | treat as annotation | `note:#x` is Content |
 | Emit this Skill’s checklist | `Leading \`>\` present? Yes.` | **payload only** — never self-audit text |
 | YAML / pseudo block | `=meta` + indented children | `>meta` + flat `key:value` lines |
 
@@ -440,6 +522,7 @@ Use this table when two habits collide:
 | `>  ` / `>  meta` | `>` / `>meta` | No spaces after `>` in Labels |
 | `.` then `<` | `.` then next section | `<` at Root illegal |
 | Blank lines | omit | Empty line is Content error |
+| bare `&` | `&path` with at least one segment | Empty delete path illegal |
 | `{…}` / `[…]` / `"key":` | XAIOP lines | Not JSON |
 | markdown \`\`\` fences | raw XAIOP only | Contaminates parse |
 | Checklist / “Yes.” / bullet self-check | start with `>` or `-` payload | Output is data, not protocol Q&A |
@@ -448,6 +531,7 @@ Use this table when two habits collide:
 | `!` / `=` before any tree | open root first | Nothing to locate |
 | Treat one-line `a:1` `b:2` at array level as one object | `>` / `a:1` / `b:2` / `<` | Each `k:v` at array level is its own element |
 | `shard: index=2, total=3` prose | `>shard` / `index:2` / `total:3` | One Label or Content per line |
+| Trailing `# comment` on a Structure/Content line | separate `#…` line if annotation is needed | Annotation is a whole-line primitive |
 
 ---
 
@@ -621,6 +705,29 @@ version:1
 
 `=meta` moves Cursor; `version:1` writes. Never `=version 1`.
 
+### J. Delete a key (`&path`)
+
+```text
+>
+>tmp
+v:1
+>keep
+v:2
+.
+&tmp
+```
+
+### K. Annotation line between Content
+
+```text
+>
+a:1
+#run-id:demo
+b:2
+```
+
+`#run-id:demo` is custom annotation transmission (ignored for tree shape). `a:1` / `b:2` remain Content.
+
 ---
 
 ## 12. Create-or-update / overwrite
@@ -629,6 +736,7 @@ version:1
 - Bare `>` on an object Cursor → re-enter that object (modify).
 - Bare `>` at array level → **new** element (not re-enter previous element).
 - Under-pop then `>` on an object element → may **overwrite** the current element instead of creating a sibling — leave correctly (`<` count) or use `.` + `=`.
+- After `&path` removes a key, a later write to the same address **creates** again.
 
 ---
 
@@ -643,6 +751,8 @@ Run mentally. **Never** write these bullets into the output.
 - [ ] **Every field uses `key:value`** — zero `=field value`, zero `field=value`
 - [ ] `=` lines (if any) are **paths only** (`=a>b` / `=meta`) with **no** value payload
 - [ ] Paths: `=a>b` not `=a.b`; arrays locate as `=name` not `=name-`
+- [ ] Deletes use `&path` (never bare `&`); object document root only
+- [ ] Annotation uses a whole `#…` line — never trailing `#` on Structure/Content
 - [ ] No Bare Labels, blank lines, indent nesting, `{}`/`[]`, fences, quotes-as-syntax, or `<` at Root
 - [ ] No HTML-like `< attrs…>`; no `<id:…>` / `<value:…>` glue; no checklist / “Yes.” / prose headers
 - [ ] After `>cast-` / `>tags-`, members are `:name` only — never bare names
@@ -663,4 +773,4 @@ When asked for XAIOP:
 3. Do **not** draft JSON / YAML / `key=value` first and translate.
 4. Do **not** explain the protocol, paste Skill rules, or answer “is `>` present?” in the same message as the payload.
 5. If the task needs multiple top-level sections, separate them with `.` after finishing each array/object section cleanly.
-6. Long documents: keep the same grammar — `>name` / `>name-` / `key:value` / `<` / `.` — at any scale.
+6. Long documents: keep the same grammar — `>name` / `>name-` / `key:value` / `<` / `.` / `&path` / `#…` — at any scale.

@@ -34,11 +34,14 @@ jobs:
 
   python:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - name: Python SDK tests
         working-directory: xaiop-sdk/python
         run: |
@@ -159,12 +162,21 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: xaiop-sdk/java/pom.xml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Build Node SDK
         working-directory: xaiop-sdk/nodejs
         run: npm ci && npm run build:ts
+      - name: Install Python SDK
+        working-directory: xaiop-sdk/python
+        run: python -m pip install -e ".[dev]"
       - name: Fuzz Node (budget 100)
         working-directory: xaiop-sdk/conformance
         run: node fuzz/fuzz-node.mjs --max=100 --seed=1
       - name: Fuzz Java (budget 100)
         working-directory: xaiop-sdk/conformance
         run: node fuzz/fuzz-java/run-fuzz.mjs --max=100 --seed=1
+      - name: Fuzz Python (budget 100)
+        working-directory: xaiop-sdk/conformance
+        run: python fuzz/fuzz-python.py --max=100 --seed=1

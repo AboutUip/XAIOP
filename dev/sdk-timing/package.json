@@ -2,7 +2,7 @@
   "name": "@xaiop/sdk-timing",
   "version": "0.2.0",
   "private": true,
-  "description": "Node.js SDK wall-clock stage timing + same-machine baseline delta (not LLM PERF-METRICS)",
+  "description": "Node.js + Python SDK wall-clock stage timing + same-machine baseline delta (not LLM PERF-METRICS)",
   "type": "module",
   "engines": {
     "node": ">=18"
@@ -12,6 +12,10 @@
     "bench:quick": "node bench.mjs --quick",
     "bench:save-baseline": "node bench.mjs --save-baseline",
     "bench:json": "node bench.mjs --json",
+    "bench:python": "python bench.py",
+    "bench:python:quick": "python bench.py --quick",
+    "bench:python:save-baseline": "python bench.py --save-baseline",
+    "bench:python:json": "python bench.py --json",
     "compare": "node compare.mjs",
     "compare:quick": "node compare.mjs --quick",
     "report": "node compare.mjs"

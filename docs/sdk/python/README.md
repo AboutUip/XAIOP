@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Package | `xaiop` |
-| Track | **Official product SDK** (alpha) |
+| Track | **Official product SDK** |
 | Protocol | **0.6.0** Frozen (`PROTOCOL_VERSION`) |
-| SDK | `0.15.0a1` (`SDK_VERSION`) |
+| SDK | `0.15.1` (`SDK_VERSION`) |
 | Code | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
 | **API reference** | **[API.md](API.md)** (authoritative surface) |
 | Parity | **[ALIGNMENT.md](ALIGNMENT.md)** |
@@ -18,7 +18,7 @@ For the full Python API (parse / encode / engine / stream / WS / control / types
 
 ## Status
 
-**0.15.0a1 alpha** — full surface implemented; soak then bump to **0.15.1**. Do not claim full Node **0.15.1** release parity until that bump (see [ALIGNMENT.md](ALIGNMENT.md)).
+**0.15.1** — stable. Full product surface aligned with Node **0.15.1** at observable-semantics level (see [ALIGNMENT.md](ALIGNMENT.md)).
 
 ## Public API (selected)
 
@@ -40,7 +40,7 @@ python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-≈ **296** unit tests under `tests/`. Parity matrix: [ALIGNMENT.md](ALIGNMENT.md).
+≈ **479** unit tests under `tests/`. Parity matrix: [ALIGNMENT.md](ALIGNMENT.md).
 
 ## Golden / CI
 

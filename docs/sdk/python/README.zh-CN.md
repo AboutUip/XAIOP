@@ -5,9 +5,9 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `xaiop` |
-| 轨道 | **官方产品 SDK**（alpha） |
+| 轨道 | **官方产品 SDK** |
 | 协议 | **0.6.0** Frozen（`PROTOCOL_VERSION`） |
-| SDK | `0.15.0a1`（`SDK_VERSION`） |
+| SDK | `0.15.1`（`SDK_VERSION`） |
 | 代码 | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
 | **API 参考** | **[API.zh-CN.md](API.zh-CN.md)**（权威表面） |
 | 对等 | **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** |
@@ -18,7 +18,7 @@
 
 ## 状态
 
-**0.15.0a1 alpha** — 产品面已落地；浸泡后升至 **0.15.1**。在升版之前勿声称与 Node **0.15.1** 正式发布完全对等（见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
+**0.15.1** — 稳定版。产品面在可观察语义层面与 Node **0.15.1** 对齐（见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
 
 ## 公共 API（节选）
 
@@ -40,7 +40,7 @@ python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-`tests/` 下约 **296** 单测。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
+`tests/` 下约 **479** 单测。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
 
 ## Golden / CI
 

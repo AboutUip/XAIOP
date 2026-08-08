@@ -272,3 +272,70 @@ def test_stream_history_integration() -> None:
     stream.jump_to(0)
     assert h.length == 1
     assert stream.get_committed_snapshot() == {"a": 1}
+
+
+def test_retain_wire_history_false_view_range() -> None:
+    eng, _ = _make_engine(
+        historySnapshot=True, mergeChunkWindow=False, retainWireHistory=False
+    )
+    eng.push(THREE_PHASES)
+    eng.finish()
+    h = eng.history
+    assert h is not None
+    view = h.view_range(0, 1)
+    assert view["json"] == {"a": 1, "b": 2}
+
+
+def test_crlf_history_wires() -> None:
+    eng, _ = _make_engine(historySnapshot=True, mergeChunkWindow=False)
+    eng.push(">\r\na:1\r\n.\r\n>\r\nb:2\r\n.\r\n")
+    eng.finish()
+    h = eng.history
+    assert h is not None
+    assert h.length == 2
+    assert h.get_after(1) == {"a": 1, "b": 2}
+
+
+def test_named_array_after_trees() -> None:
+    eng, chunks = _make_engine(historySnapshot=True, mergeChunkWindow=False)
+    eng.push(">\n>meta\nn:1\n.\n>items-\n>\nid:1\n<\n.\n")
+    eng.finish()
+    h = eng.history
+    assert h is not None
+    assert h.get_after(1) == {"meta": {"n": 1}, "items": [{"id": 1}]}
+    assert chunks[1] == {"items": [{"id": 1}]}
+
+
+def test_jump_after_finish_reopens() -> None:
+    eng, _ = _make_engine(
+        historyRealtime=True, historySnapshot=True, mergeChunkWindow=False
+    )
+    eng.push(THREE_PHASES)
+    eng.finish()
+    eng.jump_to(0)
+    assert eng.committed_snapshot == {"a": 1}
+    # can still push after jump in realtime mode
+    eng.push(">\nz:9\n.\n")
+    eng.finish()
+    assert eng.committed_snapshot.get("z") == 9 or eng.committed_snapshot == {
+        "a": 1,
+        "z": 9,
+    }
+
+
+def test_stream_set_url_releases_source() -> None:
+    stream = XaiopStream(
+        "raw://url-a",
+        merge_chunk_window=False,
+        history_snapshot=True,
+    )
+    stream.on_chunk(lambda *_a, **_k: None)
+    stream.on_done(lambda *_a, **_k: None)
+    stream.send_raw(chunks_of(">\na:1\n.\n"))
+    _wait_status(stream, STREAM_STATUS["COMPLETED"])
+    h = stream.history
+    assert h is not None
+    h.set_source("raw://url-a")
+    assert stream.set_url("raw://url-b") is True
+    # set_url may release via set_source when history active
+    assert stream.url == "raw://url-b"

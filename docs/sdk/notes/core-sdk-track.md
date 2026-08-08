@@ -10,7 +10,7 @@
 
 ## Purpose
 
-**Python** has been promoted to the official product port (SDK **0.15.0a1**, protocol **0.6.0**).  
+**Python** has been promoted to the official product port (SDK **0.15.1**, protocol **0.6.0**).  
 **Go** remains on the core-protocol track (STRICT wire only).
 
 Shared core-wire fixtures still gate Python ↔ Go wire dumps in CI.

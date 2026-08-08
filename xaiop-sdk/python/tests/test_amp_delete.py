@@ -245,3 +245,61 @@ def test_cover_and_non_cover_finals_match() -> None:
         return eng.snapshot
 
     assert run(False) == run(True) == parse_sync(text)
+
+
+def test_broadcast_relative_delete() -> None:
+    text = wire(
+        ">",
+        ">box",
+        ">a",
+        ">meta",
+        "k:1",
+        "drop:9",
+        "<",
+        "<",
+        ">b",
+        ">meta",
+        "k:2",
+        "drop:8",
+        ".",
+        "!meta",
+        "&drop",
+    )
+    assert parse_sync(text) == {
+        "box": {"a": {"meta": {"k": 1}}, "b": {"meta": {"k": 2}}}
+    }
+
+
+def test_amp_under_broadcast_then_absolute() -> None:
+    text = wire(">", ">a", "x:1", ".", ">b", "y:1", ".", "!a", "z:2", ".", "&b")
+    assert parse_sync(text) == {"a": {"x": 1, "z": 2}}
+
+
+def test_array_recreate_after_delete() -> None:
+    text = wire(">", ">items-", ":a", ":b", ".", "&items", ".", ">items-", ":c")
+    assert parse_sync(text) == {"items": ["c"]}
+
+
+def test_bare_amp_syntax_errors() -> None:
+    with pytest.raises(XaiopSyntaxError):
+        parse_sync(wire(">", "x:1", "&"))
+    with pytest.raises(XaiopSyntaxError):
+        parse_sync(wire(">", "x:1", "&>a"))
+
+
+def test_cover_consecutive_amp_merged_tombstone() -> None:
+    chunks: list = []
+    text = wire(">", ">a", "x:1", ".", ">b", "y:1", ".", "&a", "&b", ".") + "\n"
+    eng = DotCheckpointEngine(
+        {
+            "mergeChunkWindow": False,
+            "cover": True,
+            "onChunk": lambda d, _m=None: chunks.append(d),
+        }
+    )
+    eng.push(text)
+    eng.finish()
+    assert any(
+        isinstance(c, dict) and c.get("a") is None and c.get("b") is None for c in chunks
+    )
+    assert eng.snapshot == {}

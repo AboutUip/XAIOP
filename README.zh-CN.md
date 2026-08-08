@@ -16,7 +16,8 @@
   <img alt="游标 IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="流式相位" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
   <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
-  <img alt="按行" src="https://img.shields.io/badge/wire-line--oriented-94a3b8?style=flat-square&labelColor=0b1220" />
+  <img alt="Java SDK" src="https://img.shields.io/badge/SDK-Java_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Python SDK" src="https://img.shields.io/badge/SDK-Python_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
 </p>
 
 <p align="center">
@@ -29,7 +30,7 @@
   <a href="docs/overview/introduction.zh-CN.md"><img alt="引言" src="https://img.shields.io/badge/docs-%E5%BC%95%E8%A8%80-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/protocol/syntax.zh-CN.md"><img alt="协议文档" src="https://img.shields.io/badge/docs-%E5%8D%8F%E8%AE%AE-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/practice/"><img alt="实践文档" src="https://img.shields.io/badge/docs-%E5%AE%9E%E8%B7%B5-f59e0b?style=flat-square&labelColor=0b1220" /></a>
-  <a href="docs/sdk/nodejs/API.zh-CN.md"><img alt="SDK 文档" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
+  <a href="docs/sdk/"><img alt="SDK 文档" src="https://img.shields.io/badge/docs-SDK-22c55e?style=flat-square&labelColor=0b1220" /></a>
 </p>
 
 ---
@@ -84,7 +85,7 @@ name:alice
 }
 ```
 
-[文法](docs/protocol/syntax.zh-CN.md) · [完整样例](docs/examples/complex.xaiop) · [Node 演示](demos/nodejs/)
+[文法](docs/protocol/syntax.zh-CN.md) · [完整样例](docs/examples/complex.xaiop) · [Node 演示](demos/nodejs/) · [Python 演示](demos/python/)
 
 ---
 
@@ -93,15 +94,18 @@ name:alice
 - **引言** — [docs/overview/introduction.zh-CN.md](docs/overview/introduction.zh-CN.md)
 - **协议（仅线格式）** — [docs/protocol/](docs/protocol/) · [隔离说明](docs/SEPARATION.zh-CN.md) · [发布索引](docs/meta/releases.zh-CN.md) · [META-VER](docs/meta/status-and-versioning.zh-CN.md)
 - **实践** — [docs/practice/](docs/practice/) · [流式传输](docs/practice/streaming-transport.zh-CN.md) · [骨架 WS](docs/practice/skeleton-stream.zh-CN.md)
-- **Node.js SDK** — **[docs/sdk/nodejs/API.zh-CN.md](docs/sdk/nodejs/API.zh-CN.md)**（§6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根） · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [对等](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [SDK 对比耗时](dev/sdk-timing/)
-- **Java SDK** — [docs/sdk/java/](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
+- **SDK** — [docs/sdk/](docs/sdk/) · [对等契约](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/) · [阶段计时](dev/sdk-timing/)
+  - **Node.js** `xaiop` **0.15.1** — **[API](docs/sdk/nodejs/API.zh-CN.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [演示](demos/nodejs/)
+  - **Java** `io.xaiop:xaiop` **0.15.1** — [API](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
+  - **Python** `xaiop` **0.15.1** — [API](docs/sdk/python/API.zh-CN.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/python/) · [演示](demos/python/)
+  - **Go**（核心线文轨）— [指南](docs/sdk/go/) · [代码](xaiop-sdk/go/)
 - **文档预览** — 与实验 UI 同站：`cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/)（Docsify 读 `docs/`；深色主题与 Lab 共用）
 - **实验 UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / 直播流 / API 正文渲染
 - **目标封存** — [docs/archive/](docs/archive/)（LLM 发射 / 评测口径刻意不放进现行枢纽）
 
-Java SDK 已启用（`io.xaiop:xaiop` **0.15.1** — 与 Node 对齐的完整产品面 — 协议 **0.6.0**：parse · stream · encode · merge · history · WS · 控制根 · typeCheck · 行拦截 / Annotation Span）。Node.js `xaiop` **0.15.1** 实现协议 **0.6.0**。Python 仍待更新。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。对等矩阵：[docs/sdk/java/ALIGNMENT.zh-CN.md](docs/sdk/java/ALIGNMENT.zh-CN.md)。
+官方产品 SDK（**Node · Java · Python** `0.15.1`，协议 **0.6.0**）：parse · stream · encode · merge · history · WS · 控制根 · typeCheck · 行拦截 / Annotation Span（Java/Python 无 browser 包）。Node 为参考实现；Java/Python 在可观察语义层面对齐。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。对等：[java/ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [python/ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md)。
 
-**公告（2026-08-04）：** Skill **不再**以官方产品形态继续提供；源码仍可从 [`skills/`](skills/) 下载。完整说明：[docs/meta/release-notes-2026-08-04.zh-CN.md](docs/meta/release-notes-2026-08-04.zh-CN.md)。
+**公告（2026-08-04）：** Skill **不再**以官方产品形态继续提供；源码仍可从 [`skills/`](skills/) 下载，作为**保留的协议摘要**（已对齐 **0.6.0**；非封存发行物）。完整说明：[docs/meta/release-notes-2026-08-04.zh-CN.md](docs/meta/release-notes-2026-08-04.zh-CN.md)。
 
 ---
 

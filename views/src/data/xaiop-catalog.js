@@ -1,14 +1,14 @@
 /**
  * Shared catalog for docs alignment + Vue API / protocol preview.
  * Keep versions in sync with sealed protocol 0.6.0 and tip SDKs
- * (Node/Java 0.15.1 · Python 0.15.0a1).
+ * (Node/Java/Python 0.15.1).
  */
 
 export const meta = {
   protocolVersion: "0.6.0",
   packageName: "xaiop",
   packageVersion: "0.15.1",
-  pythonPackageVersion: "0.15.0a1",
+  pythonPackageVersion: "0.15.1",
   runtime: "Node.js ≥ 18 (ESM) · Java 17+ · Python ≥ 3.10",
   previewApp: "views/",
 };
@@ -606,8 +606,8 @@ export const sdkStacks = [
     id: "python",
     name: "Python",
     status: "active",
-    statusZh: "官方 alpha",
-    sdkVersion: "0.15.0a1",
+    statusZh: "官方",
+    sdkVersion: "0.15.1",
     docs: "docs/sdk/python/",
     api: "docs/sdk/python/API.md",
     code: "xaiop-sdk/python/",
