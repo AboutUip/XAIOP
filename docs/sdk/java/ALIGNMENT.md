@@ -179,6 +179,7 @@ These are intentional host-language / packaging differences — **not** parity g
 ```bash
 cd xaiop-sdk/java && mvn test
 cd xaiop-sdk/conformance && npm run golden
+cd xaiop-sdk/timing && npm run bench:java:quick   # optional same-machine stage timing
 ```
 
 ---

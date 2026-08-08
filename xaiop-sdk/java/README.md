@@ -49,6 +49,8 @@ mvn -DskipTests package
 
 Artifact: `target/xaiop-0.15.1.jar` · Requires JDK 17+.
 
+Stage timing (same stage names as Node/Python): from [`../timing/`](../timing/) run `npm run bench:java` (writes `java/last-bench.json`).
+
 ## Layout
 
 ```text

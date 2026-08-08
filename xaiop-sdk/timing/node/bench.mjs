@@ -5,7 +5,7 @@
  * Goal: measure wall-clock of SDK stages and compare against a saved baseline
  * on the same machine. Not JSON-parse championship; not LLM PERF-METRICS.
  *
- * Usage:
+ * Usage (from xaiop-sdk/timing/node, or via npm run bench:node at timing root):
  *   node bench.mjs
  *   node bench.mjs --quick
  *   node bench.mjs --save-baseline     # write baseline-bench.json
@@ -624,7 +624,7 @@ async function main() {
 
   const report = {
     kind: "xaiop-sdk-stage-timing",
-    harness: "0.2.0",
+    harness: "0.2.1",
     not: "JSON race · docs/performance.md PERF-METRICS",
     sdk: SDK_VERSION,
     protocol: PROTOCOL_VERSION,

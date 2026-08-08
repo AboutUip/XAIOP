@@ -3,7 +3,7 @@
 Module for the **core protocol track** (wire **v0.6.0 Frozen**, STRICT).
 
 Guide: [../../docs/sdk/go/README.md](../../docs/sdk/go/README.md) · Simplified Chinese: [../../docs/sdk/go/README.zh-CN.md](../../docs/sdk/go/README.zh-CN.md)  
-Shared scope: [../../docs/sdk/notes/core-sdk-track.md](../../docs/sdk/notes/core-sdk-track.md)
+Scope map: [../../docs/sdk/go/ALIGNMENT.md](../../docs/sdk/go/ALIGNMENT.md) · Track: [../../docs/sdk/notes/core-sdk-track.md](../../docs/sdk/notes/core-sdk-track.md)
 
 ## Status
 
@@ -11,8 +11,9 @@ Shared scope: [../../docs/sdk/notes/core-sdk-track.md](../../docs/sdk/notes/core
 | --- | --- |
 | Layout / module | **Active** |
 | `ProtocolVersion` | **0.6.0** |
-| `SDKVersion` | **0.6.0-alpha.1** |
+| `SDKVersion` | **0.6.0-alpha.2** |
 | Parse / Encode / Live / Materialize | **Implemented** (STRICT) |
+| Fuzz | Native `FuzzParse` / `FuzzLiveFeed` + `cmd/fuzz-go` |
 | Product surface (stream · WS · control · ...) | **Out of scope** |
 
 Aligned peer: [../python/](../python/). Corpus: [../conformance/core-wire/](../conformance/core-wire/).
@@ -22,6 +23,7 @@ Aligned peer: [../python/](../python/). Corpus: [../conformance/core-wire/](../c
 ```bash
 cd xaiop-sdk/go
 go test ./...
+go run ./cmd/fuzz-go -max=100 -seed=1
 ```
 
 ## Cross-check (Python ↔ Go)
@@ -35,6 +37,7 @@ npm run core-wire
 
 ```text
 go.mod
-xaiop/                    # parse · encode · live · materialize
+xaiop/                    # parse · encode · live · materialize · fuzz_test
 cmd/dump-core-wire/       # NDJSON dump for CI compare
+cmd/fuzz-go/              # budgeted mutation fuzz (CI)
 ```

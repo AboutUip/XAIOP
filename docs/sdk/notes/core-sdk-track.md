@@ -20,9 +20,11 @@ Shared core-wire fixtures still gate Python ↔ Go wire dumps in CI.
 | Item | Value |
 | --- | --- |
 | Code | [../../../xaiop-sdk/go/](../../../xaiop-sdk/go/) |
-| SDK | `0.6.0-alpha.1` |
+| SDK | `0.6.0-alpha.2` |
+| Scope map | [../go/ALIGNMENT.md](../go/ALIGNMENT.md) |
 | In scope | STRICT parse / encode / Live / materialize |
 | Out of scope | Stream · WS · Control Root · typeCheck · Diff checkpoint product surface |
+| Verify | `go test ./...` · `npm run core-wire` · `go run ./cmd/fuzz-go` |
 
 ## Python (official)
 

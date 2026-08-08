@@ -766,7 +766,7 @@ async function main() {
     not: "docs/performance.md PERF-METRICS",
     sdk: SDK_VERSION,
     protocol: PROTOCOL_VERSION,
-    harness: "0.2.0",
+    harness: "0.2.1",
     node: process.version,
     iters: ITERS,
     warmup: WARMUP,

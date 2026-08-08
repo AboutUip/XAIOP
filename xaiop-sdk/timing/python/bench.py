@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""XAIOP Python SDK stage timing harness (same stages as bench.mjs).
+"""XAIOP Python SDK stage timing harness (same stages as timing/node/bench.mjs).
 
-Goal: same-machine wall-clock regression / Node↔Python stage-name compare.
+Goal: same-machine wall-clock regression / cross-runtime stage-name compare.
 Not JSON-parse championship; not LLM PERF-METRICS.
 
-Usage:
-  python bench.py
-  python bench.py --quick
-  python bench.py --save-baseline
-  python bench.py --no-baseline
-  python bench.py --json
-  BENCH_ITERS=200 BENCH_WARMUP=20 python bench.py
+Usage (from xaiop-sdk/timing):
+  python python/bench.py
+  npm run bench:python
+  npm run bench:python:quick
 """
 
 from __future__ import annotations
@@ -23,7 +20,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-PYTHON_SRC = ROOT.parent / "python" / "src"
+PYTHON_SRC = ROOT.parent.parent / "python" / "src"
 if str(PYTHON_SRC) not in sys.path:
     sys.path.insert(0, str(PYTHON_SRC))
 
@@ -41,8 +38,8 @@ from xaiop import (  # noqa: E402
     parse_sync,
 )
 
-LAST_PATH = ROOT / "last-bench-python.json"
-BASELINE_PATH = ROOT / "baseline-bench-python.json"
+LAST_PATH = ROOT / "last-bench.json"
+BASELINE_PATH = ROOT / "baseline-bench.json"
 
 
 def build_fixture(depth: int = 3, breadth: int = 8) -> dict:
@@ -557,7 +554,7 @@ def main() -> int:
 
     report = {
         "kind": "xaiop-sdk-stage-timing",
-        "harness": "0.2.0",
+        "harness": "0.2.1",
         "runtime": "python",
         "not": "JSON race · docs/performance.md PERF-METRICS",
         "sdk": SDK_VERSION,

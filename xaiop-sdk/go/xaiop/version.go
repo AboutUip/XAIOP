@@ -5,4 +5,4 @@ package xaiop
 const ProtocolVersion = "0.6.0"
 
 // SDKVersion is the Go module version for the core-protocol track.
-const SDKVersion = "0.6.0-alpha.1"
+const SDKVersion = "0.6.0-alpha.2"

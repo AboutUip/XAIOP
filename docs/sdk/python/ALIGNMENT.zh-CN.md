@@ -96,7 +96,7 @@
 | 其余 encode/merge/stream/ws… | 见英版完整表 |
 
 本地规模：`pytest` ≈ **479** 用例。另有 Node↔Python golden CI。  
-计时：与 Node 同阶段名 — [`xaiop-sdk/timing/bench.py`](../../../xaiop-sdk/timing/bench.py)。
+计时：与 Node 同阶段名 — [`xaiop-sdk/timing/python/bench.py`](../../../xaiop-sdk/timing/python/bench.py)。
 
 ---
 

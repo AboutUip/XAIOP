@@ -22,7 +22,7 @@
 - CI：pytest 覆盖 **3.10 / 3.11 / 3.12**（约 **479** 例）；`golden-python`；`core-wire`；Python fuzz（`fuzz/fuzz-python.py`）
 - 文档/索引：去掉 alpha /「pending」表述；声明强度 = pytest + golden + core-wire + fuzz
 - 最小演示：[`demos/python/`](../../demos/python/)
-- 阶段计时：[`xaiop-sdk/timing/bench.py`](../../xaiop-sdk/timing/bench.py)（与 Node `bench.mjs` 阶段名一致）
+- 阶段计时：[`xaiop-sdk/timing/python/bench.py`](../../xaiop-sdk/timing/python/bench.py)（与 Node `timing/node/bench.mjs` 阶段名一致）
 
 ## 验证
 
@@ -42,7 +42,7 @@ python fuzz/fuzz-python.py --max=100 --seed=1
 
 ```bash
 cd xaiop-sdk/timing
-python bench.py --quick
+python python/bench.py --quick
 ```
 
 ## 建议标签

@@ -180,3 +180,10 @@ jobs:
       - name: Fuzz Python (budget 100)
         working-directory: xaiop-sdk/conformance
         run: python fuzz/fuzz-python.py --max=100 --seed=1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: xaiop-sdk/go/go.mod
+      - name: Fuzz Go (budget 100)
+        working-directory: xaiop-sdk/go
+        run: go run ./cmd/fuzz-go -max=100 -seed=1

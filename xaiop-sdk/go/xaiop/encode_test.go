@@ -81,12 +81,14 @@ func TestFragmentRootEncode(t *testing.T) {
 	value := map[string]any{"a": int64(1), "b": map[string]any{"x": int64(2)}}
 	opts := defaultEncodeOptions()
 	opts.Root = "fragment"
+	opts.KeyOrder = "sorted"
 	wireText, err := Encode(value, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.HasPrefix(wireText, ">") {
-		t.Fatalf("wire = %q", wireText)
+	// Sorted keys: scalar `a` first — fragment wire must not open with a lone root `>`.
+	if wireText == ">" || strings.HasPrefix(wireText, ">\n") {
+		t.Fatalf("unexpected object-root opener in fragment wire = %q", wireText)
 	}
 	parsed, err := Parse(wireText)
 	if err != nil {

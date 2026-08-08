@@ -22,5 +22,5 @@ cd ../conformance && npm run golden:python
 ## Timing
 
 ```bash
-cd ../timing && python bench.py --quick
+cd ../timing && python python/bench.py --quick
 ```

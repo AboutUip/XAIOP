@@ -240,6 +240,58 @@
       "kind": "roundtrip",
       "key_order": "sorted",
       "value": {}
+    },
+    {
+      "id": "parse.amp.nested_key",
+      "kind": "parse",
+      "wire": ">\n>a\nx:1\ny:2\n.\n&a>x\n>a\nz:3\n",
+      "expect": { "a": { "y": 2, "z": 3 } }
+    },
+    {
+      "id": "parse.eq.after_bang_scope",
+      "kind": "parse",
+      "wire": ">\n>left\n>test\nx:1\n.\n>right\n>test\ny:2\n.\n!test\nz:9\n.\n=left>test\nw:8\n",
+      "expect": {
+        "left": { "test": { "x": 1, "z": 9, "w": 8 } },
+        "right": { "test": { "y": 2, "z": 9 } }
+      }
+    },
+    {
+      "id": "parse.hash.multiline_ignore",
+      "kind": "parse",
+      "wire": ">\n# a\n# b\nx:1\n#\ny:2\n",
+      "expect": { "x": 1, "y": 2 }
+    },
+    {
+      "id": "live.chunks.amp_delete",
+      "kind": "live",
+      "chunks": [">\n", ">a\n", "x:1\n", ".\n", ">b\n", "y:2\n", "&a\n", "z:3\n"],
+      "expect": { "b": { "y": 2, "z": 3 } }
+    },
+    {
+      "id": "live.chunks.named_array",
+      "kind": "live",
+      "chunks": [">\n", ">tags-\n", ":a\n", ".\n", ">\n", ">tags-\n", ":b\n"],
+      "expect": { "tags": ["a", "b"] }
+    },
+    {
+      "id": "encode.nested.sorted",
+      "kind": "encode",
+      "value": { "z": { "b": 2, "a": 1 }, "a": true },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\na:true\n>z\na:1\nb:2\n"
+    },
+    {
+      "id": "parse_error.bang_missing",
+      "kind": "parse_error",
+      "wire": ">\n>a\nx:1\n.\n!missing\n"
+    },
+    {
+      "id": "roundtrip.nulls_and_bools",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": { "a": null, "b": false, "c": true, "d": 0 }
     }
   ]
 }

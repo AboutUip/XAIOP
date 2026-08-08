@@ -179,6 +179,7 @@
 ```bash
 cd xaiop-sdk/java && mvn test
 cd xaiop-sdk/conformance && npm run golden
+cd xaiop-sdk/timing && npm run bench:java:quick   # 可选：同机阶段计时
 ```
 
 ---

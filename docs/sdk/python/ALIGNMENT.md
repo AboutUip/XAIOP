@@ -136,7 +136,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 
 **Scale (local):** `pytest` ≈ **479** methods under `xaiop-sdk/python/tests/`. Parity is asserted by Python-side expectations transcribed from the Node suite, plus **Node↔Python golden** in CI.
 
-**Timing:** same stage names as Node — [`xaiop-sdk/timing/bench.py`](../../../xaiop-sdk/timing/bench.py) (`npm run bench:python`).
+**Timing:** same stage names as Node — [`xaiop-sdk/timing/python/bench.py`](../../../xaiop-sdk/timing/python/bench.py) (`npm run bench:python`).
 
 ---
 

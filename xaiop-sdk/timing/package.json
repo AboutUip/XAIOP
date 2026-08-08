@@ -1,28 +1,28 @@
 {
   "name": "@xaiop/sdk-timing",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
-  "description": "Node.js + Python SDK wall-clock stage timing + same-machine baseline delta (not LLM PERF-METRICS)",
-  "type": "module",
-  "engines": {
-    "node": ">=18"
-  },
+  "description": "SDK stage timing facade — Node / Python / Java under timing/{node,python,java}",
   "scripts": {
-    "bench": "node bench.mjs",
-    "bench:quick": "node bench.mjs --quick",
-    "bench:save-baseline": "node bench.mjs --save-baseline",
-    "bench:json": "node bench.mjs --json",
-    "bench:python": "python bench.py",
-    "bench:python:quick": "python bench.py --quick",
-    "bench:python:save-baseline": "python bench.py --save-baseline",
-    "bench:python:json": "python bench.py --json",
-    "compare": "node compare.mjs",
-    "compare:quick": "node compare.mjs --quick",
-    "report": "node compare.mjs"
-  },
-  "dependencies": {
-    "fast-json-patch": "^3.1.1",
-    "protobufjs": "^7.5.3",
-    "xaiop": "file:../nodejs"
+    "postinstall": "npm --prefix node install",
+    "bench": "npm run bench:node",
+    "bench:node": "npm --prefix node run bench",
+    "bench:node:quick": "npm --prefix node run bench:quick",
+    "bench:node:save-baseline": "npm --prefix node run bench:save-baseline",
+    "bench:node:json": "npm --prefix node run bench:json",
+    "bench:quick": "npm run bench:node:quick",
+    "bench:save-baseline": "npm run bench:node:save-baseline",
+    "bench:json": "npm run bench:node:json",
+    "bench:python": "python python/bench.py",
+    "bench:python:quick": "python python/bench.py --quick",
+    "bench:python:save-baseline": "python python/bench.py --save-baseline",
+    "bench:python:json": "python python/bench.py --json",
+    "bench:java": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java",
+    "bench:java:quick": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java \"-Dexec.args=--quick\"",
+    "bench:java:save-baseline": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java \"-Dexec.args=--save-baseline\"",
+    "bench:java:json": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java \"-Dexec.args=--json\"",
+    "compare": "npm --prefix node run compare",
+    "compare:quick": "npm --prefix node run compare:quick",
+    "report": "npm run compare"
   }
 }

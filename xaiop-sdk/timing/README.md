@@ -2,53 +2,72 @@
 
 [English](#english) · [简体中文](#简体中文)
 
-Harness **0.2.0** · targets Node / Python SDK **0.15.1+** / protocol **0.6.0**.
+Harness **0.2.1** · targets Node / Python / Java SDK **0.15.1+** / protocol **0.6.0**.
+
+One folder per runtime — stage **names match** across harnesses for cross-runtime compare.
+
+```text
+timing/
+  README.md · package.json     # facade entry
+  node/     bench.mjs · compare.mjs
+  python/   bench.py
+  java/     StageTimingMain (+ thin pom)
+```
 
 ---
 
 ## English
 
-**What this is:** wall-clock micro-benchmarks for the **Node.js and Python XAIOP SDKs**, plus a **cross-scheme** compare (Node) against other wire styles. Primary use: **same-machine before/after** after engine work (`emitDiff`, Diff isolation, `compactCommitted`, …). Stage **names match** across `bench.mjs` and `bench.py` for cross-runtime comparison.
+**What this is:** wall-clock micro-benchmarks for the **Node.js, Python, and Java XAIOP SDKs**, plus a **cross-scheme** compare (Node) against other wire styles. Primary use: **same-machine before/after** after engine work (`emitDiff`, Diff isolation, `compactCommitted`, …).
 
 **What this is not:** racing `JSON.parse`; LLM structured-output evaluation in [`docs/performance.md`](../../docs/performance.md).
 
-### Run
+### Run (from this directory)
 
 ```bash
 cd xaiop-sdk/timing
-npm install
+npm install                    # installs node/ deps
 
-# Node regression harness
-npm run bench:save-baseline   # once, before your change
-# … optimize …
-npm run bench                 # prints Δ% vs baseline-bench.json
-
+# Node
+npm run bench:save-baseline    # once, before your change
+npm run bench                  # Δ% vs node/baseline-bench.json
 npm run bench:quick
 
-# Python (same stage names; separate baseline file)
+# Python
 npm run bench:python:save-baseline
 npm run bench:python
 npm run bench:python:quick
-# or: python bench.py --quick
 
-npm run compare               # five-scheme dimensional compare (Node)
+# Java (JDK 17+ · Maven; installs ../java into local .m2 first)
+npm run bench:java:save-baseline
+npm run bench:java
+npm run bench:java:quick
+
+npm run compare                # five-scheme dimensional compare (Node)
+```
+
+Direct (no facade):
+
+```bash
+npm --prefix node run bench
+python python/bench.py --quick
+mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java -Dexec.args=--quick
 ```
 
 From the Node SDK package: `npm run bench` / `npm run compare` in `xaiop-sdk/nodejs`.
 
-Env: `BENCH_ITERS`, `BENCH_WARMUP`, `BENCH_LONG_PHASES`.  
-Flags: `--quick`, `--json`, `--save-baseline`, `--no-baseline`.  
-Optional: `BENCH_FAIL_SLOWER=1` exits non-zero if any stage is ≥3% slower than baseline.
+Env: `BENCH_ITERS`, `BENCH_WARMUP`, `BENCH_LONG_PHASES`, `BENCH_FAIL_SLOWER=1`.  
+Flags: `--quick`, `--json`, `--save-baseline`, `--no-baseline`.
 
-Artifacts (gitignored):
+### Artifacts (gitignored, per runtime)
 
-| Runtime | Last run | Baseline |
-| --- | --- | --- |
-| Node | `last-bench.json` | `baseline-bench.json` |
-| Python | `last-bench-python.json` | `baseline-bench-python.json` |
-| Compare | `last-report.json` | — |
+| Runtime | Last run | Baseline | Other |
+| --- | --- | --- | --- |
+| Node | `node/last-bench.json` | `node/baseline-bench.json` | `node/last-report.json` |
+| Python | `python/last-bench.json` | `python/baseline-bench.json` | — |
+| Java | `java/last-bench.json` | `java/baseline-bench.json` | — |
 
-### Stage microbench (`bench.mjs` / `bench.py`)
+### Stage microbench
 
 | Area | Stages |
 | --- | --- |
@@ -60,9 +79,7 @@ Artifacts (gitignored):
 | Long session | grow buffer vs `compactCommitted` each phase |
 | Stream | PROMISE (no Diff) vs CALLBACK+`onChunk` (Diff on) |
 
-Same-run **totals** and optional **vs baseline** table (negative % = faster).
-
-### Compare schemes (`compare.mjs`)
+### Compare schemes (`node/compare.mjs`)
 
 | Scheme | Dimension |
 | --- | --- |
@@ -72,31 +89,25 @@ Same-run **totals** and optional **vs baseline** table (negative % = faster).
 | **Protobuf** | Schema binary — atomic decode |
 | **XAIOP** | Nested IR — parseSync / checkpoint streamOn·Off·emitDiffOff |
 
-Parity checks rebuild the **same logical JSON tree**.
-
 ---
 
 ## 简体中文
 
-**本目录：** Node.js / Python SDK 墙钟耗时 +（Node）五方案横向对比。主用途：**同机优化前/后**对比（不是和 JSON 解析抢冠军）。`bench.mjs` 与 `bench.py` **阶段名一致**，便于跨运行时对照。
-
-**不是：** [`docs/performance.md`](../../docs/performance.md) 的 LLM 评测。
+**本目录：** 按运行时分目录的 SDK 墙钟测速 +（Node）五方案横向对比。主用途：**同机优化前/后**。`node/bench.mjs`、`python/bench.py`、`java/StageTimingMain` **阶段名一致**。
 
 ```bash
 cd xaiop-sdk/timing
 npm install
-npm run bench:save-baseline        # Node 优化前基线
-npm run bench
-npm run bench:python:save-baseline # Python 基线
-npm run bench:python
+npm run bench:save-baseline / npm run bench
+npm run bench:python:save-baseline / npm run bench:python
+npm run bench:java:save-baseline / npm run bench:java
 npm run compare
 ```
 
-| 场景 | 说明 |
+| 目录 | 说明 |
 | --- | --- |
-| `emitDiffOn/Off` | Diff 税 |
-| D1 / D2 | Diff 隔离、`@` 累积 Diff |
-| long grow / compact | 长会话缓冲 vs `compactCommitted` |
-| PROMISE vs CALLBACK+onChunk | Stream 是否跑相位 Diff |
+| `node/` | Node 阶段计时 + `compare.mjs` |
+| `python/` | Python 阶段计时 |
+| `java/` | Java 阶段计时（先 `mvn install` `../java`） |
 
-产物：`last-bench.json` · `baseline-bench.json` · `last-bench-python.json` · `baseline-bench-python.json`（均 gitignore）。
+产物写在各自目录的 `last-bench.json` / `baseline-bench.json`（gitignore）。

@@ -70,7 +70,7 @@ Full narrative history: [revisions.md](revisions.md).
 | --- | --- | --- |
 | Python **0.15.1** | `0.6.0` | Official product port (stable); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
 | Python **0.15.0a1** | `0.6.0` | Official product port (alpha archive); [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) |
-| Go **0.6.0-alpha.1** | `0.6.0` | Core-protocol track (STRICT wire); `cmd/dump-core-wire` for CI |
+| Go **0.6.0-alpha.2** | `0.6.0` | Core-protocol track (STRICT wire); fuzz + expanded core-wire |
 
 Other languages: declare their own sealed mapping in language READMEs.
 
