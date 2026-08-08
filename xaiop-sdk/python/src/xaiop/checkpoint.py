@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 from typing import Any, Callable
 
+from . import _checkpoint_ops as _ops
 from .annotation_span import apply_annotation_spans
 from .clone import clone_json
 from .history import ParseHistory
@@ -323,7 +324,7 @@ class DotCheckpointEngine:
             self._scan_dots_merged(at_eof)
             return
         while self._scan_at < len(self._buffer):
-            info = _read_line(self._buffer, self._scan_at, at_eof)
+            info = _ops.read_line(self._buffer, self._scan_at, at_eof)
             if not info:
                 break
             self._scan_at = info["end"]
@@ -343,7 +344,7 @@ class DotCheckpointEngine:
         phase_lines = self._phase_lines
         segment_start = self._segment_start
         while self._scan_at < len(self._buffer):
-            info = _read_line(self._buffer, self._scan_at, at_eof)
+            info = _ops.read_line(self._buffer, self._scan_at, at_eof)
             if not info:
                 break
             self._scan_at = info["end"]
@@ -385,7 +386,11 @@ class DotCheckpointEngine:
         if self._history:
             for phase in closed:
                 phase["lines"] = self._apply_annotation_spans(phase["lines"])
-                before = self._peek_commit()
+                before = (
+                    self._history.peek_after(self._history.length - 1)
+                    if self._history.length > 0
+                    else self._peek_commit()
+                )
                 raw = self._phase_wire(phase["lines"], phase["start"], phase["end"])
                 had_prior_dot = self._saw_dot
                 self._feed_live_lines(phase["lines"])
@@ -393,14 +398,15 @@ class DotCheckpointEngine:
                 diff, committed, from_live = self._build_diff(raw)
                 self._saw_dot = True
                 self._store_commit(phase["end"], committed, from_live)
-                self._history.record(
+                after = self._peek_commit()
+                self._history.record_owned(
                     {
                         "kind": "dot",
                         "bufferStart": phase["start"],
                         "bufferEnd": phase["end"],
                         "wire": raw,
                         "before": before,
-                        "after": self._peek_commit(),
+                        "after": after,
                         "diff": diff,
                     }
                 )
@@ -409,7 +415,7 @@ class DotCheckpointEngine:
                 self._emit_chunk(None)
                 return
             if len(closed) == 1:
-                self._emit_chunk(self._history.get_diff(self._history.length - 1))
+                self._emit_chunk(self._history.peek_diff(self._history.length - 1))
                 return
             self._emit_chunk(clone_json(self._peek_commit()))
             return
@@ -450,14 +456,22 @@ class DotCheckpointEngine:
             self._segment_start = end
             return
         self._alloc_phase_seq()
-        before = self._peek_commit() if self._history else None
+        before = (
+            (
+                self._history.peek_after(self._history.length - 1)
+                if self._history.length > 0
+                else self._peek_commit()
+            )
+            if self._history
+            else None
+        )
         self._feed_live_lines(lines)
         diff, committed, from_live = self._build_diff(raw)
         self._saw_dot = True
         self._segment_start = end
         self._store_commit(end, committed, from_live)
         if self._history:
-            self._history.record(
+            self._history.record_owned(
                 {
                     "kind": "dot",
                     "bufferStart": start,
@@ -481,12 +495,20 @@ class DotCheckpointEngine:
                 self._segment_start = len(self._buffer)
                 return
             self._alloc_phase_seq()
-            before = self._peek_commit() if self._history else None
+            before = (
+                (
+                    self._history.peek_after(self._history.length - 1)
+                    if self._history.length > 0
+                    else self._peek_commit()
+                )
+                if self._history
+                else None
+            )
             self._feed_live_lines(lines)
             if not self._saw_dot:
                 if not self._emit_diff:
                     diff, committed, from_live = None, None, True
-                elif _is_empty_phase_wire(raw):
+                elif _ops.is_empty_phase_wire(raw):
                     diff, committed, from_live = None, None, True
                 else:
                     diff = materialize_snapshot(self._live.value())
@@ -496,7 +518,7 @@ class DotCheckpointEngine:
             self._segment_start = len(self._buffer)
             self._store_commit(len(self._buffer), committed, from_live)
             if self._history:
-                self._history.record(
+                self._history.record_owned(
                     {
                         "kind": "tail",
                         "bufferStart": start,
@@ -530,7 +552,7 @@ class DotCheckpointEngine:
         any_emitted = False
         while i < body_len:
             j = i
-            while j < body_len and not _is_amp_line(lines[j]):
+            while j < body_len and not _ops.is_amp_line(lines[j]):
                 j += 1
             if j < body_len:
                 prefix = pending_restore + lines[i:j]
@@ -546,11 +568,11 @@ class DotCheckpointEngine:
                     )
                     any_emitted = True
                 k = j
-                while k < body_len and _is_amp_line(lines[k]):
+                while k < body_len and _ops.is_amp_line(lines[k]):
                     k += 1
                 amps = lines[j:k]
                 self._feed_live_lines(amps)
-                tombstone = _build_delete_tombstone(amps)
+                tombstone = _ops.build_delete_tombstone(amps)
                 self._feed_live_lines(["."])
                 self._emit_cover_chunk(
                     amps + ["."], tombstone, buffer_start, buffer_end, "dot"
@@ -597,14 +619,19 @@ class DotCheckpointEngine:
             self._saw_dot = True
             self._store_commit(buffer_end, None, True)
             if self._history:
-                self._history.record(
+                tip = (
+                    self._history.peek_after(self._history.length - 1)
+                    if self._history.length > 0
+                    else self._peek_commit()
+                )
+                self._history.record_owned(
                     {
                         "kind": "dot",
                         "bufferStart": buffer_start,
                         "bufferEnd": buffer_end,
                         "wire": ".\n",
-                        "before": self._peek_commit(),
-                        "after": self._peek_commit(),
+                        "before": tip,
+                        "after": tip,
                         "diff": None,
                     }
                 )
@@ -633,9 +660,17 @@ class DotCheckpointEngine:
         committed_diff: bool = False,
     ) -> None:
         self._alloc_phase_seq()
-        before = self._peek_commit() if self._history else None
+        before = (
+            (
+                self._history.peek_after(self._history.length - 1)
+                if self._history.length > 0
+                else self._peek_commit()
+            )
+            if self._history
+            else None
+        )
         self._saw_dot = True
-        wire = _lines_to_wire(wire_lines)
+        wire = _ops.lines_to_wire(wire_lines)
         diff = None
         if self._emit_diff:
             if tombstone:
@@ -651,7 +686,7 @@ class DotCheckpointEngine:
         else:
             self._store_commit(buffer_end, None, True)
         if self._history:
-            self._history.record(
+            self._history.record_owned(
                 {
                     "kind": kind,
                     "bufferStart": buffer_start,
@@ -679,7 +714,7 @@ class DotCheckpointEngine:
 
     def _phase_wire(self, lines: list[str], buffer_start: int, buffer_end: int) -> str:
         if self._line_interceptors or self._annotation_span_handlers:
-            return _lines_to_wire(lines)
+            return _ops.lines_to_wire(lines)
         return self._buffer[buffer_start:buffer_end]
 
     def _alloc_phase_seq(self) -> int | None:
@@ -743,18 +778,18 @@ class DotCheckpointEngine:
     def _build_diff(self, raw: str) -> tuple[Any, Any, bool]:
         if not self._emit_diff:
             return None, None, True
-        if not self._saw_dot or _phase_needs_prior_tree(raw):
-            if _is_empty_phase_wire(raw):
+        if not self._saw_dot or _ops.phase_needs_prior_tree(raw):
+            if _ops.is_empty_phase_wire(raw):
                 return None, None, True
             return materialize_snapshot(self._live.value()), None, True
         try:
-            text = _with_leading_dot(
-                _ensure_diff_document_root(raw, self._live_root_kind())
+            text = _ops.with_leading_dot(
+                _ops.ensure_diff_document_root(raw, self._live_root_kind())
             )
-            diff = _normalize_empty_phase(raw, self._parse_owned(text))
+            diff = _ops.normalize_empty_phase(raw, self._parse_owned(text))
             return diff, None, True
         except Exception:
-            if _is_empty_phase_wire(raw):
+            if _ops.is_empty_phase_wire(raw):
                 return None, None, True
             return materialize_snapshot(self._live.value()), None, True
 
@@ -801,7 +836,7 @@ class DotCheckpointEngine:
             if self._line_interceptors:
                 at = 0
                 while at < len(self._buffer):
-                    info = _read_line(self._buffer, at, True)
+                    info = _ops.read_line(self._buffer, at, True)
                     if not info:
                         break
                     at = info["end"]
@@ -820,152 +855,3 @@ class DotCheckpointEngine:
         self._latest_snapshot = None
         self._closed = False
 
-
-def _read_line(text: str, from_: int, at_eof: bool) -> dict[str, Any] | None:
-    if from_ >= len(text):
-        return None
-    i = from_
-    n = len(text)
-    while i < n:
-        if text[i] == "\n":
-            end = i
-            if end > from_ and text[end - 1] == "\r":
-                end -= 1
-            return {
-                "line": text[from_:end],
-                "end": i + 1,
-                "consumed_newline": True,
-            }
-        i += 1
-    if not at_eof:
-        return None
-    return {"line": text[from_:], "end": n, "consumed_newline": False}
-
-
-def _lines_to_wire(lines: list[str]) -> str:
-    if not lines:
-        return ""
-    return "\n".join(lines) + "\n"
-
-
-def _is_amp_line(line: str) -> bool:
-    return bool(line) and line[0] == "&"
-
-
-def _build_delete_tombstone(amps: list[str]) -> dict[str, Any]:
-    root: dict[str, Any] = {}
-    for line in amps:
-        path = line[1:]
-        segments = [s for s in path.split(">") if s]
-        if not segments:
-            continue
-        cur = root
-        for seg in segments[:-1]:
-            existing = cur.get(seg)
-            if existing is None or not isinstance(existing, dict):
-                cur[seg] = {}
-            cur = cur[seg]
-        cur[segments[-1]] = None
-    return root
-
-
-def _with_leading_dot(raw: str) -> str:
-    if raw == "." or raw.startswith(".\n") or raw.startswith(".\r\n"):
-        return raw
-    return raw if raw.startswith("\n") else f".\n{raw}"
-
-
-def _phase_has_bare_document_root(raw: str) -> bool:
-    line = _first_phase_line(raw)
-    return line in (">", "-")
-
-
-def _ensure_diff_document_root(raw: str, root_kind: str | None) -> str:
-    if _phase_has_bare_document_root(raw):
-        return raw
-    if root_kind == "array":
-        return raw
-    return f">\n{raw}"
-
-
-def _first_phase_line(raw: str) -> str | None:
-    i = 0
-    n = len(raw)
-    while i < n:
-        if raw[i] == "\r":
-            i += 1
-            continue
-        if raw[i] == "\n":
-            i += 1
-            continue
-        j = i
-        while j < n and raw[j] not in "\n\r":
-            j += 1
-        line = raw[i:j]
-        if line.endswith("\r"):
-            line = line[:-1]
-        if line in (".", ""):
-            i = j + 1
-            continue
-        return line
-    return None
-
-
-def _phase_needs_prior_tree(raw: str) -> bool:
-    i = 0
-    n = len(raw)
-    while i < n:
-        if raw[i] == "\r":
-            i += 1
-            continue
-        if raw[i] == "\n":
-            i += 1
-            continue
-        c = ord(raw[i])
-        if c in (61, 33, 38, 64):
-            return True
-        while i < n:
-            ch = raw[i]
-            if ch == "\n":
-                i += 1
-                break
-            if ch == "\r":
-                i += 1
-                if i < n and raw[i] == "\n":
-                    i += 1
-                break
-            i += 1
-    return False
-
-
-def _is_empty_phase_wire(raw: str) -> bool:
-    start = 0
-    end = len(raw)
-    if start < end and raw[start] == ".":
-        start += 1
-        if start < end and raw[start] == "\r":
-            start += 1
-        if start < end and raw[start] == "\n":
-            start += 1
-    if end > start:
-        e = end
-        if e > start and raw[e - 1] == "\n":
-            e -= 1
-        if e > start and raw[e - 1] == "\r":
-            e -= 1
-        if e > start and raw[e - 1] == ".":
-            e -= 1
-            if e > start and raw[e - 1] == "\n":
-                e -= 1
-            if e > start and raw[e - 1] == "\r":
-                e -= 1
-            end = e
-    while start < end and raw[start] in " \t\n\r":
-        start += 1
-    while end > start and raw[end - 1] in " \t\n\r":
-        end -= 1
-    return start >= end
-
-
-def _normalize_empty_phase(raw: str, value: Any) -> Any:
-    return None if _is_empty_phase_wire(raw) else value

@@ -932,20 +932,20 @@ public final class XaiopStream implements AutoCloseable {
       }
     }
     if (!wantsPhaseDiff()) return;
-    Object payload = diff == null ? null : Json.deepClone(diff);
+    // Engine already isolates Diff from Commit (Node _deliverChunk passes by reference).
     if (modes.contains(StreamMode.CALLBACK)) {
-      for (Consumer<Object> c : onChunk) safeRun(() -> c.accept(payload));
+      for (Consumer<Object> c : onChunk) safeRun(() -> c.accept(diff));
       for (BiConsumer<Object, DotCheckpointEngine.ChunkMeta> c : onChunkMeta) {
-        safeRun(() -> c.accept(payload, meta));
+        safeRun(() -> c.accept(diff, meta));
       }
     }
     if (modes.contains(StreamMode.EVENTS)) {
       for (Consumer<Object> c : listeners.get(StreamEvent.CHUNK)) {
-        safeRun(() -> c.accept(payload));
+        safeRun(() -> c.accept(diff));
       }
     }
     if (modes.contains(StreamMode.ASYNC_ITERATOR)) {
-      pushIter(payload);
+      pushIter(diff);
     }
   }
 

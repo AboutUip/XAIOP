@@ -134,7 +134,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | *(core-wire STRICT)* | `test_core_wire_corpus.py` |
 | *(surface / fixtures)* | `test_complex.py` · `test_root_fragment.py` · `test_modes.py` · `test_version.py` |
 
-**Scale (local):** `pytest` ≈ **479** methods under `xaiop-sdk/python/tests/`. Parity is asserted by Python-side expectations transcribed from the Node suite, plus **Node↔Python golden** in CI.
+**Scale (local):** `pytest` ≈ **487** methods under `xaiop-sdk/python/tests/`. Parity is asserted by Python-side expectations transcribed from the Node suite, plus **Node↔Python golden** in CI.
 
 **Timing:** same stage names as Node — [`xaiop-sdk/timing/python/bench.py`](../../../xaiop-sdk/timing/python/bench.py) (`npm run bench:python`).
 

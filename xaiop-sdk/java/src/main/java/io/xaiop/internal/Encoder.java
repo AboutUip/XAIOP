@@ -246,7 +246,7 @@ public final class Encoder {
         if (!(value instanceof List)) {
           throw new XaiopEncodeError("root:'array' requires an array value");
         }
-        emitArray((List<?>) value, List.of());
+        emitArray((List<?>) value, new ArrayList<>());
       } else {
         if (!(value instanceof Map)) {
           throw new XaiopEncodeError(
@@ -258,7 +258,9 @@ public final class Encoder {
           return joinWire(lines, opt.finalDot);
         }
         for (Entry e : entries) {
-          emitObject(e.key(), e.value(), List.of(e.key()));
+          List<Object> segs = new ArrayList<>(1);
+          segs.add(e.key());
+          emitObject(e.key(), e.value(), segs);
         }
       }
 
@@ -347,7 +349,9 @@ public final class Encoder {
         lines.add(">" + wk);
         openStack.add(key);
         for (Entry e : orderedEntries(map, opt.keyOrder)) {
-          emitObject(e.key(), e.value(), append(segs, e.key()));
+          segs.add(e.key());
+          emitObject(e.key(), e.value(), segs);
+          segs.remove(segs.size() - 1);
         }
         if (!afterDot && !openStack.isEmpty() && Objects.equals(peek(), key)) {
           lines.add("<");
@@ -369,14 +373,18 @@ public final class Encoder {
 
       for (int i = 0; i < arr.size(); i++) {
         reopenTo(arrSegs, !arrSegs.isEmpty());
-        emitElement(arr.get(i), append(arrSegs, i));
+        arrSegs.add(i);
+        emitElement(arr.get(i), arrSegs);
+        arrSegs.remove(arrSegs.size() - 1);
       }
     }
 
     /** Nested anonymous array under an array element (stack already on the parent index). */
     private void emitArrayNested(List<?> arr, List<Object> arrSegs) {
       for (int i = 0; i < arr.size(); i++) {
-        emitElement(arr.get(i), append(arrSegs, i));
+        arrSegs.add(i);
+        emitElement(arr.get(i), arrSegs);
+        arrSegs.remove(arrSegs.size() - 1);
       }
     }
 
@@ -407,7 +415,9 @@ public final class Encoder {
       if (el instanceof Map<?, ?> map) {
         lines.add(">");
         for (Entry e : orderedEntries(map, opt.keyOrder)) {
-          emitObject(e.key(), e.value(), append(elSegs, e.key()));
+          elSegs.add(e.key());
+          emitObject(e.key(), e.value(), elSegs);
+          elSegs.remove(elSegs.size() - 1);
         }
         if (!afterDot) lines.add("<");
         if (!afterDot && !openStack.isEmpty() && Objects.equals(peek(), index)) pop();
@@ -821,7 +831,17 @@ public final class Encoder {
   private static String joinWire(List<String> lines, boolean finalDot) {
     List<String> cleaned = collapseRedundantLeavesBeforePhase(lines);
     if (finalDot) cleaned.add(".");
-    return String.join("\n", cleaned) + "\n";
+    int n = cleaned.size();
+    if (n == 0) return "\n";
+    int size = n; // newlines
+    for (String line : cleaned) size += line.length();
+    StringBuilder sb = new StringBuilder(size);
+    for (int i = 0; i < n; i++) {
+      if (i > 0) sb.append('\n');
+      sb.append(cleaned.get(i));
+    }
+    sb.append('\n');
+    return sb.toString();
   }
 
   /** A `<` immediately before `.` (or EOF) is a no-op: the phase reset already leaves. */
@@ -855,12 +875,5 @@ public final class Encoder {
       });
     }
     return entries;
-  }
-
-  private static List<Object> append(List<Object> segs, Object seg) {
-    List<Object> out = new ArrayList<>(segs.size() + 1);
-    out.addAll(segs);
-    out.add(seg);
-    return out;
   }
 }

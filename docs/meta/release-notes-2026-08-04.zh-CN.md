@@ -77,7 +77,7 @@ mvn -DskipTests package   # → target/xaiop-0.5.0.jar
 
 - 协议包 **0.6.0** 仍为 Frozen，不可变。
 - 既有封存协议 / SDK 包版本号不被改写（[releases.zh-CN.md](releases.zh-CN.md)）。
-- Python SDK 仍待更新。
+- Python SDK 仍待更新。（本条为当时状态；其后已发布稳定版 `0.15.1` — [release-notes-2026-08-08-python-0.15.1.zh-CN.md](release-notes-2026-08-08-python-0.15.1.zh-CN.md)）
 
 ---
 

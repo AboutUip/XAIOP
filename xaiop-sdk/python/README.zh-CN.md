@@ -24,3 +24,5 @@ cd ../conformance && npm run golden:python
 ```bash
 cd ../timing && python python/bench.py --quick
 ```
+
+2026-08-08 内部维护说明：[../../docs/meta/release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](../../docs/meta/release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)。

@@ -49,7 +49,7 @@ mvn -DskipTests package
 
 Artifact: `target/xaiop-0.15.1.jar` · Requires JDK 17+.
 
-Stage timing (same stage names as Node/Python): from [`../timing/`](../timing/) run `npm run bench:java` (writes `java/last-bench.json`).
+Stage timing (same stage names as Node/Python): from [`../timing/`](../timing/) run `npm run bench:java` (writes `java/last-bench.json`). Internal 2026-08-08 perf notes: [../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md).
 
 ## Layout
 
@@ -60,8 +60,9 @@ src/main/java/io/xaiop/
   Encode.java / Merge.java / XaiopEngine.java / …
   types/                 TYPE · TypeRegistry · TypeFreezeSession · XaiopTypeError
   control/               ControlDemux · ControlPlaneHost · ResumeWireLog · …
-  stream/                DotCheckpointEngine · ParseHistory · XaiopStream · LineIntercept
-                         AnnotationSpan · PhaseEncode · Materialize · Transport · …
+  stream/                 DotCheckpointEngine · ParseHistory · XaiopStream · LineIntercept
+                          AnnotationSpan · PhaseEncode · Materialize · Transport · …
+                          (+ package-private CheckpointDiffBuild / Cover / Scan / Async)
   ws/                    XaiopWs · XaiopWsConnection · XaiopWsHub · Rfc6455*
   compat/ · internal/
 ```

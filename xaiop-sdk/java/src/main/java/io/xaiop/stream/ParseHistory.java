@@ -287,6 +287,9 @@ public final class ParseHistory {
   /**
    * Append a phase-boundary record. No-op when both modes are off.
    *
+   * <p>Defensive deep-clones of {@code before}/{@code after}/{@code diff}. Engine ingest that
+   * already holds isolated trees should call {@link #recordOwned} instead.
+   *
    * @return the recorded node, or {@code null} when disabled
    */
   public HistoryNode record(
@@ -297,9 +300,41 @@ public final class ParseHistory {
       Object before,
       Object after,
       Object diff) {
+    return recordOwned(
+        kind,
+        bufferStart,
+        bufferEnd,
+        wire,
+        Json.deepClone(before),
+        Json.deepClone(after),
+        Json.deepClone(diff));
+  }
+
+  /**
+   * Append a phase-boundary record taking <b>ownership</b> of already-isolated trees (no extra
+   * clone). When {@code before} is the previous node's {@code after} (same reference), storage is
+   * shared across adjacent phases.
+   *
+   * <p>Package-private for {@link DotCheckpointEngine}; public getters still deep-clone on export.
+   */
+  HistoryNode recordOwned(
+      String kind,
+      int bufferStart,
+      int bufferEnd,
+      String wire,
+      Object before,
+      Object after,
+      Object diff) {
     if (!enabled()) return null;
     int index = nodes.size();
     String nodeKind = HISTORY_NODE_KIND.TAIL.equals(kind) ? HISTORY_NODE_KIND.TAIL : HISTORY_NODE_KIND.DOT;
+    Object storedBefore = before;
+    if (!nodes.isEmpty()) {
+      Object prevAfter = nodes.get(nodes.size() - 1).after;
+      if (prevAfter == before) {
+        storedBefore = prevAfter;
+      }
+    }
     HistoryNode node =
         new HistoryNode(
             index,
@@ -307,9 +342,9 @@ public final class ParseHistory {
             bufferStart,
             bufferEnd,
             retainWire ? (wire != null ? wire : null) : null,
-            Json.deepClone(before),
-            Json.deepClone(after),
-            Json.deepClone(diff));
+            storedBefore,
+            after,
+            diff);
     nodes.add(node);
     invalidateRangeIfNeeded();
     return node;
@@ -331,12 +366,22 @@ public final class ParseHistory {
     return Json.deepClone(nodeAt(index).diff);
   }
 
+  /** Package-private: engine emit path — no clone (caller must not mutate shared storage). */
+  Object peekDiff(int index) {
+    return nodeAt(index).diff;
+  }
+
   public Object getBefore(int index) {
     return Json.deepClone(nodeAt(index).before);
   }
 
   public Object getAfter(int index) {
     return Json.deepClone(nodeAt(index).after);
+  }
+
+  /** Package-private: adjacent-phase {@code before} sharing — no clone. */
+  Object peekAfter(int index) {
+    return nodeAt(index).after;
   }
 
   /** Snapshot: read-only compare of {@code after} trees at two indices. */
@@ -356,16 +401,13 @@ public final class ParseHistory {
     if (a > b) {
       throw new IndexOutOfBoundsException("viewRange: from (" + from + ") > to (" + to + ")");
     }
+    // Cache holds internal refs; return path always deep-clones once (no cache+return double clone).
     if (rangeView != null && rangeView.from == a && rangeView.to == b) {
       return new RangeView(
-          a,
-          b,
-          cloneNodes(rangeView.nodes),
-          Json.deepClone(rangeView.json));
+          a, b, cloneNodes(rangeView.nodes), Json.deepClone(rangeView.json));
     }
 
     List<HistoryNode> slice = nodes.subList(a, b + 1);
-    List<HistoryNode> cloned = cloneNodes(slice);
     Object json;
     boolean allWire = true;
     StringBuilder text = new StringBuilder();
@@ -381,10 +423,10 @@ public final class ParseHistory {
           Materialize.materializeSnapshot(
               Parse.parse(text.toString(), ParseOptions.of(compat, false)));
     } else {
-      json = Json.deepClone(slice.get(slice.size() - 1).after);
+      json = slice.get(slice.size() - 1).after;
     }
-    rangeView = new RangeViewCache(a, b, cloned, json);
-    return new RangeView(a, b, cloneNodes(cloned), Json.deepClone(json));
+    rangeView = new RangeViewCache(a, b, new ArrayList<>(slice), json);
+    return new RangeView(a, b, cloneNodes(rangeView.nodes), Json.deepClone(json));
   }
 
   /**

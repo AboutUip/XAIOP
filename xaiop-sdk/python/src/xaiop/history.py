@@ -15,7 +15,7 @@ HISTORY_NODE_KIND = {"DOT": "dot", "TAIL": "tail"}
 
 
 class RangeError(ValueError):
-    """Index / jump range error (Node `RangeError` counterpart)."""
+    """Index / jump range error (Node ``RangeError`` counterpart)."""
 
 
 @dataclass
@@ -111,9 +111,28 @@ class ParseHistory:
         }
 
     def record(self, entry: dict[str, Any]) -> HistoryNode | None:
+        """Append with defensive clones (safe for external callers)."""
+        return self.record_owned(
+            {
+                **entry,
+                "before": clone_json(entry.get("before")),
+                "after": clone_json(entry.get("after")),
+                "diff": clone_json(entry.get("diff")),
+            }
+        )
+
+    def record_owned(self, entry: dict[str, Any]) -> HistoryNode | None:
+        """Append taking ownership of already-isolated trees (no extra clone).
+
+        When ``before`` is the previous node's ``after`` (same object), adjacent
+        phases share storage. Public getters still deep-clone on export.
+        """
         if not self.enabled:
             return None
         index = len(self._nodes)
+        before = entry.get("before")
+        if self._nodes and self._nodes[-1].after is before:
+            before = self._nodes[-1].after
         node = HistoryNode(
             index=index,
             kind=(
@@ -128,9 +147,9 @@ class ParseHistory:
                 if self._retain_wire and entry.get("wire") is not None
                 else None
             ),
-            before=clone_json(entry.get("before")),
-            after=clone_json(entry.get("after")),
-            diff=clone_json(entry.get("diff")),
+            before=before,
+            after=entry.get("after"),
+            diff=entry.get("diff"),
         )
         self._nodes.append(node)
         self._invalidate_range_if_needed()
@@ -146,11 +165,19 @@ class ParseHistory:
     def get_diff(self, index: int) -> Any:
         return clone_json(self._node_at(index).diff)
 
+    def peek_diff(self, index: int) -> Any:
+        """Engine emit path — no clone (do not mutate shared storage)."""
+        return self._node_at(index).diff
+
     def get_before(self, index: int) -> Any:
         return clone_json(self._node_at(index).before)
 
     def get_after(self, index: int) -> Any:
         return clone_json(self._node_at(index).after)
+
+    def peek_after(self, index: int) -> Any:
+        """Adjacent-phase ``before`` sharing — no clone."""
+        return self._node_at(index).after
 
     def compare(self, index_a: int, index_b: int) -> dict[str, Any]:
         self._require_snapshot("compare")
@@ -167,6 +194,7 @@ class ParseHistory:
         b = self._normalize_index(to_index)
         if a > b:
             raise RangeError(f"viewRange: from ({from_index}) > to ({to_index})")
+        # Cache holds internal refs; return path always deep-clones once.
         if (
             self._range_view
             and self._range_view["from"] == a
@@ -180,18 +208,22 @@ class ParseHistory:
             }
 
         slice_nodes = self._nodes[a : b + 1]
-        nodes = [_clone_node(n) for n in slice_nodes]
         wires = [n.wire for n in slice_nodes]
         if all(w is not None for w in wires):
             text = "".join(str(w) for w in wires)
             json_val = materialize_snapshot(parse_sync(text, self._compat))
         else:
-            json_val = clone_json(slice_nodes[-1].after)
-        self._range_view = {"from": a, "to": b, "nodes": nodes, "json": json_val}
+            json_val = slice_nodes[-1].after
+        self._range_view = {
+            "from": a,
+            "to": b,
+            "nodes": list(slice_nodes),
+            "json": json_val,
+        }
         return {
             "from": a,
             "to": b,
-            "nodes": [_clone_node(n) for n in nodes],
+            "nodes": [_clone_node(n) for n in self._range_view["nodes"]],
             "json": clone_json(json_val),
         }
 

@@ -41,7 +41,7 @@
 | Phase iteration | Sync iterator `chunks()` / helper `chunks_of` (not native `async for`) |
 | Live parser class | `LiveParser` (Node `LiveXaiopParser`) |
 
-This repository’s **SDK focus remains Node.js** for product choices; Python is the official port. Normative parity inventory: [ALIGNMENT.md](ALIGNMENT.md).
+Node remains the reference for locked product choices; Python is an official port at the same observable-semantics level. Parity inventory: [ALIGNMENT.md](ALIGNMENT.md).
 
 ---
 

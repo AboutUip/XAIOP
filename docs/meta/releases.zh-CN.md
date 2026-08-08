@@ -58,7 +58,7 @@
 
 | SDK | 实现的协议 | 说明 |
 | --- | --- | --- |
-| `0.15.1` | `0.6.0` | 流式消费端接通 cover/history/typeCheck/control/拦截/Annotation Span + `chunks()`；与 Node tip 对齐。现行对等矩阵：[../sdk/java/ALIGNMENT.zh-CN.md](../sdk/java/ALIGNMENT.zh-CN.md) |
+| `0.15.1` | `0.6.0` | 流式消费端接通 cover/history/typeCheck/control/拦截/Annotation Span + `chunks()`；**2026-08-08** 内部性能/结构（Diff 投递对齐 Node、history 所有权、checkpoint 协作类）— [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。现行对等矩阵：[../sdk/java/ALIGNMENT.zh-CN.md](../sdk/java/ALIGNMENT.zh-CN.md) |
 | `0.15.0` | `0.6.0` | 与 Node 对齐的完整产品面：WS · 控制根 · cover · typeCheck · 行拦截 / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` 消费端（HTTP / SSE / RAW）；线格式仍为 **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
@@ -68,7 +68,7 @@
 
 | SDK | 协议 | 说明 |
 | --- | --- | --- |
-| Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
+| Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-08** 内部 clone/history/结构 — [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
 | Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha 档案）；[release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) |
 | Go **0.6.0-alpha.2** | `0.6.0` | 核心协议轨（STRICT 线文）；fuzz + 扩展 core-wire |
 
@@ -80,6 +80,8 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md) — Python `0.15.1` 内部 clone / history / checkpoint 结构（不升版本） |
+| 2026-08-08 | [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md) — Java `0.15.1` 内部性能 / checkpoint 结构（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1.zh-CN.md](release-notes-2026-08-08-python-0.15.1.zh-CN.md) — Python `0.15.1` 稳定版（退出 alpha） |
 | 2026-08-07 | [release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) — Python `0.15.0a1` 官方端口 alpha |
 | 2026-08-06 | [release-notes-2026-08-06-core-sdk.zh-CN.md](release-notes-2026-08-06-core-sdk.zh-CN.md) — Python `0.6.0a1` · Go `0.6.0-alpha.1` 核心线文 + CI |

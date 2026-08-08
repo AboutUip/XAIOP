@@ -40,7 +40,7 @@ python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-≈ **479** unit tests under `tests/`. Parity matrix: [ALIGNMENT.md](ALIGNMENT.md).
+≈ **487** unit tests under `tests/`. Parity matrix: [ALIGNMENT.md](ALIGNMENT.md).
 
 ## Golden / CI
 

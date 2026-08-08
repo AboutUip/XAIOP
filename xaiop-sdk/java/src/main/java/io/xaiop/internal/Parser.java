@@ -381,8 +381,8 @@ public final class Parser {
       }
       String name = line.substring(1);
       // In-line >a>b composition: allow split
-      if (name.contains(">")) {
-        String[] parts = name.split(">", -1);
+      if (name.indexOf('>') >= 0) {
+        List<String> parts = splitKeepEmpty(name);
         for (String p : parts) assertName(logicalName(p), lineNo, symbolKeys);
         runOnCursors(
             () -> {
@@ -684,7 +684,7 @@ public final class Parser {
           forSuffix = path;
         }
         boolean hasArraySuffix = false;
-        for (String s : forSuffix.split(">", -1)) {
+        for (String s : splitKeepEmpty(forSuffix)) {
           if (s.length() > 1 && s.endsWith("-")) {
             hasArraySuffix = true;
             break;
@@ -1037,22 +1037,29 @@ public final class Parser {
     if (path == null || path.isEmpty()) {
       throw new XaiopSyntaxError("empty " + op + " path", lineNo);
     }
-    String[] parts = path.split(">", -1);
-    boolean invalid = path.contains(">>") || path.startsWith(">") || path.endsWith(">");
-    if (!invalid) {
-      for (String p : parts) {
-        if (p.isEmpty()) {
+    boolean invalid = path.charAt(0) == '>' || path.charAt(path.length() - 1) == '>';
+    List<String> segments = new ArrayList<>();
+    int start = 0;
+    int n = path.length();
+    for (int i = 0; i < n; i++) {
+      if (path.charAt(i) == '>') {
+        if (i == start) {
           invalid = true;
           break;
         }
+        segments.add(logicalName(path.substring(start, i)));
+        start = i + 1;
+      }
+    }
+    if (!invalid) {
+      if (start >= n) {
+        invalid = true;
+      } else {
+        segments.add(logicalName(path.substring(start)));
       }
     }
     if (invalid) {
       throw new XaiopSyntaxError("invalid " + op + " path: " + Json.stringify(path), lineNo);
-    }
-    List<String> segments = new ArrayList<>(parts.length);
-    for (String p : parts) {
-      segments.add(logicalName(p));
     }
     for (String s : segments) assertName(s, lineNo, symbolKeys);
     return segments;
@@ -1061,9 +1068,30 @@ public final class Parser {
   /** {@code segments} split on {@code >}, empty pieces filtered out. */
   private static List<String> splitNonEmpty(String path) {
     List<String> out = new ArrayList<>();
-    for (String s : path.split(">", -1)) {
-      if (!s.isEmpty()) out.add(s);
+    int start = 0;
+    int n = path.length();
+    for (int i = 0; i < n; i++) {
+      if (path.charAt(i) == '>') {
+        if (i > start) out.add(path.substring(start, i));
+        start = i + 1;
+      }
     }
+    if (start < n) out.add(path.substring(start));
+    return out;
+  }
+
+  /** Like {@code String.split(">", -1)} without regex allocation. */
+  private static List<String> splitKeepEmpty(String path) {
+    List<String> out = new ArrayList<>();
+    int start = 0;
+    int n = path.length();
+    for (int i = 0; i < n; i++) {
+      if (path.charAt(i) == '>') {
+        out.add(path.substring(start, i));
+        start = i + 1;
+      }
+    }
+    out.add(path.substring(start));
     return out;
   }
 
@@ -1186,12 +1214,52 @@ public final class Parser {
     return true;
   }
 
-  /** Float token (PROT-CONTENT §5.2): not int-only; fraction and/or exponent. */
-  private static final Pattern FLOAT_TOKEN_RE =
-      Pattern.compile("^[+-]?(?:\\d+\\.\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?$|^[+-]?\\d+[eE][+-]?\\d+$");
-
+  /** Float token (PROT-CONTENT §5.2): not int-only; fraction and/or exponent. No Matcher alloc. */
   private static boolean isFloatToken(String s) {
-    return FLOAT_TOKEN_RE.matcher(s).matches();
+    int n = s.length();
+    if (n == 0) return false;
+    int i = 0;
+    if (s.charAt(0) == '+' || s.charAt(0) == '-') i++;
+    if (i >= n) return false;
+
+    boolean sawDigit = false;
+    boolean sawDot = false;
+    boolean sawExp = false;
+
+    // Leading digits or leading "."
+    if (s.charAt(i) == '.') {
+      sawDot = true;
+      i++;
+    }
+    while (i < n) {
+      char c = s.charAt(i);
+      if (c >= '0' && c <= '9') {
+        sawDigit = true;
+        i++;
+        continue;
+      }
+      if (c == '.' && !sawDot && !sawExp) {
+        sawDot = true;
+        i++;
+        continue;
+      }
+      if ((c == 'e' || c == 'E') && !sawExp && sawDigit) {
+        sawExp = true;
+        i++;
+        if (i < n && (s.charAt(i) == '+' || s.charAt(i) == '-')) i++;
+        int expDigits = 0;
+        while (i < n) {
+          char d = s.charAt(i);
+          if (d < '0' || d > '9') return false;
+          expDigits++;
+          i++;
+        }
+        return expDigits > 0 && (sawDot || sawExp);
+      }
+      return false;
+    }
+    // Must have digits, and either a fraction or an exponent (int-only rejected by caller first).
+    return sawDigit && (sawDot || sawExp);
   }
 
   private static List<Frame> fuzzyFind(Object node, List<String> segments) {

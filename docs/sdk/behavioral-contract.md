@@ -6,10 +6,11 @@
 | --- | --- |
 | Document ID | `SDK-BEHAVE` |
 | Status | Informative |
-| Last updated | 2026-08-06 |
+| Last updated | 2026-08-08 |
 | Normative | **No** — SDK product catalog (not protocol conformance) |
 | Reference implementation (primary) | Node.js `xaiop` **0.15.1** (`xaiop-sdk/nodejs/`) |
-| Official Java port | `io.xaiop:xaiop` **0.15.1** — fully aligned ([java/ALIGNMENT.md](java/ALIGNMENT.md)) |
+| Official Java port | `io.xaiop:xaiop` **0.15.1** — aligned ([java/ALIGNMENT.md](java/ALIGNMENT.md)) |
+| Official Python port | `xaiop` **0.15.1** — aligned ([python/ALIGNMENT.md](python/ALIGNMENT.md)) |
 | Protocol wire | Frozen **v0.6.0** |
 
 **Isolation:** Protocol = **cursor IR** wire only · Practice = writers & transport · This page = **what an SDK must match for official parity** — [../SEPARATION.md](../SEPARATION.md).  
@@ -179,7 +180,9 @@ Parity-minded ports **SHOULD** expose equivalents of:
 
 API: [nodejs/API.md](nodejs/API.md) §6 · [nodejs/notes/streaming-parse.md](nodejs/notes/streaming-parse.md).
 
-**Java (`io.xaiop:xaiop` 0.15.1):** fully aligned official port of the Node **0.15.1** product surface (protocol **0.6.0**). `XaiopStream` wires **all** consumer options (cover · history · typeCheck · line intercept · Annotation Span · Control Root session/autoAck · `chunks()`) across **HTTP / SSE / RAW / WebSocket**, plus `XaiopWs` listen/connect, phase encode, and `symbolKeys`. Parity matrix: [java/ALIGNMENT.md](java/ALIGNMENT.md) · Guide: [java/README.md](java/README.md).
+**Java (`io.xaiop:xaiop` 0.15.1):** official port aligned with the Node **0.15.1** product surface (protocol **0.6.0**). `XaiopStream` wires consumer options (cover · history · typeCheck · line intercept · Annotation Span · Control Root session/autoAck · `chunks()`) across **HTTP / SSE / RAW / WebSocket**, plus `XaiopWs` listen/connect, phase encode, and `symbolKeys`. Parity: [java/ALIGNMENT.md](java/ALIGNMENT.md).
+
+**Python (`xaiop` 0.15.1):** official port aligned with the same Node **0.15.1** product surface (protocol **0.6.0**; no browser). Stream / WS / control / typeCheck / intercept / Annotation Span / history as in [python/ALIGNMENT.md](python/ALIGNMENT.md).
 
 ---
 
@@ -215,7 +218,7 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 
 **Official Java port (`io.xaiop:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port). Stage timing: [`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/) (`StageTimingMain` / `npm run bench:java`).
 
-**Official Python port (`xaiop` 0.15.1):** satisfies this checklist — see [python/ALIGNMENT.md §8](python/ALIGNMENT.md). Verification: expanded pytest (~**479**) + `golden-python` (**32** NDJSON cases) + `core-wire` + Python fuzz. Stage timing: [`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/) (`bench.py`).
+**Official Python port (`xaiop` 0.15.1):** satisfies this checklist — see [python/ALIGNMENT.md §8](python/ALIGNMENT.md). Verification: pytest (~**487**) + `golden-python` (**32** NDJSON cases) + `core-wire` + Python fuzz. Stage timing: [`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/) (`bench.py`).
 
 **Golden suites (Node):** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`.
 

@@ -80,6 +80,7 @@ io.xaiop/                 facade · Parse · Encode · Merge · Engine · option
   control/                ControlDemux · ControlPlaneHost · ResumeWireLog · …
   stream/                 DotCheckpointEngine · ParseHistory · XaiopStream · LineIntercept
                           AnnotationSpan · PhaseEncode · Materialize · Transport
+                          (+ package-private CheckpointDiffBuild / Cover / Scan / Async)
   ws/                     XaiopWs · XaiopWsConnection · XaiopWsHub · Rfc6455*
   internal/               Parser · Encoder · LabelEscape
 ```
@@ -395,3 +396,5 @@ mvn test                  # full suite incl. StreamAdvancedTest
 mvn -DskipTests package   # target/xaiop-0.15.1.jar
 mvn test                  # includes StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```
+
+Stage timing: [`xaiop-sdk/timing`](../../../xaiop-sdk/timing/) (`npm run bench:java`). Internal 2026-08-08 notes: [../../meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../meta/release-notes-2026-08-08-java-0.15.1-internal.md).

@@ -20,10 +20,11 @@
 
 This document is the **definitive parity matrix** for the Java port against the Node.js reference. Method names and idioms differ; **observable semantics** (Diff boundary, compat suite, encode defaults, WS phase push, Control Root, typeCheck, intercept / Annotation Span) must match.
 
-| Stack | Package / artifact | SDK | Protocol |
-| --- | --- | --- | --- |
-| Node.js (primary) | `xaiop` | **0.15.1** | **0.6.0** |
-| Java (official port) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** |
+| Stack | Package / artifact | SDK | Protocol | Status |
+| --- | --- | --- | --- | --- |
+| Node.js (primary) | `xaiop` | **0.15.1** | **0.6.0** | Reference |
+| Java (official port) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
+| Python (official port) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
 
 Pin the Maven artifact version; read `Xaiop.PROTOCOL_VERSION` for the wire package. Java has **no** `xaiop/browser` subpath — listen and connect share one JDK package (`io.xaiop.ws`).
 
@@ -45,7 +46,7 @@ Pin the Maven artifact version; read `Xaiop.PROTOCOL_VERSION` for the wire packa
 | Checkpoint Diff (`.` phase / window-merge) | ✅ | ✅ | Default `mergeChunkWindow=true` |
 | Cover Diff (`cover`) | ✅ | ✅ | `&` run → tombstone Diffs + Cursor restore |
 | Parse history (snapshot / realtime) | ✅ | ✅ | `ParseHistory` · `jumpTo` |
-| Diff isolation (D1) | ✅ | ✅ | Diff never aliased with Commit |
+| Diff isolation (D1) | ✅ | ✅ | Diff never aliased with Commit; stream/WS deliver Diff by reference after engine isolation (same as Node) |
 | `@` cumulative Diff (D2) | ✅ | ✅ | Same as Node stepwise / opt rules |
 | Buffer compact (`compactCommitted`) | ✅ | ✅ | Long-session wire discard |
 | `XaiopStream` HTTP | ✅ | ✅ | `java.net.http.HttpClient` |
@@ -143,7 +144,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | `symbol.keys.test.js` | `SymbolKeysTest` |
 | *(surface smoke)* | `SdkSurfaceTest` |
 
-≈33 JUnit classes under `io.xaiop` (ported suite + thin robustness / surface smokes; **555** methods in `mvn test`). Parity is asserted by Java-side expectations transcribed from the Node suite. **Node↔Java golden comparison runs in CI** ([`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) `golden` job — encode / parse / stream Diff NDJSON dumps under [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)).
+≈37 JUnit classes under `io.xaiop` (ported suite + thin robustness / surface smokes; **564** methods in `mvn test`). Parity is asserted by Java-side expectations transcribed from the Node suite. **Node↔Java golden comparison runs in CI** ([`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) `golden` job — encode / parse / stream Diff NDJSON dumps under [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)).
 
 ---
 
@@ -163,6 +164,7 @@ These are intentional host-language / packaging differences — **not** parity g
 | Abort | `abort()` + `timeoutMs` instead of DOM/`AbortSignal` |
 | `undefined` | Absent; Annotation Span keep uses `AnnotationSpan.KEEP` |
 | Number width | Split integer / float JVM types; wire float formatting still matches Node |
+| Internal checkpoint helpers | Package-private `CheckpointDiffBuild` / `Cover` / `Scan` / `Async` — not a published API; same observable engine surface |
 
 ---
 
@@ -199,7 +201,7 @@ All items **satisfied** by `io.xaiop:xaiop` **0.15.1** (see [../behavioral-contr
 - [x] Final Snapshot ≡ one-shot parse of full buffer (under same compat)  
 - [x] WS phase `.\n` / `final` / close codes (skeleton sessions via `XaiopWs`)  
 
-Third-party ports claiming the same level **SHOULD** still tick this list independently; the Java official port is the second reference implementation that already does.
+Third-party ports claiming the same level **SHOULD** still tick this list independently; the official Java and Python ports already do.
 
 ---
 

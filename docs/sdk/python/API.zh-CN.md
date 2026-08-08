@@ -41,7 +41,7 @@
 | 相位迭代 | 同步迭代器 `chunks()` / 辅助 `chunks_of`（非原生 `async for`） |
 | 实时解析类 | `LiveParser`（Node `LiveXaiopParser`） |
 
-本仓库的 **SDK 重心仍在 Node.js**（产品选择）；Python 为官方端口。规范对等清单：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
+Node 仍为产品选择锁定的参考实现；Python 为同可观测语义水平的官方移植。对等清单：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
 
 ---
 

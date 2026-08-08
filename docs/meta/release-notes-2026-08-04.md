@@ -77,7 +77,7 @@ mvn -DskipTests package   # → target/xaiop-0.5.0.jar
 
 - Protocol package **0.6.0** remains Frozen and immutable.
 - Older sealed protocol / SDK package numbers are not rewritten ([releases.md](releases.md)).
-- Python SDK remains pending.
+- Python SDK remains pending *(as of this note; later shipped as stable `0.15.1` — [release-notes-2026-08-08-python-0.15.1.md](release-notes-2026-08-08-python-0.15.1.md))*.
 
 ---
 

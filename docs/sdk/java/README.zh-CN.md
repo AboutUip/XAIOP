@@ -74,6 +74,7 @@ io.xaiop/                 门面 · Parse · Encode · Merge · Engine · 选项
   control/                ControlDemux · ControlPlaneHost · ResumeWireLog · …
   stream/                 DotCheckpointEngine · ParseHistory · XaiopStream · LineIntercept
                           AnnotationSpan · PhaseEncode · Materialize · Transport
+                          （另有 package-private：CheckpointDiffBuild / Cover / Scan / Async）
   ws/                     XaiopWs · XaiopWsConnection · XaiopWsHub · Rfc6455*
   internal/               Parser · Encoder · LabelEscape
 ```
@@ -357,3 +358,5 @@ mvn test                  # 全量（含 StreamAdvancedTest）
 mvn -DskipTests package   # target/xaiop-0.15.1.jar
 mvn test                  # 含 StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```
+
+阶段计时：[`xaiop-sdk/timing`](../../../xaiop-sdk/timing/)（`npm run bench:java`）。2026-08-08 内部维护说明：[../../meta/release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](../../meta/release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。

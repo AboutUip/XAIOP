@@ -40,7 +40,7 @@ python -m pip install -e ".[dev,http,ws]"
 pytest
 ```
 
-`tests/` 下约 **479** 单测。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
+`tests/` 下约 **487** 单测。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
 
 ## Golden / CI
 

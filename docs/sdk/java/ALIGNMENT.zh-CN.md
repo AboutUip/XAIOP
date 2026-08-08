@@ -20,10 +20,11 @@
 
 本文是 Java 移植相对 Node.js 参考实现的**权威对等矩阵**。方法名与惯用法可以不同；**可观测语义**（Diff 边界、兼容套件、encode 默认、WS 相位推送、控制根、typeCheck、行拦截 / Annotation Span）必须一致。
 
-| 技术栈 | 包 / 产物 | SDK | 协议 |
-| --- | --- | --- | --- |
-| Node.js（主实现） | `xaiop` | **0.15.1** | **0.6.0** |
-| Java（官方移植） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** |
+| 技术栈 | 包 / 产物 | SDK | 协议 | 状态 |
+| --- | --- | --- | --- | --- |
+| Node.js（主实现） | `xaiop` | **0.15.1** | **0.6.0** | 参考 |
+| Java（官方移植） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
+| Python（官方移植） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
 
 请锁定 Maven 产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `xaiop/browser` 分包 — listen 与 connect 同属 JDK 包 `io.xaiop.ws`。
 
@@ -45,7 +46,7 @@
 | Checkpoint Diff（`.` 相位 / 窗口合并） | ✅ | ✅ | 默认 `mergeChunkWindow=true` |
 | Cover Diff（`cover`） | ✅ | ✅ | `&` 连续删除 → 墓碑 Diff + Cursor 恢复 |
 | 解析历史（snapshot / realtime） | ✅ | ✅ | `ParseHistory` · `jumpTo` |
-| Diff 隔离（D1） | ✅ | ✅ | Diff 绝不与 Commit 共享引用 |
+| Diff 隔离（D1） | ✅ | ✅ | Diff 绝不与 Commit 共享引用；引擎隔离后 stream/WS 按引用投递 Diff（与 Node 一致） |
 | `@` 累积 Diff（D2） | ✅ | ✅ | 与 Node 逐步 / 选项规则一致 |
 | Buffer compact（`compactCommitted`） | ✅ | ✅ | 长会话丢弃已提交线文 |
 | `XaiopStream` HTTP | ✅ | ✅ | `java.net.http.HttpClient` |
@@ -143,7 +144,7 @@
 | `symbol.keys.test.js` | `SymbolKeysTest` |
 | *（表面冒烟）* | `SdkSurfaceTest` |
 
-约 33 个 JUnit 测试类（`io.xaiop` 下：移植套件 + 薄鲁棒 / 表面冒烟；`mvn test` 约 **555** 个方法）。一致性由 Java 侧断言，期望值从 Node 套件转写。**Node↔Java 黄金比对已接入 CI**（[`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) 的 `golden` job — encode / parse / 流式 Diff NDJSON，见 [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)）。
+约 37 个 JUnit 测试类（`io.xaiop` 下：移植套件 + 薄鲁棒 / 表面冒烟；`mvn test` **564** 个方法）。一致性由 Java 侧断言，期望值从 Node 套件转写。**Node↔Java 黄金比对已接入 CI**（[`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) 的 `golden` job — encode / parse / 流式 Diff NDJSON，见 [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)）。
 
 ---
 
@@ -163,6 +164,7 @@
 | Abort | `abort()` + `timeoutMs`，而非 DOM/`AbortSignal` |
 | `undefined` | 不存在；Annotation Span 保留使用 `AnnotationSpan.KEEP` |
 | 数值宽度 | JVM 区分整数 / 浮点；线格式浮点仍与 Node 一致 |
+| 内部 checkpoint 协作类 | package-private `CheckpointDiffBuild` / `Cover` / `Scan` / `Async` — 非对外 API；引擎可观测表面不变 |
 
 ---
 
@@ -199,7 +201,7 @@ cd xaiop-sdk/timing && npm run bench:java:quick   # 可选：同机阶段计时
 - [x] 最终 Snapshot ≡ 同兼容策略下全缓冲一次性 parse  
 - [x] WS 相位 `.\n` / `final` / 关闭码（经 `XaiopWs` 骨架会话）  
 
-宣称同等水平的第三方移植仍应**自行**勾选本清单；Java 官方移植是已满足该清单的第二个参考实现。
+宣称同等水平的第三方移植仍应**自行**勾选本清单；官方 Java / Python 移植已满足该清单。
 
 ---
 

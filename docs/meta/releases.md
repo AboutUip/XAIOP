@@ -58,7 +58,7 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Protocol implemented | Notes |
 | --- | --- | --- |
-| `0.15.1` | `0.6.0` | Stream consumer wires cover/history/typeCheck/control/intercept/Annotation Span + `chunks()`; lockstep with Node tip. Living parity matrix: [../sdk/java/ALIGNMENT.md](../sdk/java/ALIGNMENT.md) |
+| `0.15.1` | `0.6.0` | Stream consumer wires cover/history/typeCheck/control/intercept/Annotation Span + `chunks()`; **2026-08-08** internal perf/structure (Diff deliver aligned with Node, history ownership, checkpoint helpers) — [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md). Living parity matrix: [../sdk/java/ALIGNMENT.md](../sdk/java/ALIGNMENT.md) |
 | `0.15.0` | `0.6.0` | Full Node-aligned surface: WS · Control Root · cover · typeCheck · intercept / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` consumer (HTTP / SSE / RAW); still wire **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
@@ -68,7 +68,7 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Protocol | Notes |
 | --- | --- | --- |
-| Python **0.15.1** | `0.6.0` | Official product port (stable); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
+| Python **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-08** internal clone/history/structure — [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
 | Python **0.15.0a1** | `0.6.0` | Official product port (alpha archive); [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) |
 | Go **0.6.0-alpha.2** | `0.6.0` | Core-protocol track (STRICT wire); fuzz + expanded core-wire |
 
@@ -80,6 +80,8 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md) — Python `0.15.1` internal clone / history / checkpoint structure (no version bump) |
+| 2026-08-08 | [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md) — Java `0.15.1` internal perf / checkpoint structure (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1.md](release-notes-2026-08-08-python-0.15.1.md) — Python `0.15.1` stable (exit alpha) |
 | 2026-08-07 | [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) — Python `0.15.0a1` official port alpha |
 | 2026-08-06 | [release-notes-2026-08-06-core-sdk.md](release-notes-2026-08-06-core-sdk.md) — Python `0.6.0a1` · Go `0.6.0-alpha.1` core-wire + CI |

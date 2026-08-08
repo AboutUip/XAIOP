@@ -545,7 +545,7 @@ Facade: `Xaiop.stream(url)` / `Xaiop.stream(url, options)`.
 
 | API | When | Value |
 | --- | --- | --- |
-| `onChunk` / `onChunkWithMeta` / iterator | Phase / window boundary | Diff JSON; empty phase may be `null`; **meta** may include `seq` / `seqs` (phase sequence, §7.7) and `typeCheckEscapePaths` |
+| `onChunk` / `onChunkWithMeta` / iterator | Phase / window boundary | Diff JSON; empty phase may be `null`; **meta** may include `seq` / `seqs` (phase sequence, §7.7) and `typeCheckEscapePaths`. Diff is already isolated from Commit — delivered **by reference** (Node-aligned); mutate carefully if multiple listeners share one chunk |
 | `getCommittedSnapshot()` | After each commit | Cumulative later-wins through last `.` / EOF |
 | `bufferStats()` / `compactCommitted(...)` | Mid-stream | Receive-buffer sizes / discard committed wire (keep live tree) |
 | `getSnapshot()` / `onDone` | After finish | Full-buffer parse; empty → `{}` |
@@ -636,10 +636,12 @@ History is built by the checkpoint when `historySnapshot` and/or `historyRealtim
 | API | Notes |
 | --- | --- |
 | `info()` / `exportTimeRoot()` | Metadata / node list |
-| `getNode` / `getDiff` / `getBefore` / `getAfter` | Read by index |
-| `compare` / `viewRange` | Compare / range view |
+| `getNode` / `getDiff` / `getBefore` / `getAfter` | Read by index (**deep-clone** export; callers may mutate safely) |
+| `compare` / `viewRange` | Compare / range view (defensive clones on return) |
 | `jumpTo` / `canJumpTo` | Realtime forward jump |
 | `setSource` / `release` | Associate source key / release |
+
+The checkpoint engine may store owned / shared trees internally when history is on; **public** history APIs above remain clone-on-read (Node-aligned).
 
 `Materialize.materializeSnapshot(parsed)`: Fragment → plain object (JSON surface).  
 `Materialize.materializeOwned(parsed)`: skips clone for a plain root (unsafe if parser reused).

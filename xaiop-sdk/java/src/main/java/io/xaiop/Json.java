@@ -26,7 +26,7 @@ public final class Json {
   public static Object deepClone(Object value) {
     if (value == null) return null;
     if (value instanceof Map<?, ?> map) {
-      LinkedHashMap<String, Object> out = new LinkedHashMap<>();
+      LinkedHashMap<String, Object> out = new LinkedHashMap<>((map.size() * 4 / 3) + 1);
       for (Map.Entry<?, ?> e : map.entrySet()) {
         out.put(String.valueOf(e.getKey()), deepClone(e.getValue()));
       }

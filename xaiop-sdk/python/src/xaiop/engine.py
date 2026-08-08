@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import random
 import time
 from typing import Any
@@ -249,8 +248,8 @@ class XaiopEngine:
             raise ValueError(f"unknown data id: {data_id}")
         value = self._store[data_id]
         if isinstance(value, XaiopFragment):
-            return XaiopFragment(copy.deepcopy(value.entries))
-        return copy.deepcopy(value)
+            return XaiopFragment(clone_json(value.entries))
+        return clone_json(value)
 
     @staticmethod
     def parse_sync(source: str, compatibility_mode: bool = False) -> Any:

@@ -8,15 +8,11 @@ import io.xaiop.compat.CompatFixId;
 import io.xaiop.compat.CompatPolicy;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -145,9 +141,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
   private final List<Integer> logSeqQueue = new ArrayList<>();
   private final List<Integer> pendingLogSeqs = new ArrayList<>();
 
-  private ScheduledExecutorService executor;
-  private CompletableFuture<Void> asyncDrainPromise;
-  private boolean asyncDrainCancelled;
+  private final CheckpointAsync async = new CheckpointAsync();
 
   public DotCheckpointEngine(Options options) {
     if (options == null) throw new NullPointerException("checkpoint options are required");
@@ -370,10 +364,10 @@ public final class DotCheckpointEngine implements AutoCloseable {
   public CompletableFuture<Void> pushAsync(String chunk) {
     synchronized (this) {
       if (closed) {
-        return failed(new IllegalStateException("checkpoint engine is closed"));
+        return CheckpointAsync.failed(new IllegalStateException("checkpoint engine is closed"));
       }
       if (chunk == null) {
-        return failed(new NullPointerException("stream chunk must be a string"));
+        return CheckpointAsync.failed(new NullPointerException("stream chunk must be a string"));
       }
       if (chunk.isEmpty()) return CompletableFuture.completedFuture(null);
       buffer.append(chunk);
@@ -389,7 +383,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       cancelPendingAsyncDrain();
       finishBody();
     }
-    shutdownExecutor();
+    async.shutdown();
   }
 
   /** Async finish: await any pending drain, then finish on the drain thread. */
@@ -397,30 +391,27 @@ public final class DotCheckpointEngine implements AutoCloseable {
     CompletableFuture<Void> pending;
     synchronized (this) {
       if (closed) return CompletableFuture.completedFuture(null);
-      pending = asyncDrainPromise;
+      pending = async.drainPromise();
     }
     CompletableFuture<Void> base =
         pending != null ? pending : CompletableFuture.completedFuture(null);
     return base.thenCompose(
         ignored -> {
           CompletableFuture<Void> done = new CompletableFuture<>();
-          executor()
-              .schedule(
-                  () -> {
-                    RuntimeException failure = null;
-                    synchronized (this) {
-                      try {
-                        if (!closed) finishBody();
-                      } catch (RuntimeException e) {
-                        failure = e;
-                      }
-                    }
-                    shutdownExecutor();
-                    if (failure != null) done.completeExceptionally(failure);
-                    else done.complete(null);
-                  },
-                  0,
-                  TimeUnit.MILLISECONDS);
+          async.schedule(
+              () -> {
+                RuntimeException failure = null;
+                synchronized (this) {
+                  try {
+                    if (!closed) finishBody();
+                  } catch (RuntimeException e) {
+                    failure = e;
+                  }
+                }
+                async.shutdown();
+                if (failure != null) done.completeExceptionally(failure);
+                else done.complete(null);
+              });
           return done;
         });
   }
@@ -428,7 +419,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
   /** Releases the drain thread. Safe to call repeatedly; does not finish the document. */
   @Override
   public void close() {
-    shutdownExecutor();
+    async.shutdown();
   }
 
   // --- core ------------------------------------------------------------------
@@ -467,7 +458,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       return;
     }
     while (scanAt < buffer.length()) {
-      Line info = readLine(buffer, scanAt, atEof);
+      CheckpointScan.Line info = CheckpointScan.readLine(buffer, scanAt, atEof);
       if (info == null) break;
       scanAt = info.end();
       String accepted = acceptLine(info.text());
@@ -483,12 +474,12 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
   /** Collects every complete {@code .} currently available, feeds once, emits once. */
   private void scanDotsMerged(boolean atEof) {
-    List<ClosedPhase> closedPhases = new ArrayList<>();
+    List<CheckpointScan.ClosedPhase> closedPhases = new ArrayList<>();
     List<String> pending = new ArrayList<>(phaseLines);
     int start = segmentStart;
 
     while (scanAt < buffer.length()) {
-      Line info = readLine(buffer, scanAt, atEof);
+      CheckpointScan.Line info = CheckpointScan.readLine(buffer, scanAt, atEof);
       if (info == null) break;
       scanAt = info.end();
       String accepted = acceptLine(info.text());
@@ -498,7 +489,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       }
       pending.add(accepted);
       if (accepted.equals(".")) {
-        closedPhases.add(new ClosedPhase(start, info.end(), pending));
+        closedPhases.add(new CheckpointScan.ClosedPhase(start, info.end(), pending));
         pending = new ArrayList<>();
         start = info.end();
       }
@@ -513,11 +504,11 @@ public final class DotCheckpointEngine implements AutoCloseable {
     emitClosedWindow(closedPhases);
   }
 
-  private void emitClosedWindow(List<ClosedPhase> closedPhases) {
+  private void emitClosedWindow(List<CheckpointScan.ClosedPhase> closedPhases) {
     int lastEnd = closedPhases.get(closedPhases.size() - 1).end();
 
     if (cover) {
-      for (ClosedPhase phase : closedPhases) {
+      for (CheckpointScan.ClosedPhase phase : closedPhases) {
         emitCoverPhase(phase.lines(), phase.start(), phase.end(), false);
       }
       segmentStart = lastEnd;
@@ -530,23 +521,27 @@ public final class DotCheckpointEngine implements AutoCloseable {
     }
 
     if (history != null) {
-      for (ClosedPhase phase : closedPhases) {
+      for (CheckpointScan.ClosedPhase phase : closedPhases) {
         List<String> lines = applyAnnotationSpans(phase.lines());
-        Object before = peekCommit();
+        Object before =
+            history.length() > 0
+                ? history.peekAfter(history.length() - 1)
+                : peekCommit();
         String raw = phaseWire(lines, phase.start(), phase.end());
         boolean hadPriorDot = sawDot;
         feedLiveLines(lines);
         sawDot = hadPriorDot;
-        Diff result = buildDiff(raw);
+        CheckpointDiffBuild.Diff result = buildDiff(raw);
         sawDot = true;
         storeCommit(phase.end(), result.committed(), result.fromLive());
-        history.record(
+        Object after = peekCommit();
+        history.recordOwned(
             ParseHistory.HISTORY_NODE_KIND.DOT,
             phase.start(),
             phase.end(),
             raw,
             before,
-            peekCommit(),
+            after,
             result.diff());
       }
       segmentStart = lastEnd;
@@ -555,7 +550,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
         return;
       }
       if (closedPhases.size() == 1) {
-        emitChunk(history.getDiff(history.length() - 1));
+        emitChunk(history.peekDiff(history.length() - 1));
         return;
       }
       emitChunk(Json.deepClone(peekCommit()));
@@ -564,7 +559,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
     List<String> allLines = new ArrayList<>();
     List<List<String>> appliedPhases = new ArrayList<>(closedPhases.size());
-    for (ClosedPhase phase : closedPhases) {
+    for (CheckpointScan.ClosedPhase phase : closedPhases) {
       List<String> lines = applyAnnotationSpans(phase.lines());
       appliedPhases.add(lines);
       allLines.addAll(lines);
@@ -582,10 +577,10 @@ public final class DotCheckpointEngine implements AutoCloseable {
     }
 
     if (closedPhases.size() == 1) {
-      ClosedPhase only = closedPhases.get(0);
+      CheckpointScan.ClosedPhase only = closedPhases.get(0);
       String raw = phaseWire(appliedPhases.get(0), only.start(), only.end());
       sawDot = sawDotBefore;
-      Diff result = buildDiff(raw);
+      CheckpointDiffBuild.Diff result = buildDiff(raw);
       sawDot = true;
       storeCommit(lastEnd, result.committed(), result.fromLive());
       emitChunk(result.diff());
@@ -608,14 +603,17 @@ public final class DotCheckpointEngine implements AutoCloseable {
       return;
     }
     allocPhaseSeq();
-    Object before = history != null ? peekCommit() : null;
+    Object before =
+        history != null
+            ? (history.length() > 0 ? history.peekAfter(history.length() - 1) : peekCommit())
+            : null;
     feedLiveLines(lines);
-    Diff result = buildDiff(raw);
+    CheckpointDiffBuild.Diff result = buildDiff(raw);
     sawDot = true;
     segmentStart = end;
     storeCommit(end, result.committed(), result.fromLive());
     if (history != null) {
-      history.record(
+      history.recordOwned(
           ParseHistory.HISTORY_NODE_KIND.DOT,
           start,
           end,
@@ -639,14 +637,19 @@ public final class DotCheckpointEngine implements AutoCloseable {
         return;
       }
       allocPhaseSeq();
-      Object before = history != null ? peekCommit() : null;
+      Object before =
+          history != null
+              ? (history.length() > 0 ? history.peekAfter(history.length() - 1) : peekCommit())
+              : null;
       feedLiveLines(lines);
-      Diff result;
+      CheckpointDiffBuild.Diff result;
       if (!sawDot) {
-        if (!emitDiff || isEmptyPhaseWire(raw)) {
-          result = new Diff(null, null, true);
+        if (!emitDiff || CheckpointDiffBuild.isEmptyPhaseWire(raw)) {
+          result = new CheckpointDiffBuild.Diff(null, null, true);
         } else {
-          result = new Diff(Materialize.materializeSnapshot(live.value()), null, true);
+          result =
+              new CheckpointDiffBuild.Diff(
+                  Materialize.materializeSnapshot(live.value()), null, true);
         }
       } else {
         result = buildDiff(raw);
@@ -654,7 +657,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       segmentStart = buffer.length();
       storeCommit(buffer.length(), result.committed(), result.fromLive());
       if (history != null) {
-        history.record(
+        history.recordOwned(
             ParseHistory.HISTORY_NODE_KIND.TAIL,
             start,
             buffer.length(),
@@ -683,7 +686,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
     while (i < bodyLen) {
       int j = i;
-      while (j < bodyLen && !isAmpLine(lines.get(j))) j++;
+      while (j < bodyLen && !CheckpointCover.isAmpLine(lines.get(j))) j++;
 
       if (j < bodyLen) {
         List<String> prefix = new ArrayList<>(pendingRestore);
@@ -703,10 +706,10 @@ public final class DotCheckpointEngine implements AutoCloseable {
         }
 
         int k = j;
-        while (k < bodyLen && isAmpLine(lines.get(k))) k++;
+        while (k < bodyLen && CheckpointCover.isAmpLine(lines.get(k))) k++;
         List<String> amps = lines.subList(j, k);
         feedLiveLines(amps);
-        Map<String, Object> tombstone = buildDeleteTombstone(amps);
+        Map<String, Object> tombstone = CheckpointCover.buildDeleteTombstone(amps);
         feedLiveLines(List.of("."));
         List<String> ampWire = new ArrayList<>(amps);
         ampWire.add(".");
@@ -761,13 +764,14 @@ public final class DotCheckpointEngine implements AutoCloseable {
       sawDot = true;
       storeCommit(bufferEnd, null, true);
       if (history != null) {
-        history.record(
+        Object tip = history.length() > 0 ? history.peekAfter(history.length() - 1) : peekCommit();
+        history.recordOwned(
             ParseHistory.HISTORY_NODE_KIND.DOT,
             bufferStart,
             bufferEnd,
             ".\n",
-            peekCommit(),
-            peekCommit(),
+            tip,
+            tip,
             null);
       }
       allocPhaseSeq();
@@ -790,9 +794,12 @@ public final class DotCheckpointEngine implements AutoCloseable {
       String kind,
       boolean committedDiff) {
     allocPhaseSeq();
-    Object before = history != null ? peekCommit() : null;
+    Object before =
+        history != null
+            ? (history.length() > 0 ? history.peekAfter(history.length() - 1) : peekCommit())
+            : null;
     sawDot = true;
-    String wire = linesToWire(wireLines);
+    String wire = CheckpointCover.linesToWire(wireLines);
     Object diff = null;
     if (emitDiff) {
       if (tombstone != null) {
@@ -802,7 +809,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
         diff = Materialize.materializeSnapshot(live.value());
         storeCommit(bufferEnd, null, true);
       } else {
-        Diff built = buildDiff(wire);
+        CheckpointDiffBuild.Diff built = buildDiff(wire);
         diff = built.diff();
         storeCommit(bufferEnd, built.committed(), built.fromLive());
       }
@@ -810,7 +817,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       storeCommit(bufferEnd, null, true);
     }
     if (history != null) {
-      history.record(kind, bufferStart, bufferEnd, wire, before, peekCommit(), diff);
+      history.recordOwned(kind, bufferStart, bufferEnd, wire, before, peekCommit(), diff);
     }
     emitChunk(diff);
   }
@@ -837,46 +844,9 @@ public final class DotCheckpointEngine implements AutoCloseable {
     }
   }
 
-  private Diff buildDiff(String raw) {
-    if (!emitDiff) {
-      return new Diff(null, null, true);
-    }
-
-    // First phase / locate / fallback: Diff is a clone of the live Commit tree.
-    if (!sawDot || phaseNeedsPriorTree(raw)) {
-      if (isEmptyPhaseWire(raw)) {
-        return new Diff(null, null, true);
-      }
-      return new Diff(Materialize.materializeSnapshot(live.value()), null, true);
-    }
-
-    // Later ordinary phase: phase-local Diff with synthetic document root when needed.
-    try {
-      String text = withLeadingDot(ensureDiffDocumentRoot(raw, liveRootKind()));
-      Object diff = normalizeEmptyPhase(raw, parseOwned(text));
-      return new Diff(diff, null, true);
-    } catch (RuntimeException e) {
-      // Commit already applied; never abort the stream solely because Diff isolation failed.
-      if (isEmptyPhaseWire(raw)) {
-        return new Diff(null, null, true);
-      }
-      return new Diff(Materialize.materializeSnapshot(live.value()), null, true);
-    }
-  }
-
-  private String liveRootKind() {
-    if (live == null) return null;
-    String kind = live.docKind();
-    if ("array".equals(kind) || "fragment".equals(kind) || "object".equals(kind)) {
-      return kind;
-    }
-    try {
-      Object v = live.value();
-      if (v instanceof List) return "array";
-    } catch (RuntimeException ignored) {
-      /* ignore */
-    }
-    return "object";
+  private CheckpointDiffBuild.Diff buildDiff(String raw) {
+    ensureLive();
+    return CheckpointDiffBuild.build(emitDiff, sawDot, raw, live, compat, symbolKeys);
   }
 
   private void storeCommit(int at, Object snapshot, boolean fromLive) {
@@ -887,9 +857,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
   /** Fresh parse; ownership transferred (plain roots are not cloned again). */
   private Object parseOwned(String text) {
-    if (text.isEmpty()) return null;
-    return Materialize.materializeOwned(
-        Parse.parse(text, ParseOptions.of(compat, symbolKeys)));
+    return CheckpointDiffBuild.parseOwned(text, compat, symbolKeys);
   }
 
   private void rebuildFromHistoryJump(ParseHistory.JumpResult result) {
@@ -907,7 +875,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       if (!lineInterceptors.isEmpty()) {
         int at = 0;
         while (at < buffer.length()) {
-          Line info = readLine(buffer, at, true);
+          CheckpointScan.Line info = CheckpointScan.readLine(buffer, at, true);
           if (info == null) break;
           at = info.end();
           String accepted = acceptLine(info.text());
@@ -946,7 +914,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
 
   private String phaseWire(List<String> lines, int bufferStart, int bufferEnd) {
     if (!lineInterceptors.isEmpty() || !annotationSpanHandlers.isEmpty()) {
-      return linesToWire(lines);
+      return CheckpointCover.linesToWire(lines);
     }
     return buffer.substring(bufferStart, bufferEnd);
   }
@@ -990,243 +958,21 @@ public final class DotCheckpointEngine implements AutoCloseable {
   // --- async plumbing --------------------------------------------------------
 
   private CompletableFuture<Void> scheduleAsyncDrain() {
-    if (asyncDrainPromise != null) return asyncDrainPromise;
-    CompletableFuture<Void> promise = new CompletableFuture<>();
-    asyncDrainPromise = promise;
-    asyncDrainCancelled = false;
-    executor()
-        .schedule(
-            () -> {
-              RuntimeException failure = null;
-              synchronized (this) {
-                boolean cancelled = asyncDrainCancelled;
-                asyncDrainPromise = null;
-                asyncDrainCancelled = false;
-                if (!cancelled) {
-                  try {
-                    if (!closed && streamProcessing) scanDots(false);
-                  } catch (RuntimeException e) {
-                    failure = e;
-                  }
-                }
-              }
-              if (failure != null) promise.completeExceptionally(failure);
-              else promise.complete(null);
-            },
-            0,
-            TimeUnit.MILLISECONDS);
-    return promise;
+    return async.scheduleDrain(
+        this,
+        () -> {
+          if (!closed && streamProcessing) scanDots(false);
+        });
   }
 
   private void cancelPendingAsyncDrain() {
-    if (asyncDrainPromise != null) asyncDrainCancelled = true;
-  }
-
-  private synchronized ScheduledExecutorService executor() {
-    if (executor == null) {
-      executor =
-          Executors.newSingleThreadScheduledExecutor(
-              r -> {
-                Thread t = new Thread(r, "xaiop-checkpoint");
-                t.setDaemon(true);
-                return t;
-              });
-    }
-    return executor;
-  }
-
-  private void shutdownExecutor() {
-    ScheduledExecutorService pool;
-    synchronized (this) {
-      pool = executor;
-      executor = null;
-    }
-    if (pool != null) pool.shutdown();
-  }
-
-  private static CompletableFuture<Void> failed(RuntimeException error) {
-    CompletableFuture<Void> f = new CompletableFuture<>();
-    f.completeExceptionally(error);
-    return f;
-  }
-
-  // --- helpers ---------------------------------------------------------------
-
-  private static String withLeadingDot(String raw) {
-    if (raw.equals(".") || raw.startsWith(".\n") || raw.startsWith(".\r\n")) {
-      return raw;
-    }
-    return raw.startsWith("\n") ? "." + raw : ".\n" + raw;
-  }
-
-  private static String firstPhaseLine(String raw) {
-    int i = 0;
-    int n = raw.length();
-    while (i < n) {
-      char c = raw.charAt(i);
-      if (c == '\r' || c == '\n') {
-        i++;
-        continue;
-      }
-      int j = i;
-      while (j < n) {
-        char ch = raw.charAt(j);
-        if (ch == '\n' || ch == '\r') break;
-        j++;
-      }
-      String line = raw.substring(i, j);
-      if (line.endsWith("\r")) line = line.substring(0, line.length() - 1);
-      if (line.equals(".") || line.isEmpty()) {
-        i = j + 1;
-        continue;
-      }
-      return line;
-    }
-    return null;
-  }
-
-  private static boolean phaseHasBareDocumentRoot(String raw) {
-    String line = firstPhaseLine(raw);
-    return ">".equals(line) || "-".equals(line);
-  }
-
-  private static String ensureDiffDocumentRoot(String raw, String rootKind) {
-    if (phaseHasBareDocumentRoot(raw)) return raw;
-    if ("array".equals(rootKind)) return raw;
-    return ">\n" + raw;
-  }
-
-  /** Whether the phase contains {@code =}/{@code !}/{@code &}/{@code @} (needs the prior tree). */
-  private static boolean phaseNeedsPriorTree(String raw) {
-    int i = 0;
-    int n = raw.length();
-    while (i < n) {
-      char c = raw.charAt(i);
-      if (c == '\r' || c == '\n') {
-        i++;
-        continue;
-      }
-      if (c == '=' || c == '!' || c == '&' || c == '@') return true;
-      while (i < n) {
-        char ch = raw.charAt(i);
-        if (ch == '\n') {
-          i++;
-          break;
-        }
-        if (ch == '\r') {
-          i++;
-          if (i < n && raw.charAt(i) == '\n') i++;
-          break;
-        }
-        i++;
-      }
-    }
-    return false;
-  }
-
-  private static boolean isEmptyPhaseWire(String raw) {
-    int start = 0;
-    int end = raw.length();
-    if (start < end && raw.charAt(start) == '.') {
-      start++;
-      if (start < end && raw.charAt(start) == '\r') start++;
-      if (start < end && raw.charAt(start) == '\n') start++;
-    }
-    if (end > start) {
-      int e = end;
-      if (e > start && raw.charAt(e - 1) == '\n') e--;
-      if (e > start && raw.charAt(e - 1) == '\r') e--;
-      if (e > start && raw.charAt(e - 1) == '.') {
-        e--;
-        if (e > start && raw.charAt(e - 1) == '\n') e--;
-        if (e > start && raw.charAt(e - 1) == '\r') e--;
-        end = e;
-      }
-    }
-    while (start < end) {
-      char c = raw.charAt(start);
-      if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-        start++;
-        continue;
-      }
-      break;
-    }
-    while (end > start) {
-      char c = raw.charAt(end - 1);
-      if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-        end--;
-        continue;
-      }
-      break;
-    }
-    return start >= end;
-  }
-
-  private static Object normalizeEmptyPhase(String raw, Object value) {
-    return isEmptyPhaseWire(raw) ? null : value;
-  }
-
-  private static boolean isAmpLine(String line) {
-    return line != null && !line.isEmpty() && line.charAt(0) == '&';
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> buildDeleteTombstone(List<String> amps) {
-    Map<String, Object> root = new LinkedHashMap<>();
-    for (String line : amps) {
-      String path = line.substring(1);
-      String[] segments = path.split(">");
-      List<String> segs = new ArrayList<>();
-      for (String s : segments) {
-        if (!s.isEmpty()) segs.add(s);
-      }
-      if (segs.isEmpty()) continue;
-      Map<String, Object> cur = root;
-      for (int i = 0; i < segs.size() - 1; i++) {
-        String seg = segs.get(i);
-        Object existing = cur.get(seg);
-        if (!(existing instanceof Map<?, ?>)) {
-          Map<String, Object> next = new LinkedHashMap<>();
-          cur.put(seg, next);
-          cur = next;
-        } else {
-          cur = (Map<String, Object>) existing;
-        }
-      }
-      cur.put(segs.get(segs.size() - 1), null);
-    }
-    return root;
-  }
-
-  private static String linesToWire(List<String> lines) {
-    if (lines.isEmpty()) return "";
-    return String.join("\n", lines) + "\n";
+    async.cancelPending();
   }
 
   private static List<String> uniqueEscape(List<String> paths) {
     Set<String> seen = new LinkedHashSet<>(paths);
     return new ArrayList<>(seen);
   }
-
-  private static Line readLine(CharSequence text, int from, boolean atEof) {
-    int length = text.length();
-    if (from >= length) return null;
-    for (int i = from; i < length; i++) {
-      if (text.charAt(i) == '\n') {
-        int end = i;
-        if (end > from && text.charAt(end - 1) == '\r') end--;
-        return new Line(text.subSequence(from, end).toString(), i + 1, true);
-      }
-    }
-    if (!atEof) return null;
-    return new Line(text.subSequence(from, length).toString(), length, false);
-  }
-
-  private record Line(String text, int end, boolean consumedNewline) {}
-
-  private record Diff(Object diff, Object committed, boolean fromLive) {}
-
-  private record ClosedPhase(int start, int end, List<String> lines) {}
 
   /** Hooks / tuning for {@link DotCheckpointEngine}. */
   public static final class Options {

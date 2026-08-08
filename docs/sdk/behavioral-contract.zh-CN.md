@@ -6,10 +6,11 @@
 | --- | --- |
 | 文档 ID | `SDK-BEHAVE` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-06 |
+| 最近更新 | 2026-08-08 |
 | 规范性 | **否** — SDK 产品目录（非协议符合性） |
 | 参考实现（重心） | Node.js `xaiop` **0.15.1**（`xaiop-sdk/nodejs/`） |
-| Java 官方移植 | `io.xaiop:xaiop` **0.15.1** — 全面对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)） |
+| Java 官方移植 | `io.xaiop:xaiop` **0.15.1** — 已对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)） |
+| Python 官方移植 | `xaiop` **0.15.1** — 已对齐（[python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)） |
 | 协议线格式 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
@@ -179,7 +180,9 @@ finish 时:
 
 API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md)。
 
-**Java（`io.xaiop:xaiop` 0.15.1）：** 与 Node **0.15.1** 全面对齐的官方移植（协议 **0.6.0**）。`XaiopStream` 已接通**全部**消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等矩阵：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md) · 指南：[java/README.zh-CN.md](java/README.zh-CN.md)。
+**Java（`io.xaiop:xaiop` 0.15.1）：** 与 Node **0.15.1** 对齐的官方移植（协议 **0.6.0**）。`XaiopStream` 接通消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)。
+
+**Python（`xaiop` 0.15.1）：** 同一 Node **0.15.1** 产品面的官方移植（协议 **0.6.0**；无 browser）。Stream / WS / control / typeCheck / intercept / Annotation Span / history 见 [python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)。
 
 ---
 
@@ -215,7 +218,7 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 
 **Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。
 
-**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：扩展 pytest（~**479**）+ `golden-python`（**32** NDJSON）+ `core-wire` + Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
+**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest（~**487**）+ `golden-python`（**32** NDJSON）+ `core-wire` + Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
 
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 

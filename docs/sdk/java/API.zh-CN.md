@@ -545,7 +545,7 @@ stream.send(new XaiopStream.SendOptions().transport(TransportKind.HTTP));
 
 | API | 时机 | 值 |
 | --- | --- | --- |
-| `onChunk` / `onChunkWithMeta` / 迭代器 | 相 / 窗口边界 | Diff JSON；空相可为 `null`；**meta** 可含 `seq` / `seqs`（相位序号，§7.7）与 `typeCheckEscapePaths` |
+| `onChunk` / `onChunkWithMeta` / 迭代器 | 相 / 窗口边界 | Diff JSON；空相可为 `null`；**meta** 可含 `seq` / `seqs`（相位序号，§7.7）与 `typeCheckEscapePaths`。Diff 已相对 Commit 隔离 — **按引用投递**（与 Node 对齐）；多 listener 共享同一分片时请谨慎突变 |
 | `getCommittedSnapshot()` | 每次 commit 后 | 截至最近 `.` / EOF 的累积后写覆盖 |
 | `bufferStats()` / `compactCommitted(...)` | 中途 | 接收缓冲大小 / 丢弃已提交线文（保留活树） |
 | `getSnapshot()` / `onDone` | finish 后 | 全缓冲解析；空 → `{}` |
@@ -636,10 +636,12 @@ eng.onAnnotationSpan(fn); // 见 §6.5
 | API | 说明 |
 | --- | --- |
 | `info()` / `exportTimeRoot()` | 元数据 / 节点列表 |
-| `getNode` / `getDiff` / `getBefore` / `getAfter` | 按索引读取 |
-| `compare` / `viewRange` | 比较 / 区间视图 |
+| `getNode` / `getDiff` / `getBefore` / `getAfter` | 按索引读取（**deep-clone** 导出；调用方可安全突变） |
+| `compare` / `viewRange` | 比较 / 区间视图（返回时防御性 clone） |
 | `jumpTo` / `canJumpTo` | 实时前向跳转 |
 | `setSource` / `release` | 关联源键 / 释放 |
+
+开启 history 时，checkpoint 引擎内部可能持有已移交 / 相邻共享的树；上表**公开** API 仍为读时 clone（与 Node 对齐）。
 
 `Materialize.materializeSnapshot(parsed)`：Fragment → 普通对象（JSON 表面）。  
 `Materialize.materializeOwned(parsed)`：对普通根跳过克隆（解析器复用时不安全）。
