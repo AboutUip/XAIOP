@@ -94,7 +94,7 @@ Materializes as:
 - **Introduction** — [docs/overview/introduction.md](docs/overview/introduction.md)
 - **Protocol (wire only)** — [docs/protocol/](docs/protocol/) · [separation](docs/SEPARATION.md) · [releases](docs/meta/releases.md) · [META-VER](docs/meta/status-and-versioning.md)
 - **Practice** — [docs/practice/](docs/practice/) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
-- **SDKs** — [docs/sdk/](docs/sdk/) · [parity contract](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/) · [stage timing](dev/sdk-timing/)
+- **SDKs** — [docs/sdk/](docs/sdk/) · [parity contract](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/) · [stage timing](xaiop-sdk/timing/)
   - **Node.js** `xaiop` **0.15.1** — **[API](docs/sdk/nodejs/API.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [code](xaiop-sdk/nodejs/) · [demo](demos/nodejs/)
   - **Java** `io.xaiop:xaiop` **0.15.1** — [API](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
   - **Python** `xaiop` **0.15.1** — [API](docs/sdk/python/API.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.md) · [code](xaiop-sdk/python/) · [demo](demos/python/)

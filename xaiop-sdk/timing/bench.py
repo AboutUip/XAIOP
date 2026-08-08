@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-PYTHON_SRC = ROOT.parent.parent / "xaiop-sdk" / "python" / "src"
+PYTHON_SRC = ROOT.parent / "python" / "src"
 if str(PYTHON_SRC) not in sys.path:
     sys.path.insert(0, str(PYTHON_SRC))
 

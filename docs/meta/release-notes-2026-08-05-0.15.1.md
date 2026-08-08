@@ -24,5 +24,5 @@ Same-machine stage timing vs **0.15.0** baseline (full fixture): **streamOn / em
 
 ```bash
 cd xaiop-sdk/nodejs && npm test
-cd ../../dev/sdk-timing && npm run bench   # vs baseline-bench.json
+cd ../../xaiop-sdk/timing && npm run bench   # vs baseline-bench.json
 ```

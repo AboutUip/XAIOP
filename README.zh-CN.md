@@ -94,7 +94,7 @@ name:alice
 - **引言** — [docs/overview/introduction.zh-CN.md](docs/overview/introduction.zh-CN.md)
 - **协议（仅线格式）** — [docs/protocol/](docs/protocol/) · [隔离说明](docs/SEPARATION.zh-CN.md) · [发布索引](docs/meta/releases.zh-CN.md) · [META-VER](docs/meta/status-and-versioning.zh-CN.md)
 - **实践** — [docs/practice/](docs/practice/) · [流式传输](docs/practice/streaming-transport.zh-CN.md) · [骨架 WS](docs/practice/skeleton-stream.zh-CN.md)
-- **SDK** — [docs/sdk/](docs/sdk/) · [对等契约](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/) · [阶段计时](dev/sdk-timing/)
+- **SDK** — [docs/sdk/](docs/sdk/) · [对等契约](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/) · [阶段计时](xaiop-sdk/timing/)
   - **Node.js** `xaiop` **0.15.1** — **[API](docs/sdk/nodejs/API.zh-CN.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [演示](demos/nodejs/)
   - **Java** `io.xaiop:xaiop` **0.15.1** — [API](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
   - **Python** `xaiop` **0.15.1** — [API](docs/sdk/python/API.zh-CN.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/python/) · [演示](demos/python/)

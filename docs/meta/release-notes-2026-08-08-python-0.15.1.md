@@ -22,7 +22,7 @@ Parity matrix: [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md)
 - CI: pytest on **3.10 / 3.11 / 3.12** (~**479** cases); `golden-python`; `core-wire`; Python fuzz (`fuzz/fuzz-python.py`)
 - Docs/indexes: alpha / “pending” wording retired; claim strength = pytest + golden + core-wire + fuzz
 - Minimal demo: [`demos/python/`](../../demos/python/)
-- Stage timing: [`dev/sdk-timing/bench.py`](../../dev/sdk-timing/bench.py) (same stage names as Node `bench.mjs`)
+- Stage timing: [`xaiop-sdk/timing/bench.py`](../../xaiop-sdk/timing/bench.py) (same stage names as Node `bench.mjs`)
 
 ## Verify
 
@@ -41,7 +41,7 @@ python fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
 ```bash
-cd dev/sdk-timing
+cd xaiop-sdk/timing
 python bench.py --quick
 ```
 

@@ -28,3 +28,4 @@
 | [java/](java/) | **Active** — `io.xaiop:xaiop` **0.15.1** — protocol **0.6.0** (full Node-aligned surface; [ALIGNMENT](../docs/sdk/java/ALIGNMENT.md)) |
 | [python/](python/) | **Active** — `xaiop` **0.15.1** — protocol **0.6.0** ([ALIGNMENT](../docs/sdk/python/ALIGNMENT.md)) |
 | [go/](go/) | **Core-protocol wire-complete** — `ProtocolVersion` **0.6.0** · module `0.6.0-alpha.1` ([track](../docs/sdk/notes/core-sdk-track.md)) |
+| [timing/](timing/) | SDK stage microbench (Node + Python) — not a product package |

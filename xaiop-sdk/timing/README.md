@@ -1,4 +1,4 @@
-# SDK stage timing (`dev/sdk-timing`)
+# SDK stage timing (`xaiop-sdk/timing`)
 
 [English](#english) · [简体中文](#简体中文)
 
@@ -15,7 +15,7 @@ Harness **0.2.0** · targets Node / Python SDK **0.15.1+** / protocol **0.6.0**.
 ### Run
 
 ```bash
-cd dev/sdk-timing
+cd xaiop-sdk/timing
 npm install
 
 # Node regression harness
@@ -83,7 +83,7 @@ Parity checks rebuild the **same logical JSON tree**.
 **不是：** [`docs/performance.md`](../../docs/performance.md) 的 LLM 评测。
 
 ```bash
-cd dev/sdk-timing
+cd xaiop-sdk/timing
 npm install
 npm run bench:save-baseline        # Node 优化前基线
 npm run bench

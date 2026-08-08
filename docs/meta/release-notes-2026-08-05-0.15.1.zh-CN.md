@@ -23,5 +23,5 @@
 
 ```bash
 cd xaiop-sdk/nodejs && npm test
-cd ../../dev/sdk-timing && npm run bench
+cd ../../xaiop-sdk/timing && npm run bench
 ```

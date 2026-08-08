@@ -28,3 +28,4 @@
 | [java/](java/) | **进行中** — `io.xaiop:xaiop` **0.15.1** — 协议 **0.6.0**（与 Node 对齐的完整产品面；[ALIGNMENT](../docs/sdk/java/ALIGNMENT.zh-CN.md)） |
 | [python/](python/) | **进行中** — `xaiop` **0.15.1** — 协议 **0.6.0**（[ALIGNMENT](../docs/sdk/python/ALIGNMENT.zh-CN.md)） |
 | [go/](go/) | **核心协议线文完成** — `ProtocolVersion` **0.6.0** · module `0.6.0-alpha.1`（[轨道说明](../docs/sdk/notes/core-sdk-track.zh-CN.md)） |
+| [timing/](timing/) | SDK 阶段微基准（Node + Python）— 非产品包 |

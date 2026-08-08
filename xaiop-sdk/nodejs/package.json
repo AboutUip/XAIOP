@@ -29,8 +29,8 @@
   "scripts": {
     "build:ts": "tsc -p tsconfig.json",
     "test": "npm run build:ts && node test/run-all.mjs",
-    "bench": "node ../../dev/sdk-timing/bench.mjs",
-    "compare": "node ../../dev/sdk-timing/compare.mjs",
+    "bench": "node ../timing/bench.mjs",
+    "compare": "node ../timing/compare.mjs",
     "build": "npm test && node scripts/build.js",
     "pack": "npm run build"
   },

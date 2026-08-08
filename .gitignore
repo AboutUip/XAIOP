@@ -1,22 +1,15 @@
 # =============================================================================
 # XAIOP — repository .gitignore
 # Layout: docs/ (Docsify via views) · views/ (lab) ·
-#         xaiop-sdk/{nodejs,java,python,go} · skills/ (source-only, tracked) ·
+#         xaiop-sdk/{nodejs,java,python,go,timing} · skills/ (source-only, tracked) ·
 #         demos/ · resources/ · conformance/
 # Intentionally TRACKED (do not ignore): docs/vendor/, skills/, docs/themes/
+# Local-only scratch: dev/ (never published)
 # =============================================================================
 
 # --- Local / workspace (do not publish) --------------------------------------
-# Keep personal scratch under dev/, but publish the SDK stage-timing harness.
-dev/*
-!dev/sdk-timing/
-!dev/sdk-timing/**
-dev/sdk-timing/node_modules/
-dev/sdk-timing/last-report.json
-dev/sdk-timing/last-bench.json
-dev/sdk-timing/baseline-bench.json
-dev/sdk-timing/last-bench-python.json
-dev/sdk-timing/baseline-bench-python.json
+# Personal scratch / trash -- local only; never commit.
+dev/
 .cursor/
 .vscode/
 .idea/
@@ -163,6 +156,14 @@ dependency-reduced-pom.xml
 .mvn/timing.properties
 # Keep wrapper jar if added later (explicit allow)
 !.mvn/wrapper/maven-wrapper.jar
+
+# --- SDK timing harness (xaiop-sdk/timing) -----------------------------------
+xaiop-sdk/timing/node_modules/
+xaiop-sdk/timing/last-report.json
+xaiop-sdk/timing/last-bench.json
+xaiop-sdk/timing/baseline-bench.json
+xaiop-sdk/timing/last-bench-python.json
+xaiop-sdk/timing/baseline-bench-python.json
 
 # --- Python (xaiop-sdk/python) -----------------------------------------------
 __pycache__/
