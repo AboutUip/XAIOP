@@ -147,6 +147,33 @@ jobs:
         working-directory: xaiop-sdk/conformance
         run: node compare.mjs out/node.ndjson out/python-product.ndjson
 
+  golden-go:
+    needs: [node, go]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: xaiop-sdk/nodejs/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: xaiop-sdk/go/go.mod
+      - name: Build Node SDK
+        working-directory: xaiop-sdk/nodejs
+        run: npm ci && npm run build:ts
+      - name: Dump Node goldens
+        working-directory: xaiop-sdk/conformance
+        run: node node/dump-goldens.mjs --out out/node.ndjson
+      - name: Dump Go goldens
+        working-directory: xaiop-sdk/go
+        run: go run ./cmd/dump-goldens --fixtures ../conformance/fixtures --out ../conformance/out/go-product.ndjson
+      - name: Compare Node ↔ Go
+        working-directory: xaiop-sdk/conformance
+        run: node compare.mjs out/node.ndjson out/go-product.ndjson
+
   fuzz:
     runs-on: ubuntu-latest
     steps:

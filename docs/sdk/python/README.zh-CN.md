@@ -48,4 +48,4 @@ pytest
 cd xaiop-sdk/conformance && npm run golden:python
 ```
 
-Node↔Python 黄金 **32** 例。CI 任务：`.github/workflows/ci.yml` 中的 `python`、`golden-python`。
+Node↔Python 黄金 **50** 例。CI 任务：`.github/workflows/ci.yml` 中的 `python`、`golden-python`。

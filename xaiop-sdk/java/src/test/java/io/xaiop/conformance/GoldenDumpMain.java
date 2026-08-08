@@ -32,6 +32,10 @@ public final class GoldenDumpMain {
     "delete-phases",
     "at-array-d2",
     "bang-broadcast",
+    "d1-named-enter",
+    "locate-equals",
+    "hash-ignore",
+    "at-exact",
   };
 
   private GoldenDumpMain() {}

@@ -8,6 +8,20 @@ func Materialize(parsed any) any {
 	return deepCopy(parsed)
 }
 
+// MaterializeSnapshot is an alias of Materialize (Node/Python materializeSnapshot).
+func MaterializeSnapshot(parsed any) any {
+	return Materialize(parsed)
+}
+
+// MaterializeOwned transfers parser output without cloning a plain document root.
+// Fragment entries are still deep-copied.
+func MaterializeOwned(parsed any) any {
+	if f, ok := parsed.(*Fragment); ok {
+		return deepCopy(f.Entries)
+	}
+	return parsed
+}
+
 func deepCopy(v any) any {
 	switch x := v.(type) {
 	case nil:

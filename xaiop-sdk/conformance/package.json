@@ -2,7 +2,7 @@
   "name": "xaiop-conformance",
   "private": true,
   "type": "module",
-  "description": "Node\u2194Java / Node\u2194Python golden dumps, Python\u2194Go core-wire, fuzz",
+  "description": "Node↔Java / Node↔Python / Node↔Go golden dumps, Python↔Go core-wire, fuzz",
   "scripts": {
     "build:node": "npm run build:ts --prefix ../nodejs",
     "dump:node": "node node/dump-goldens.mjs --out out/node.ndjson",
@@ -17,6 +17,9 @@
     "fuzz:java": "node fuzz/fuzz-java/run-fuzz.mjs --max=200",
     "dump:python-product": "python python/dump-goldens.py --out out/python-product.ndjson",
     "compare:python": "node compare.mjs out/node.ndjson out/python-product.ndjson",
+    "dump:go-product": "go run -C ../go ./cmd/dump-goldens --fixtures ../conformance/fixtures --out ../conformance/out/go-product.ndjson",
+    "compare:go": "node compare.mjs out/node.ndjson out/go-product.ndjson",
+    "golden:go": "npm run build:node && npm run dump:node && npm run dump:go-product && npm run compare:go",
     "golden:python": "npm run build:node && npm run dump:node && npm run dump:python-product && npm run compare:python"
   }
 }

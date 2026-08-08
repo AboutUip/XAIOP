@@ -48,4 +48,4 @@ pytest
 cd xaiop-sdk/conformance && npm run golden:python
 ```
 
-**32** Node↔Python golden cases (encode corpus + operator fixtures). Jobs: `python`, `golden-python` in `.github/workflows/ci.yml`.
+**50** Node↔Python golden cases (encode corpus **30** + ten parse/stream fixtures). Jobs: `python`, `golden-python` in `.github/workflows/ci.yml`.

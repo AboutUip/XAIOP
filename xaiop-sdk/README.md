@@ -1,11 +1,12 @@
 # XAIOP SDK
 
-> Official multi-runtime **SDK** — Node `xaiop` **0.15.1** (protocol **0.6.0**) · Java `io.xaiop:xaiop` **0.15.1** · Python `xaiop` **0.15.1**
+> Official multi-runtime **SDK** — Node `xaiop` **0.15.1** (protocol **0.6.0**) · Java `io.xaiop:xaiop` **0.15.1** · Python `xaiop` **0.15.1** · Go module **0.15.1**
 
 [English](README.md) · Simplified Chinese: [README.zh-CN.md](README.zh-CN.md)
 
 | Docs | Link |
 | --- | --- |
+| Release notes (2026-08-08 · Go 0.15.1) | [../docs/meta/release-notes-2026-08-08-go-0.15.1.md](../docs/meta/release-notes-2026-08-08-go-0.15.1.md) |
 | Release notes (2026-08-08 · Python 0.15.1) | [../docs/meta/release-notes-2026-08-08-python-0.15.1.md](../docs/meta/release-notes-2026-08-08-python-0.15.1.md) |
 | Release notes (2026-08-07 · Python 0.15.0a1) | [../docs/meta/release-notes-2026-08-07-python-0.15.0a1.md](../docs/meta/release-notes-2026-08-07-python-0.15.0a1.md) |
 | Release notes (2026-08-06 · core SDKs) | [../docs/meta/release-notes-2026-08-06-core-sdk.md](../docs/meta/release-notes-2026-08-06-core-sdk.md) |
@@ -18,6 +19,9 @@
 | SDK | [../docs/sdk/](../docs/sdk/) |
 | Behavioral contract (third-party parity) | [../docs/sdk/behavioral-contract.md](../docs/sdk/behavioral-contract.md) |
 | Java <-> Node parity matrix | [../docs/sdk/java/ALIGNMENT.md](../docs/sdk/java/ALIGNMENT.md) |
+| Python <-> Node parity matrix | [../docs/sdk/python/ALIGNMENT.md](../docs/sdk/python/ALIGNMENT.md) |
+| Go <-> Node parity matrix | [../docs/sdk/go/ALIGNMENT.md](../docs/sdk/go/ALIGNMENT.md) |
+| Conformance (golden / core-wire) | [conformance/](conformance/) |
 | Protocol (wire only) | [../docs/protocol/](../docs/protocol/) |
 | Practice (model · streaming) | [../docs/practice/](../docs/practice/) |
 | Separation | [../docs/SEPARATION.md](../docs/SEPARATION.md) |
@@ -27,5 +31,5 @@
 | [nodejs/](nodejs/) | **Active** — `xaiop` **0.15.1** <-> protocol **0.6.0** (parse · stream · encode · merge · history · WS · Control Root / logSeq · Diff isolation / `@` Diff · buffer compact) |
 | [java/](java/) | **Active** — `io.xaiop:xaiop` **0.15.1** — protocol **0.6.0** (full Node-aligned surface; [ALIGNMENT](../docs/sdk/java/ALIGNMENT.md)) |
 | [python/](python/) | **Active** — `xaiop` **0.15.1** — protocol **0.6.0** ([ALIGNMENT](../docs/sdk/python/ALIGNMENT.md)) |
-| [go/](go/) | **Core-protocol wire-complete** — `ProtocolVersion` **0.6.0** · module `0.6.0-alpha.2` ([track](../docs/sdk/notes/core-sdk-track.md)) |
-| [timing/](timing/) | SDK stage microbench (Node + Python + Java) — not a product package |
+| [go/](go/) | **Official** — `ProtocolVersion` **0.6.0** · module **0.15.1** ([ALIGNMENT](../docs/sdk/go/ALIGNMENT.md) · [API](../docs/sdk/go/API.md)) |
+| [timing/](timing/) | SDK stage microbench (Node + Python + Java + **Go**) — not a product package |

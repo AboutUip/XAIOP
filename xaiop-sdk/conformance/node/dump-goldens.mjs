@@ -71,6 +71,10 @@ function dumpParse() {
     "delete-phases",
     "at-array-d2",
     "bang-broadcast",
+    "d1-named-enter",
+    "locate-equals",
+    "hash-ignore",
+    "at-exact",
   ]) {
     const wire = readFileSync(join(FIXTURES, `${name}.xaiop`), "utf8");
     const tree = materializeSnapshot(parseSync(wire));
@@ -108,6 +112,10 @@ for (const name of [
   "delete-phases",
   "at-array-d2",
   "bang-broadcast",
+  "d1-named-enter",
+  "locate-equals",
+  "hash-ignore",
+  "at-exact",
 ]) {
   dumpStream(name);
 }

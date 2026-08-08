@@ -2,7 +2,7 @@
   "name": "@xaiop/sdk-timing",
   "version": "0.2.1",
   "private": true,
-  "description": "SDK stage timing facade — Node / Python / Java under timing/{node,python,java}",
+  "description": "SDK stage timing facade — Node / Python / Java / Go under timing/{node,python,java,go}",
   "scripts": {
     "postinstall": "npm --prefix node install",
     "bench": "npm run bench:node",
@@ -21,6 +21,12 @@
     "bench:java:quick": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java \"-Dexec.args=--quick\"",
     "bench:java:save-baseline": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java \"-Dexec.args=--save-baseline\"",
     "bench:java:json": "mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java \"-Dexec.args=--json\"",
+    "bench:go": "go run -C go .",
+    "bench:go:quick": "go run -C go . -quick",
+    "bench:go:save-baseline": "go run -C go . -save-baseline",
+    "bench:go:json": "go run -C go . -json",
+    "bench:go:json-gate": "node go/json_gate.mjs",
+    "bench:go:json-gate:quick": "node go/json_gate.mjs --quick",
     "compare": "npm --prefix node run compare",
     "compare:quick": "npm --prefix node run compare:quick",
     "report": "npm run compare"

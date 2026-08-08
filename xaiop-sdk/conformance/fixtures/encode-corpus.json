@@ -18,5 +18,15 @@
   { "emptyRoot": {} },
   [],
   { "long": { "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" } },
-  { "mixDepth": { "a": { "b": [1, { "c": null }, true] }, "z": 0 } }
+  { "mixDepth": { "a": { "b": [1, { "c": null }, true] }, "z": 0 } },
+  { "i": 0, "j": -7, "f": 1.5, "t": true, "s": "hello", "empty": "" },
+  { "unicode": { "name": "江辞", "tags": ["绝世神医", "楚家大少"] } },
+  { "phases": { "a": 1, "b": 2, "c": 3 } },
+  { "bools": { "t": true, "f": false, "n": null } },
+  { "nums": { "int": 42, "neg": -1, "flt": 3.14, "tiny": 1e-6, "big": 1e3 } },
+  { "tree": { "left": { "v": 1 }, "right": { "v": 2, "kids": [3, 4] } } },
+  { "forcedMore": { "a": "1e3", "b": "false", "c": "-2.5E-2", "d": ".5" } },
+  { "arrRootish": { "items": [], "meta": { "count": 0 } } },
+  { "overwrite": { "id": 2, "name": "v2" } },
+  { "deepArr": [{ "a": [{ "b": 1 }] }, { "c": true }] }
 ]

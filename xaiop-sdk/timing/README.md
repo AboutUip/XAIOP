@@ -2,7 +2,7 @@
 
 [English](#english) · [简体中文](#简体中文)
 
-Harness **0.2.1** · targets Node / Python / Java SDK **0.15.1+** / protocol **0.6.0**.
+Harness **0.2.1** · targets Node / Python / Java / Go SDK **0.15.1+** / protocol **0.6.0**.
 
 One folder per runtime — stage **names match** across harnesses for cross-runtime compare.
 
@@ -12,102 +12,90 @@ timing/
   node/     bench.mjs · compare.mjs
   python/   bench.py
   java/     StageTimingMain (+ thin pom)
+  go/       main.go (stage timing)
 ```
 
 ---
 
 ## English
 
-**What this is:** wall-clock micro-benchmarks for the **Node.js, Python, and Java XAIOP SDKs**, plus a **cross-scheme** compare (Node) against other wire styles. Primary use: **same-machine before/after** after engine work (`emitDiff`, Diff isolation, `compactCommitted`, …).
+**What this is:** wall-clock micro-benchmarks for the **Node.js, Python, Java, and Go XAIOP SDKs**, plus a **cross-scheme** compare (Node) against other wire styles. Primary use: **same-machine before/after** after engine work. Go is the natural runtime for ingest / checkpoint throughput comparisons.
 
-**What this is not:** racing `JSON.parse`; LLM structured-output evaluation in [`docs/performance.md`](../../docs/performance.md).
+**What this is not:** LLM structured-output evaluation in [`docs/performance.md`](../../docs/performance.md). (There *is* a dedicated Go Parse ↔ JSON gate — see below — separate from stage timing.)
 
 ### Run (from this directory)
 
 ```bash
 cd xaiop-sdk/timing
-npm install                    # installs node/ deps
+npm install
 
-# Node
-npm run bench:save-baseline    # once, before your change
-npm run bench                  # Δ% vs node/baseline-bench.json
-npm run bench:quick
+# Node / Python / Java / Go
+npm run bench:save-baseline && npm run bench
+npm run bench:python:save-baseline && npm run bench:python
+npm run bench:java:save-baseline && npm run bench:java
+npm run bench:go:save-baseline && npm run bench:go
+npm run bench:go:quick
 
-# Python
-npm run bench:python:save-baseline
-npm run bench:python
-npm run bench:python:quick
+# Go Parse ↔ JSON gate (Node JSON.parse + encoding/json)
+npm run bench:go:json-gate:quick
+npm run bench:go:json-gate
 
-# Java (JDK 17+ · Maven; installs ../java into local .m2 first)
-npm run bench:java:save-baseline
-npm run bench:java
-npm run bench:java:quick
-
-npm run compare                # five-scheme dimensional compare (Node)
+npm run compare
 ```
 
-Direct (no facade):
+Direct Go:
 
 ```bash
-npm --prefix node run bench
-python python/bench.py --quick
-mvn -f ../java/pom.xml -q -DskipTests install && mvn -f java/pom.xml -q compile exec:java -Dexec.args=--quick
+go run -C go . -quick
+go run -C go . -save-baseline
+node go/json_gate.mjs --quick
 ```
 
-From the Node SDK package: `npm run bench` / `npm run compare` in `xaiop-sdk/nodejs`.
+Env: `BENCH_ITERS`, `BENCH_WARMUP`, `BENCH_LONG_PHASES`, `BENCH_FAIL_SLOWER=1`, `BENCH_FAIL_GATE=1` (exit 2 if primary Parse/NodeJSON > 1.2).
 
-Env: `BENCH_ITERS`, `BENCH_WARMUP`, `BENCH_LONG_PHASES`, `BENCH_FAIL_SLOWER=1`.  
-Flags: `--quick`, `--json`, `--save-baseline`, `--no-baseline`.
+### Artifacts (gitignored)
 
-### Artifacts (gitignored, per runtime)
+| Runtime | Last run | Baseline |
+| --- | --- | --- |
+| Node | `node/last-bench.json` | `node/baseline-bench.json` |
+| Python | `python/last-bench.json` | `python/baseline-bench.json` |
+| Java | `java/last-bench.json` | `java/baseline-bench.json` |
+| Go | `go/last-bench.json` | `go/baseline-bench.json` |
+| Go JSON gate | `go/last-json-gate.json` | — |
 
-| Runtime | Last run | Baseline | Other |
-| --- | --- | --- | --- |
-| Node | `node/last-bench.json` | `node/baseline-bench.json` | `node/last-report.json` |
-| Python | `python/last-bench.json` | `python/baseline-bench.json` | — |
-| Java | `java/last-bench.json` | `java/baseline-bench.json` | — |
+### Parse ↔ JSON gate
+
+Fair fixture: one nested tree → JSON via stringify/marshal; XAIOP via `Encode(DotPolicy:"none")`.
+
+| Gate | Ratio | Target |
+| --- | --- | --- |
+| Primary | Go `Parse` / Node `JSON.parse` | ≤ 1.2 |
+| Secondary | Go `Parse` / `encoding/json.Unmarshal` | report (≤ 1.2 preferred) |
+
+Before→after (representative same-machine runs; ±~0.2× noise): primary **~3.8× → ~1.3–1.5×** (quick) and **~5.3× → ~1.7–1.9×** (full); secondary **~1.5× → ~0.5–0.6×** (beats `encoding/json`). Details: [`docs/sdk/go/ALIGNMENT.md`](../../docs/sdk/go/ALIGNMENT.md) §5.
 
 ### Stage microbench
 
-| Area | Stages |
-| --- | --- |
-| Encode / parse | `encodeSync/*`, `parseSync/*`, materialize |
-| Checkpoint | streamOn / streamOff / dense |
-| Diff tax | `emitDiffOn` vs `emitDiffOff` (dense) |
-| D1 / D2 | `>name` after `.` split push; `@` into named array |
-| Locate | `!` / `=` |
-| Long session | grow buffer vs `compactCommitted` each phase |
-| Stream | PROMISE (no Diff) vs CALLBACK+`onChunk` (Diff on) |
-
-### Compare schemes (`node/compare.mjs`)
-
-| Scheme | Dimension |
-| --- | --- |
-| **Full JSON** | Atomic document — usable only at EOF |
-| **NDJSON** | Line records merged into one tree |
-| **JSON Patch** | RFC 6902 ops applied from `{}` |
-| **Protobuf** | Schema binary — atomic decode |
-| **XAIOP** | Nested IR — parseSync / checkpoint streamOn·Off·emitDiffOff |
+Encode/parse · checkpoint streamOn/Off · emitDiff tax · D1/D2 · locate · long-session compact · stream PROMISE/CALLBACK — **same names** on every runtime.
 
 ---
 
 ## 简体中文
 
-**本目录：** 按运行时分目录的 SDK 墙钟测速 +（Node）五方案横向对比。主用途：**同机优化前/后**。`node/bench.mjs`、`python/bench.py`、`java/StageTimingMain` **阶段名一致**。
+**本目录：** SDK 墙钟测速（Node / Python / Java / **Go**）+ Node 五方案横向对比。阶段名一致，便于跨运行时对照。Go 适合 ingest / checkpoint 吞吐对比。
 
 ```bash
 cd xaiop-sdk/timing
-npm install
-npm run bench:save-baseline / npm run bench
-npm run bench:python:save-baseline / npm run bench:python
-npm run bench:java:save-baseline / npm run bench:java
-npm run compare
+npm run bench:go:quick
+npm run bench:go:save-baseline
+npm run bench:go
+npm run bench:go:json-gate:quick
+npm run bench:go:json-gate
 ```
 
 | 目录 | 说明 |
 | --- | --- |
-| `node/` | Node 阶段计时 + `compare.mjs` |
-| `python/` | Python 阶段计时 |
-| `java/` | Java 阶段计时（先 `mvn install` `../java`） |
+| `go/` | Go 阶段计时（`go run` · replace → `../go`）+ `json_gate.mjs` / `jsongate/` |
+| `go/last-json-gate.json` | Parse ↔ JSON 门槛最近一次结果 |
 
-产物写在各自目录的 `last-bench.json` / `baseline-bench.json`（gitignore）。
+**Parse ↔ JSON 门槛：** 主门槛 `Parse / Node JSON.parse ≤ 1.2`（当前约 **1.3–1.9×**，受 V8/`map[string]any` 下限约束）；次门槛相对 `encoding/json`（约 **0.5–0.6×**，已击败）。见 [`docs/sdk/go/ALIGNMENT.zh-CN.md`](../../docs/sdk/go/ALIGNMENT.zh-CN.md) §5。

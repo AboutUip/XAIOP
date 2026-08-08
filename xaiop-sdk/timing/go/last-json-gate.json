@@ -1,0 +1,18 @@
+{
+  "quick": false,
+  "depth": 3,
+  "breadth": 8,
+  "iters": 400,
+  "warmup": 40,
+  "nodeJsonNsPerOp": 1003349.7499999999,
+  "goJsonNsPerOp": 2759450,
+  "goParseNsPerOp": 1675997.5,
+  "ratioParseOverNodeJSON": 1.670402070663794,
+  "ratioParseOverGoJSON": 0.6073665041946765,
+  "primaryGatePass": false,
+  "secondaryGatePass": true,
+  "goJsonOverNodeJSON": 2.7502373922951597,
+  "jsonBytes": 142862,
+  "wireBytes": 112285,
+  "sdk": "0.15.1"
+}

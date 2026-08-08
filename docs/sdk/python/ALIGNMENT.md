@@ -171,7 +171,7 @@ cd xaiop-sdk/conformance && npm run core-wire
 python xaiop-sdk/conformance/fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
-**Golden coverage (product):** encode corpus (**20** values) + parse/stream for `complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast` → **32** NDJSON cases.
+**Golden coverage (product):** encode corpus (**30** values) + parse/stream for ten fixtures (`complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast`, `d1-named-enter`, `locate-equals`, `hash-ignore`, `at-exact`) → **50** NDJSON cases.
 
 **Separate track:** Python ↔ Go STRICT core-wire (`npm run core-wire`) remains for protocol wire only — not a substitute for Node product golden.
 

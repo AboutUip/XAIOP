@@ -1,37 +1,103 @@
-# Go 核心线文对齐
+# Go ↔ Node SDK 对齐
 
 [English](ALIGNMENT.md) · [简体中文](ALIGNMENT.zh-CN.md)
 
 | 字段 | 值 |
 | --- | --- |
-| 文档 | 薄范围说明（非产品对等） |
-| 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` |
-| SDK | **0.6.0-alpha.2** |
-| 协议 | **0.6.0** Frozen（`xaiop.ProtocolVersion`） |
-| 轨道 | [../notes/core-sdk-track.zh-CN.md](../notes/core-sdk-track.zh-CN.md) |
+| 文档 | 现行对等矩阵（Go 官方端口） |
+| Go 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.15.1** |
+| Node 包 | `xaiop` **0.15.1** |
+| 协议线文 | **0.6.0** Frozen（`xaiop.ProtocolVersion`） |
+| 规范性 | **否** — 产品对等清单 |
+| 权威 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |
 
-**不是** Node/Java/Python **0.15.1** 产品 ALIGNMENT。Go 仍在 **核心协议轨**。
+**指南：** [README.zh-CN.md](README.zh-CN.md) · **API：** [API.zh-CN.md](API.zh-CN.md) · **代码：** [../../../xaiop-sdk/go/](../../../xaiop-sdk/go/)  
+**无** browser 入口（同 Java / Python）。
 
-## 范围内
+---
 
-| 表面 | 说明 |
-| --- | --- |
-| `Parse` | STRICT 全文 |
-| `LiveParser` | `FeedLine` / `FeedText` / `Value` / `CursorRestoreLines` |
-| `Encode` | object / array / fragment；跨 dump 用 sorted 键序 |
-| `Materialize` / `Fragment` | 深拷贝 · fragment entries |
-| 算子 | `>` `<` `-` `=` `@` `!` `&` `#` `.` · Content 分型 · 强制字符串 |
+## 1. 目的与版本
 
-## 范围外
+| 栈 | 包 / 模块 | SDK | 协议 | 状态 |
+| --- | --- | --- | --- | --- |
+| Node.js（主） | `xaiop` | **0.15.1** | **0.6.0** | 参考 |
+| Java（官方） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
+| Python（官方） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
+| Go（官方端口） | `…/xaiop-sdk/go` | **0.15.1** | **0.6.0** | 已对齐 |
 
-Stream / Diff checkpoint · WS · Control Root · typeCheck · history · merge · browser · 产品 golden（32 cases）。
+---
 
-## 如何验证
+## 2. 功能对等矩阵
+
+| 功能 | Node | Go | 说明 |
+| --- | --- | --- | --- |
+| Parse（strict / compat） | ✅ | ✅ | `Parse` STRICT；`ParseWithOptions` · Compat ×8 + `symbolKeys` 已接线 |
+| Fragment | ✅ | ✅ | `Fragment` |
+| Compat ×8 | ✅ | ✅ | `xaiop/compat` + ingest 改写 / pop-and-retry / locate 重试 |
+| Encode（dotPolicy + 路径切点） | ✅ | ✅ | ES `Number#toString` · OrderedObject 插入序 |
+| Merge / inject | ✅ | ✅ | `MergeJSON` · Engine inject |
+| Engine 存储 | ✅ | ✅ | `Engine` sync-first |
+| Live parse | ✅ | ✅ | `LiveParser` |
+| `&` 删除 / `#` 忽略 | ✅ | ✅ | Cursor 链禁止 · cover 墓碑 |
+| Checkpoint Diff / cover / history | ✅ | ✅ | `xaiop/stream` |
+| Diff 隔离（D1）/ `@` Diff（D2） | ✅ | ✅ | |
+| Buffer compact | ✅ | ✅ | `CompactCommitted` |
+| `XaiopStream` HTTP / SSE / RAW | ✅ | ✅ | |
+| Stream 选项接线 | ✅ | ✅ | |
+| typeCheck / TypeRegistry | ✅ | ✅ | `xaiop/types` |
+| 行拦截 / Annotation Span | ✅ | ✅ | `AnnotationSpanKeep` |
+| 控制根（`#!`） | ✅ | ✅ | `xaiop/control` |
+| Phase encode | ✅ | ✅ | `PhaseEncodeJSON` / KeyValue |
+| `symbolKeys` | ✅ | ✅ | U+001F 编码 + 解析解码 |
+| `XaiopWs` listen / connect | ✅ | ✅ | 标准库 RFC6455 子集 · `xaiop/ws` |
+| Browser 入口 | ✅ | ❌ | 范围外 |
+
+完整 Node→Go 惯用法与包映射见英文 [ALIGNMENT.md](ALIGNMENT.md) §3–4。
+
+---
+
+## 5. 验证与交叉验证
 
 ```bash
 cd xaiop-sdk/go && go test ./...
+cd xaiop-sdk/conformance && npm run golden:go
 cd xaiop-sdk/conformance && npm run core-wire
 cd xaiop-sdk/go && go run ./cmd/fuzz-go -max=100 -seed=1
 ```
 
-共享语料：[../../../xaiop-sdk/conformance/core-wire/](../../../xaiop-sdk/conformance/core-wire/)。
+| 门禁 | 证明内容 | 规模 |
+| --- | --- | --- |
+| `go test ./...` | 包级行为对齐 | Compat ×8 · `&`/`!`/`@`/`#` · encode/merge · D1/D2 · cover · stream framing · control · WS |
+| `npm run golden:go` | Node ↔ Go **产品** NDJSON | **50** 例（encode **30** + parse **10** + stream **10**） |
+| `npm run core-wire` | Python ↔ Go **STRICT** 线文 | **46** 例 |
+| `cmd/fuzz-go` | 变异崩溃预算 | CI / 本地 |
+
+**声明强度：** Go 包测 + Node↔Go 产品黄金（**50**）+ Python↔Go STRICT core-wire（**46**）+ fuzz。CI：`golden-go`。
+
+**计时：** 与 Node / Python / Java 同阶段名 — [`xaiop-sdk/timing/go`](../../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
+
+**Parse ↔ JSON 门槛**（STRICT 一次性 `Parse` vs 同机 JSON，同一嵌套 fixture）：
+
+```bash
+cd xaiop-sdk/timing
+npm run bench:go:json-gate:quick
+npm run bench:go:json-gate
+```
+
+| 门槛 | 目标 | 说明 |
+| --- | --- | --- |
+| 主门槛 | `Parse / Node JSON.parse ≤ 1.2` | V8 ≈ 浏览器级 JSON 引擎 |
+| 次门槛 | `Parse / encoding/json`（报告；宜 ≤1.2） | 同进程 Go 公平对照 |
+
+**优化前后**（同机嵌套 fixture）：
+
+| Fixture | Parse/Node | Parse/GoJSON |
+| --- | ---: | ---: |
+| 优化前 quick / full | **~3.8×** / **~5.3×** | **~1.5×** / **~1.5×** |
+| 优化后 quick / full | **~1.3–1.5×** / **~1.7–1.9×** | **~0.45–0.55×** / **~0.55–0.62×** |
+
+热路径：无 broadcast 直调、手写 float、content 首字节快路径、one-shot 扫行、typed frames、数组 sync-on-pop、`sync.Pool`、容量提示、STRICT `assertName` ASCII 快路径。产物：`timing/go/last-json-gate.json`。
+
+主门槛 ≤1.2× Node 受 Go `encoding/json`→`map[string]any` 相对 V8 的运行时下限约束（同 fixture 上 `encoding/json` 常为 Node 的 **~2.5–3.5×**）；次门槛（同进程击败 `encoding/json`）为可复现的同运行时条，当前 **通过**（约 **0.5–0.6×**）。
+
+行为契约清单见英文版 §8；本清单已勾选完成。

@@ -12,7 +12,7 @@ Architecture: [../SEPARATION.md](../SEPARATION.md).
 | [Node.js](nodejs/) | **Primary / official focus** — `xaiop` **0.15.1** (TS) ↔ protocol **0.6.0**; buffer compact · `@` Diff · Diff isolation · Control Root `#!` / `meta.logSeq` / resume; entries `xaiop` · `xaiop/browser` · `xaiop/core` | **[API.md](nodejs/API.md)** (primary) · [notes/](nodejs/notes/) |
 | [Java](java/) | **Official** (`io.xaiop:xaiop` **0.15.1** — protocol **0.6.0**, Node-aligned product surface) | **[API.md](java/API.md)** · [Guide](java/README.md) · [ALIGNMENT.md](java/ALIGNMENT.md) |
 | [Python](python/) | **Official** (`xaiop` **0.15.1** — protocol **0.6.0**, Node-aligned product surface) | **[API.md](python/API.md)** · [Guide](python/README.md) · [ALIGNMENT.md](python/ALIGNMENT.md) |
-| [Go](go/) | **Core-protocol wire-complete** (`ProtocolVersion` **0.6.0**, SDK `0.6.0-alpha.2`) | [Guide](go/README.md) · [ALIGNMENT](go/ALIGNMENT.md) · [track](notes/core-sdk-track.md) |
+| [Go](go/) | **Official** (`…/xaiop-sdk/go` **0.15.1** — protocol **0.6.0**, Node-aligned product surface) | **[API.md](go/API.md)** · [Guide](go/README.md) · [ALIGNMENT](go/ALIGNMENT.md) |
 
 Cross-stack: [behavioral-contract.md](behavioral-contract.md) · [notes/](notes/)
 

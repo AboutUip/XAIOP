@@ -118,7 +118,7 @@ cd xaiop-sdk/conformance && npm run core-wire
 python xaiop-sdk/conformance/fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
-产品 golden：**32** 例（encode 语料 20 + parse/stream 各 6 套 fixture）。  
+产品 golden：**50** 例（encode 语料 30 + parse/stream 各 10 套 fixture）。
 Python↔Go `core-wire` 仍为协议 STRICT 轨，**不能**代替 Node 产品 golden。
 
 ---

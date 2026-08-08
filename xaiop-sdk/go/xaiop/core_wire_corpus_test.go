@@ -132,7 +132,10 @@ func TestCoreWireCorpus(t *testing.T) {
 				if keyOrder == "" {
 					keyOrder = "sorted"
 				}
-				wire, err := Encode(value, EncodeOptions{Root: root, TrailingNewline: true, KeyOrder: keyOrder})
+				wire, err := Encode(value, EncodeOptions{
+					Root: root, Style: "relative", DotPolicy: "none",
+					TrailingNewline: true, KeyOrder: keyOrder,
+				})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -149,7 +152,10 @@ func TestCoreWireCorpus(t *testing.T) {
 				if root == "" {
 					root = "auto"
 				}
-				_, err := Encode(value, EncodeOptions{Root: root, TrailingNewline: true})
+				_, err := Encode(value, EncodeOptions{
+					Root: root, Style: "relative", DotPolicy: "none",
+					TrailingNewline: true,
+				})
 				if err == nil {
 					t.Fatal("expected encode error")
 				}
@@ -166,7 +172,10 @@ func TestCoreWireCorpus(t *testing.T) {
 				if keyOrder == "" {
 					keyOrder = "sorted"
 				}
-				wire, err := Encode(value, EncodeOptions{TrailingNewline: true, KeyOrder: keyOrder})
+				wire, err := Encode(value, EncodeOptions{
+					Style: "relative", DotPolicy: "none",
+					TrailingNewline: true, KeyOrder: keyOrder,
+				})
 				if err != nil {
 					t.Fatal(err)
 				}

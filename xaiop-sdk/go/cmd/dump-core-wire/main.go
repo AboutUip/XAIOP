@@ -177,7 +177,10 @@ func runCase(root string, c caseSpec) (map[string]any, error) {
 		if keyOrder == "" {
 			keyOrder = "sorted"
 		}
-		wire, err := xaiop.Encode(value, xaiop.EncodeOptions{Root: rootOpt, TrailingNewline: true, KeyOrder: keyOrder})
+		wire, err := xaiop.Encode(value, xaiop.EncodeOptions{
+			Root: rootOpt, Style: "relative", DotPolicy: "none",
+			TrailingNewline: true, KeyOrder: keyOrder,
+		})
 		if err != nil {
 			out["error"] = err.Error()
 			return out, nil
@@ -194,7 +197,10 @@ func runCase(root string, c caseSpec) (map[string]any, error) {
 		if rootOpt == "" {
 			rootOpt = "auto"
 		}
-		_, err := xaiop.Encode(value, xaiop.EncodeOptions{Root: rootOpt, TrailingNewline: true})
+		_, err := xaiop.Encode(value, xaiop.EncodeOptions{
+			Root: rootOpt, Style: "relative", DotPolicy: "none",
+			TrailingNewline: true,
+		})
 		if err == nil {
 			out["error"] = "expected encode error"
 			return out, nil
@@ -216,7 +222,10 @@ func runCase(root string, c caseSpec) (map[string]any, error) {
 		if keyOrder == "" {
 			keyOrder = "sorted"
 		}
-		wire, err := xaiop.Encode(value, xaiop.EncodeOptions{TrailingNewline: true, KeyOrder: keyOrder})
+		wire, err := xaiop.Encode(value, xaiop.EncodeOptions{
+			Style: "relative", DotPolicy: "none",
+			TrailingNewline: true, KeyOrder: keyOrder,
+		})
 		if err != nil {
 			return nil, err
 		}

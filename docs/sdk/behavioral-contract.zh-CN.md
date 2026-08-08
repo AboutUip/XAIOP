@@ -11,7 +11,8 @@
 | 参考实现（重心） | Node.js `xaiop` **0.15.1**（`xaiop-sdk/nodejs/`） |
 | Java 官方移植 | `io.xaiop:xaiop` **0.15.1** — 已对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)） |
 | Python 官方移植 | `xaiop` **0.15.1** — 已对齐（[python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)） |
-| 协议线格式 | Frozen **v0.6.0** |
+| Go 官方移植 | `…/xaiop-sdk/go` **0.15.1** — 已对齐（[go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)） |
+| 协议线文 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
 **立场：** 协议 IR ≠ 产品营销面 — [../overview/introduction.zh-CN.md](../overview/introduction.zh-CN.md)。  
@@ -218,7 +219,9 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 
 **Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。
 
-**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest（~**487**）+ `golden-python`（**32** NDJSON）+ `core-wire` + Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
+**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest（~**487**）+ `golden-python`（**50** NDJSON）+ `core-wire`（**46**）+ Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
+
+**Go 官方端口（`…/xaiop-sdk/go` 0.15.1）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**50** NDJSON）+ `core-wire`（**46**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
 
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 

@@ -166,6 +166,8 @@ xaiop-sdk/timing/python/last-bench.json
 xaiop-sdk/timing/python/baseline-bench.json
 xaiop-sdk/timing/java/last-bench.json
 xaiop-sdk/timing/java/baseline-bench.json
+xaiop-sdk/timing/go/last-bench.json
+xaiop-sdk/timing/go/baseline-bench.json
 xaiop-sdk/timing/java/target/
 # legacy flat artifacts (pre runtime split)
 xaiop-sdk/timing/node_modules/

@@ -70,7 +70,9 @@
 | --- | --- | --- |
 | Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-08** 内部 clone/history/结构 — [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
 | Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha 档案）；[release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) |
-| Go **0.6.0-alpha.2** | `0.6.0` | 核心协议轨（STRICT 线文）；fuzz + 扩展 core-wire |
+| Go **0.15.1** | `0.6.0` | 官方产品端口（稳定）；与 Node 对齐；[../sdk/go/ALIGNMENT.zh-CN.md](../sdk/go/ALIGNMENT.zh-CN.md) · [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) |
+| Go **0.15.0-alpha.1** | `0.6.0` | 产品晋级开发档档案 |
+| Go **0.6.0-alpha.2** | `0.6.0` | 核心协议轨档案（STRICT 线文）；fuzz + 扩展 core-wire |
 
 其他语言：在各语言 README 中声明自身的封存映射。
 
@@ -80,6 +82,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) — Go `0.15.1` 稳定官方端口（退出 alpha） |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md) — Python `0.15.1` 内部 clone / history / checkpoint 结构（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md) — Java `0.15.1` 内部性能 / checkpoint 结构（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1.zh-CN.md](release-notes-2026-08-08-python-0.15.1.zh-CN.md) — Python `0.15.1` 稳定版（退出 alpha） |

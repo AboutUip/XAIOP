@@ -8,10 +8,11 @@ Python ↔ Go **core-wire** (STRICT protocol track, **not** product golden): [`c
 
 | Path | Role |
 | --- | --- |
-| `fixtures/` | Shared `.xaiop` / JSON corpus (Node ↔ Java ↔ Python) |
+| `fixtures/` | Shared `.xaiop` / JSON corpus (Node ↔ Java ↔ Python ↔ Go) |
 | `node/dump-goldens.mjs` | Node NDJSON dump |
 | `java/run-dump.mjs` | Compiles Java test main and dumps NDJSON |
 | `python/dump-goldens.py` | Python product NDJSON dump |
+| `../go/cmd/dump-goldens` | Go product NDJSON dump |
 | `compare.mjs` | Deep-equal trees/diffs; byte-equal wire |
 | `core-wire/` | Python ↔ Go STRICT corpus (`cases.json`) + dump/compare |
 | `fuzz/` | Mutation fuzz (Node + Java) |
@@ -29,7 +30,9 @@ Each line:
 
 Case ids must match across runtimes. Stream cases use `DotCheckpointEngine` with `mergeChunkWindow: false`.
 
-**Product golden coverage:** encode corpus (**20**) + parse/stream for `complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast` → **32** cases.
+**Product golden coverage (current):** encode corpus (**30**) + parse/stream for ten fixtures → **50** cases:
+
+`complex` · `stream-phases` (`stream:phases`) · `overwrite-id` · `delete-phases` · `at-array-d2` · `bang-broadcast` · `d1-named-enter` · `locate-equals` · `hash-ignore` · `at-exact`
 
 ## Run locally
 
@@ -51,13 +54,21 @@ cd ../conformance
 npm run golden:python
 ```
 
+### Node ↔ Go golden
+
+```bash
+npm run golden:go
+```
+
+Prerequisites: Go ≥ 1.22, Node ≥ 18, built Node SDK.
+
 ### Python ↔ Go core-wire
 
 ```bash
 npm run core-wire
 ```
 
-Prerequisites: Python ≥ 3.10, Go ≥ 1.22, Node (for `compare-core.mjs` only).
+Prerequisites: Python ≥ 3.10, Go ≥ 1.22, Node (for `compare-core.mjs` only). STRICT corpus: **46** cases.
 
 ## Fuzz
 
@@ -70,4 +81,4 @@ Unexpected crashes (non-`XaiopSyntaxError`) fail the process.
 
 ## CI
 
-`.github/workflows/ci.yml` jobs: `node`, `java`, `python`, `go`, `golden` (Node↔Java), `golden-python` (Node↔Python), `core-wire` (Python↔Go), `fuzz`.
+`.github/workflows/ci.yml` jobs: `node`, `java`, `python`, `go`, `golden` (Node↔Java), `golden-python` (Node↔Python), `golden-go` (Node↔Go), `core-wire` (Python↔Go), `fuzz`.

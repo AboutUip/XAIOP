@@ -70,7 +70,9 @@ Full narrative history: [revisions.md](revisions.md).
 | --- | --- | --- |
 | Python **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-08** internal clone/history/structure — [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
 | Python **0.15.0a1** | `0.6.0` | Official product port (alpha archive); [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) |
-| Go **0.6.0-alpha.2** | `0.6.0` | Core-protocol track (STRICT wire); fuzz + expanded core-wire |
+| Go **0.15.1** | `0.6.0` | Official product port (stable); Node-aligned; product golden **50** + core-wire **46**; [../sdk/go/ALIGNMENT.md](../sdk/go/ALIGNMENT.md) · [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) |
+| Go **0.15.0-alpha.1** | `0.6.0` | Product promotion development archive |
+| Go **0.6.0-alpha.2** | `0.6.0` | Core-protocol track archive (STRICT wire); fuzz + expanded core-wire |
 
 Other languages: declare their own sealed mapping in language READMEs.
 
@@ -80,6 +82,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) — Go `0.15.1` stable official port (exit alpha) |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md) — Python `0.15.1` internal clone / history / checkpoint structure (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md) — Java `0.15.1` internal perf / checkpoint structure (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1.md](release-notes-2026-08-08-python-0.15.1.md) — Python `0.15.1` stable (exit alpha) |

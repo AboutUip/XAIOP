@@ -1,7 +1,8 @@
 /**
  * Shared catalog for docs alignment + Vue API / protocol preview.
  * Keep versions in sync with sealed protocol 0.6.0 and tip SDKs
- * (Node/Java/Python 0.15.1).
+ * Node/Java/Python/Go **0.15.1**. Go cross-validation: product golden 50 · core-wire 46
+ * — see docs/sdk/go/ALIGNMENT.md.
  */
 
 export const meta = {
@@ -615,11 +616,11 @@ export const sdkStacks = [
   {
     id: "go",
     name: "Go",
-    status: "core",
-    statusZh: "核心线文轨",
-    sdkVersion: "0.6.0-alpha.1",
+    status: "official",
+    statusZh: "官方",
+    sdkVersion: "0.15.1",
     docs: "docs/sdk/go/",
-    api: null,
+    api: "docs/sdk/go/API.md",
     code: "xaiop-sdk/go/",
   },
 ];
