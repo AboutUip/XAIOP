@@ -230,6 +230,8 @@ mem.prof
 *.prof
 go.work
 go.work.sum
+# Native go test -fuzz working corpus (local only)
+xaiop-sdk/go/**/testdata/fuzz/
 # Accidental local binaries named after the package
 /xaiop
 /xaiop.exe
