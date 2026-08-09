@@ -35,11 +35,13 @@
 
 ---
 
-## 3. SDK 包（Node.js `xaiop`）
+## 3. SDK 包（Node.js `@bylan280/xaiop`）
+
+已发布到 npm：[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop)。
 
 | SDK | 实现的协议 | Git 标签（建议） | 说明 |
 | --- | --- | --- | --- |
-| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | tip 性能：**2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；此前 Diff/Commit 去双克隆；仍协议 **0.6.0** |
+| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | **npm 已上架** `@bylan280/xaiop@0.15.1` — [release-notes-2026-08-09-nodejs-npm.zh-CN.md](release-notes-2026-08-09-nodejs-npm.zh-CN.md)；tip 性能 **2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；此前 Diff/Commit 去双克隆；仍协议 **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted`（长会话丢弃已提交线文）；仍协议 **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` 累积 Diff（D2）；可选 `onChunk` / `emitDiff:false`；仍协议 **0.6.0** |
 | `0.14.2` | `0.6.0` | `sdk-nodejs-v0.14.2` | `.` 后 Diff 隔离（D1）；键控建模文档 / NG6；仍协议 **0.6.0** |
@@ -82,6 +84,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-09 | [release-notes-2026-08-09-nodejs-npm.zh-CN.md](release-notes-2026-08-09-nodejs-npm.zh-CN.md) — 首次 npm 发布 **`@bylan280/xaiop@0.15.1`** |
 | 2026-08-09 | [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md) — Node/Java/Python/Go tip **0.15.1** 极限热路径（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) — Go `0.15.1` 稳定官方端口（退出 alpha） |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md) — Python `0.15.1` 内部 clone / history / checkpoint 结构（不升版本） |

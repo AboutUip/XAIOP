@@ -1,6 +1,6 @@
 # XAIOP Java SDK
 
-Maven project producing a publishable **JAR** (`io.xaiop:xaiop` **0.15.1**) for XAIOP protocol **v0.6.0 Frozen**, aligned with the Node.js reference (`xaiop` **0.15.1**).
+Maven project producing a publishable **JAR** (`io.xaiop:xaiop` **0.15.1**) for XAIOP protocol **v0.6.0 Frozen**, aligned with the Node.js reference ([`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1**).
 
 Guide: [../../docs/sdk/java/README.md](../../docs/sdk/java/README.md) · 简体中文: [../../docs/sdk/java/README.zh-CN.md](../../docs/sdk/java/README.zh-CN.md)  
 **Parity matrix:** [../../docs/sdk/java/ALIGNMENT.md](../../docs/sdk/java/ALIGNMENT.md) · [中文](../../docs/sdk/java/ALIGNMENT.zh-CN.md)  

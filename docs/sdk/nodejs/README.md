@@ -4,10 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| Package | `xaiop` |
+| Package | `@bylan280/xaiop` (npm) |
 | SDK | **0.15.1** (TypeScript) |
 | Protocol package | **0.6.0** Frozen (sealed) |
-| Runtime | Node.js ≥ 18 (default entry); browsers → `xaiop/browser` |
+| Runtime | Node.js ≥ 18 (default entry); browsers → `@bylan280/xaiop/browser` |
 | Code | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` → `dist/`) |
 
 **Full API:** [API.md](API.md)
@@ -15,9 +15,9 @@
 **Entrypoints:**
 
 ```js
-import { parseSync, XaiopWs } from "xaiop";                 // full Node surface
-import { parseSync, XaiopBrowserWs } from "xaiop/browser"; // browser client
-import { parseSync, encodeSync } from "xaiop/core";        // isomorphic core
+import { parseSync, XaiopWs } from "@bylan280/xaiop";                 // full Node surface
+import { parseSync, XaiopBrowserWs } from "@bylan280/xaiop/browser"; // browser client
+import { parseSync, encodeSync } from "@bylan280/xaiop/core";        // isomorphic core
 ```
 
 **Protocol:** [../../protocol/](../../protocol/) · [../../meta/releases.md](../../meta/releases.md)  
@@ -28,6 +28,12 @@ import { parseSync, encodeSync } from "xaiop/core";        // isomorphic core
 ---
 
 ## Install
+
+```bash
+npm install @bylan280/xaiop
+```
+
+From source:
 
 ```bash
 cd xaiop-sdk/nodejs

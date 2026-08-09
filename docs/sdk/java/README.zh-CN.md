@@ -10,7 +10,7 @@
 | 运行时 | Java 17+（零 runtime 依赖） |
 | 代码 | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-本包在**可观测语义**上对齐 Node.js 参考实现（`xaiop` **0.15.1** ↔ 协议 **0.6.0**）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
+本包在**可观测语义**上对齐 Node.js 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1** ↔ 协议 **0.6.0**）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `@bylan280/xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
 
 **API 参考（权威）：** **[API.zh-CN.md](API.zh-CN.md)** — 完整表面（§0–§11）：Parse · Encode · Engine · Stream · WS · Control · Compat · 类型 · 错误。  
 **对等矩阵（Java ↔ Node）：** **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** — 功能表 · 惯用法 · 包映射 · 测试映射 · 可接受差异 · §8 清单。  

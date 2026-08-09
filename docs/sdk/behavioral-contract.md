@@ -223,7 +223,7 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 
 **Official Go port (`…/xaiop-sdk/go` 0.15.1):** satisfies this checklist — see [go/ALIGNMENT.md §8](go/ALIGNMENT.md). Verification: `go test ./...` + `golden-go` (**50** NDJSON) + `core-wire` (**46**) + Go fuzz. Cross-validation detail: [go/ALIGNMENT.md §5](go/ALIGNMENT.md#5-verification--cross-validation). Stage timing: [`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/) (`npm run bench:go`).
 
-**Node reference (`xaiop` 0.15.1):** suite **688**; stage timing + Parse↔JSON gate: [nodejs/notes/performance.md](nodejs/notes/performance.md) · hub [../performance.md](../performance.md). Extreme-perf tip (2026-08-09, no version bump): [../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md).
+**Node reference (`@bylan280/xaiop` 0.15.1 on [npm](https://www.npmjs.com/package/@bylan280/xaiop)):** suite **688**; stage timing + Parse↔JSON gate: [nodejs/notes/performance.md](nodejs/notes/performance.md) · hub [../performance.md](../performance.md). Extreme-perf tip (2026-08-09, no version bump): [../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md). npm publish: [../meta/release-notes-2026-08-09-nodejs-npm.md](../meta/release-notes-2026-08-09-nodejs-npm.md).
 
 **Golden suites (Node):** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`.
 

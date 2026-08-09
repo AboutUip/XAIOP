@@ -3,9 +3,9 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.6.0 Frozen (sealed)  
-**SDK**: 0.15.1 (TypeScript)  
+**SDK**: 0.15.1 (TypeScript) · npm **`@bylan280/xaiop`**  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
-**Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`)  
+**Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`) · [npm](https://www.npmjs.com/package/@bylan280/xaiop)  
 **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
 
 ---
@@ -14,13 +14,13 @@
 
 | Entry | Environment | Surface |
 | --- | --- | --- |
-| `import "xaiop"` | **Node.js ≥ 18** (primary) | Full: parse/encode/engine/stream/`XaiopWs` listen+connect |
-| `import "xaiop/browser"` | **Browsers** (client subset) | Core + **phase streaming** `XaiopStream` (fetch/SSE/native WS) + `XaiopBrowserWs.connect`; **no** listen/hub |
-| `import "xaiop/core"` | Isomorphic (Node or bundler) | Wire core only: parse/encode/merge/checkpoint/engine; **no** network I/O |
+| `import "@bylan280/xaiop"` | **Node.js ≥ 18** (primary) | Full: parse/encode/engine/stream/`XaiopWs` listen+connect |
+| `import "@bylan280/xaiop/browser"` | **Browsers** (client subset) | Core + **phase streaming** `XaiopStream` (fetch/SSE/native WS) + `XaiopBrowserWs.connect`; **no** listen/hub |
+| `import "@bylan280/xaiop/core"` | Isomorphic (Node or bundler) | Wire core only: parse/encode/merge/checkpoint/engine; **no** network I/O |
 
 | Claim | |
 | --- | --- |
-| Default `"xaiop"` works in browsers as-is | **No** (pulls `ws` / `node:stream`) |
+| Default `"@bylan280/xaiop"` works in browsers as-is | **No** (pulls `ws` / `node:stream`) |
 | Browser server `listen` | **No** — use Node `XaiopWs.listen`; browser only `connect` / `XaiopStream` |
 | Browser **`.` phase Diff** | **Yes** — same `DotCheckpointEngine` as Node (`onChunk` / `onPhase`, Commit, optional `cover` / `mergeChunkWindow` / `typeCheck` / **line intercept** / **Annotation Span** / **Control Root**) |
 | Wire semantics | All three entries share one `core` (protocol package **0.6.0**) |
@@ -66,7 +66,7 @@ import {
   XaiopStream,
   PROTOCOL_VERSION,
   SDK_VERSION,
-} from "xaiop";
+} from "@bylan280/xaiop";
 
 // XAIOP → JSON
 parseSync(">\na:1\n");           // → { a: 1 }
@@ -85,10 +85,10 @@ stream.onChunk((diff) => {});
 await stream.send({ transport: "http" });
 ```
 
-Browser (**phase Diffs supported**; import from `xaiop/browser`):
+Browser (**phase Diffs supported**; import from `@bylan280/xaiop/browser`):
 
 ```js
-import { XaiopStream, XaiopBrowserWs, TRANSPORT_KIND } from "xaiop/browser";
+import { XaiopStream, XaiopBrowserWs, TRANSPORT_KIND } from "@bylan280/xaiop/browser";
 
 const stream = new XaiopStream(url);
 stream.onChunk((diff) => { /* that phase’s JSON */ });
@@ -218,7 +218,7 @@ Parse full XAIOP text to JSON or a Fragment (sync / async).
 - Empty source → `{}`
 
 ```js
-import { parseSync, CompatPolicy } from "xaiop";
+import { parseSync, CompatPolicy } from "@bylan280/xaiop";
 
 parseSync(">\na:1\n");
 parseSync(text, true);
@@ -287,7 +287,7 @@ Free functions / `XaiopEngine` static / instance produce the same wire for the s
 
 **Rejected string values (throw `XaiopEncodeError`):** containing CR/LF; **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable.
 ```js
-import { encodeSync, DOT_POLICY } from "xaiop";
+import { encodeSync, DOT_POLICY } from "@bylan280/xaiop";
 
 encodeSync({ a: 1, b: 2 }); // default perTopLevelKey
 encodeSync({ a: 1, b: 2 }, { dotPolicy: DOT_POLICY.NONE });
@@ -333,7 +333,7 @@ Constants: `DOT_POLICY` · `LABEL_ESCAPE_INTRODUCER` (`"\u001f"`).
 `XaiopEngine`: in-memory store (runtime data ids) plus parse / encode / merge-inject. Compatibility mode is **off** by default.
 
 ```js
-import { XaiopEngine } from "xaiop";
+import { XaiopEngine } from "@bylan280/xaiop";
 
 const engine = new XaiopEngine();
 const engineCompat = new XaiopEngine({ compatibilityMode: true });
@@ -405,7 +405,7 @@ const engineCompat = new XaiopEngine({ compatibilityMode: true });
 | When | `upload` / `uploadSync` / `uploadJson*` / `injectXaiop*` / `injectJson*` |
 
 ```js
-import { XaiopEngine, TYPE, objectType, arrayType } from "xaiop";
+import { XaiopEngine, TYPE, objectType, arrayType } from "@bylan280/xaiop";
 
 const eng = new XaiopEngine();
 eng.registerType("data.fork", TYPE.STRING);
@@ -449,7 +449,7 @@ Deep-dive: [notes/typecheck.md](notes/typecheck.md).
 HTTP / SSE / WebSocket / RAW **consumer**. Text feeds `DotCheckpointEngine`, emits Diffs on `.`, and parses the final Snapshot at EOF.
 
 ```js
-import { XaiopStream, STREAM_MODES, TRANSPORT_KIND } from "xaiop";
+import { XaiopStream, STREAM_MODES, TRANSPORT_KIND } from "@bylan280/xaiop";
 
 const stream = new XaiopStream(url, {
   streamProcessing: true,   // default
@@ -596,7 +596,7 @@ Deep notes: [notes/streaming-parse.md](notes/streaming-parse.md) · [notes/histo
 | Rewrite / skip | **Yes** (return string or `null`) | **No** |
 
 ```js
-import { LINE_KIND, DotCheckpointEngine } from "xaiop";
+import { LINE_KIND, DotCheckpointEngine } from "@bylan280/xaiop";
 
 eng.onLineIntercept(({ raw, view }) => {
   if (view.kind === LINE_KIND.ANNOTATION) return null; // skip line
@@ -668,7 +668,7 @@ The **wire** does not define `connect` / Promises / callback order; the followin
 ### 7.1 `XaiopWs`
 
 ```js
-import { XaiopWs } from "xaiop";
+import { XaiopWs } from "@bylan280/xaiop";
 
 const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
 hub.onConnection(async (conn) => {
@@ -761,7 +761,7 @@ Full table and test reference: [notes/ws-session.md](notes/ws-session.md) §5.
 
 ### 7.6 Browser `xaiop/browser` — phase client
 
-Import from **`xaiop/browser`** (not the default `"xaiop"`). Shares Node’s `DotCheckpointEngine` in `core`: `.` phases, later-wins Diff/Commit, optional `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`** (§5.5) / **line intercept** (§6.4) / **Annotation Span** (§6.5) / **Control Root** (§7.7).
+Import from **`@bylan280/xaiop/browser`** (not the default `"xaiop"`). Shares Node’s `DotCheckpointEngine` in `core`: `.` phases, later-wins Diff/Commit, optional `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`** (§5.5) / **line intercept** (§6.4) / **Annotation Span** (§6.5) / **Control Root** (§7.7).
 
 | API | Phases | Notes |
 | --- | --- | --- |
@@ -771,7 +771,7 @@ Import from **`xaiop/browser`** (not the default `"xaiop"`). Shares Node’s `Do
 | `xaiop/core` | No network | Local `DotCheckpointEngine` only; you feed text yourself |
 
 ```js
-import { XaiopBrowserWs } from "xaiop/browser";
+import { XaiopBrowserWs } from "@bylan280/xaiop/browser";
 
 const client = await XaiopBrowserWs.connect(url, {
   onPhase: (diff) => {
@@ -786,7 +786,7 @@ console.log(await client.done);
 | vs Node `XaiopWs` | |
 | --- | --- |
 | Socket | `globalThis.WebSocket` only |
-| `listen` / `XaiopWsHub` | **Not provided** (server still `import { XaiopWs } from "xaiop"`) |
+| `listen` / `XaiopWsHub` | **Not provided** (server still `import { XaiopWs } from "@bylan280/xaiop"`) |
 | `connect` early-frame semantics | **Same**: callbacks in options; resolve ≠ “no events yet” |
 | Phase / Diff / Commit / `cover` / `typeCheck` / line intercept / Annotation Span / Control Root | **Same** (one checkpoint / freeze session); `pushTypeConsistency` is server-side |
 
@@ -841,7 +841,7 @@ Engine inject (mutates store):
 `InjectOptions`: `conflict`, `compat`, `as: "json"|"xaiop"` (default `json`), `encodeOptions`.
 
 ```js
-import { mergeToJson, MERGE_CONFLICT, XaiopEngine } from "xaiop";
+import { mergeToJson, MERGE_CONFLICT, XaiopEngine } from "@bylan280/xaiop";
 
 mergeToJson({ a: 1 }, ">\nb:2\n", { conflict: MERGE_CONFLICT.KEEP });
 
@@ -878,7 +878,7 @@ When enabled with no overrides: **all eight** fixes on. Plain objects override d
 Exports: `CompatPolicy`, `COMPAT_FIX_IDS`, `COMPAT_FIX_DEFAULTS`.
 
 ```js
-import { parseSync, CompatPolicy } from "xaiop";
+import { parseSync, CompatPolicy } from "@bylan280/xaiop";
 
 parseSync(text, new CompatPolicy({ forcedRoot: false }));
 engine.setCompatibilityMode(true);
@@ -933,7 +933,7 @@ Declarations are emitted by `tsc` under `dist/**/*.d.ts` (default / `browser` / 
 | `TypeError` | Bad argument types (non-string source, illegal `conflict` / `as`, `pushTypeConsistency` prerequisites, etc.) |
 
 ```js
-import { parseSync, encodeSync, XaiopSyntaxError, XaiopEncodeError } from "xaiop";
+import { parseSync, encodeSync, XaiopSyntaxError, XaiopEncodeError } from "@bylan280/xaiop";
 
 try {
   parseSync(">\n&\n"); // bare & → XaiopSyntaxError

@@ -223,7 +223,7 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 
 **Go 官方端口（`…/xaiop-sdk/go` 0.15.1）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**50** NDJSON）+ `core-wire`（**46**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
 
-**Node 参考实现（`xaiop` 0.15.1）：** 单测 **688**；阶段计时 + Parse↔JSON：[nodejs/notes/performance.zh-CN.md](nodejs/notes/performance.zh-CN.md) · 枢纽 [../performance.zh-CN.md](../performance.zh-CN.md)。极限性能 tip（2026-08-09，不升版本）：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。
+**Node 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) 0.15.1）：** 单测 **688**；阶段计时 + Parse↔JSON：[nodejs/notes/performance.zh-CN.md](nodejs/notes/performance.zh-CN.md) · 枢纽 [../performance.zh-CN.md](../performance.zh-CN.md)。极限性能 tip（2026-08-09，不升版本）：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。npm 上架：[../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md](../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md)。
 
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 

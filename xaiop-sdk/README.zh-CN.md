@@ -1,11 +1,12 @@
 # XAIOP SDK
 
-> 官方多运行时 **SDK** — Node `xaiop` **0.15.1**（协议 **0.6.0**）· Java `io.xaiop:xaiop` **0.15.1** · Python `xaiop` **0.15.1** · Go 模块 **0.15.1**
+> 官方多运行时 **SDK** — Node npm **`@bylan280/xaiop`** **0.15.1**（协议 **0.6.0**）· Java `io.xaiop:xaiop` **0.15.1** · Python `xaiop` **0.15.1** · Go 模块 **0.15.1**
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 | 文档 | 链接 |
 | --- | --- |
+| Node npm 上架（2026-08-09） | [../docs/meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md](../docs/meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md) · [npm](https://www.npmjs.com/package/@bylan280/xaiop) |
 | 极限性能 tip（2026-08-09 · 全运行时） | [../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md) |
 | SDK 阶段计时枢纽 | [../docs/performance.zh-CN.md](../docs/performance.zh-CN.md) · [timing/](timing/) |
 | 发行说明（2026-08-08 · Go 0.15.1） | [../docs/meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md](../docs/meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md) |
@@ -30,7 +31,7 @@
 
 | 目录 | 状态 |
 | --- | --- |
-| [nodejs/](nodejs/) | **进行中** — `xaiop` **0.15.1** <-> 协议 **0.6.0**（parse · stream · encode · merge · history · WS · 控制根 / logSeq · Diff 隔离 / `@` Diff · buffer compact；**2026-08-09** 极限热路径 tip） |
+| [nodejs/](nodejs/) | **进行中** — npm **`@bylan280/xaiop`** **0.15.1** <-> 协议 **0.6.0**（parse · stream · encode · merge · history · WS · 控制根 / logSeq · Diff 隔离 / `@` Diff · buffer compact；**2026-08-09** 极限热路径 tip） |
 | [java/](java/) | **进行中** — `io.xaiop:xaiop` **0.15.1** — 协议 **0.6.0**（与 Node 对齐的完整产品面；[ALIGNMENT](../docs/sdk/java/ALIGNMENT.zh-CN.md)） |
 | [python/](python/) | **进行中** — `xaiop` **0.15.1** — 协议 **0.6.0**（[ALIGNMENT](../docs/sdk/python/ALIGNMENT.zh-CN.md)） |
 | [go/](go/) | **官方** — `ProtocolVersion` **0.6.0** · module **0.15.1**（[ALIGNMENT](../docs/sdk/go/ALIGNMENT.zh-CN.md) · [API](../docs/sdk/go/API.zh-CN.md)） |

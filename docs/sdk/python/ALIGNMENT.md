@@ -6,7 +6,7 @@
 | --- | --- |
 | Document | Living parity matrix (Python official port) |
 | Python package | `xaiop` **0.15.1** |
-| Node package | `xaiop` **0.15.1** |
+| Node package | `@bylan280/xaiop` **0.15.1** (npm) |
 | Protocol wire | **0.6.0** Frozen (`PROTOCOL_VERSION`) |
 | Normative | **No** — product parity inventory (not protocol conformance alone) |
 | Authority | Node reference + [../behavioral-contract.md](../behavioral-contract.md) |
@@ -23,7 +23,7 @@ This document is the **definitive parity matrix** for the Python official port a
 
 | Stack | Package | SDK | Protocol | Status |
 | --- | --- | --- | --- | --- |
-| Node.js (primary) | `xaiop` | **0.15.1** | **0.6.0** | Reference |
+| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | Reference |
 | Java (official) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
 | Python (official port) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
 

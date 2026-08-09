@@ -6,6 +6,7 @@ Hub for three **coupled but isolated** trees — see **[SEPARATION.md](SEPARATIO
 **What XAIOP is:** [overview/introduction.md](overview/introduction.md).  
 **Frozen / sealed** = immutable protocol package versions — [meta/releases.md](meta/releases.md) · [meta/status-and-versioning.md](meta/status-and-versioning.md) (`META-VER`).  
 **Latest tip:** Official product SDKs **Node · Java · Python · Go** `0.15.1` ↔ protocol **0.6.0**. Go parity: [sdk/go/ALIGNMENT.md](sdk/go/ALIGNMENT.md) (product golden **50** · core-wire **46**).  
+**Node npm:** [`@bylan280/xaiop@0.15.1`](https://www.npmjs.com/package/@bylan280/xaiop) — [release-notes-2026-08-09-nodejs-npm.md](meta/release-notes-2026-08-09-nodejs-npm.md).  
 **SDK stage timing / extreme-perf (2026-08-09):** [performance.md](performance.md) · [meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md).  
 **Prior release notes:** [meta/release-notes-2026-08-08-go-0.15.1.md](meta/release-notes-2026-08-08-go-0.15.1.md) (Go **0.15.1**) · [meta/release-notes-2026-08-08-python-0.15.1.md](meta/release-notes-2026-08-08-python-0.15.1.md) (Python **0.15.1**) · [meta/release-notes-2026-08-05-0.15.1.md](meta/release-notes-2026-08-05-0.15.1.md) (Node **0.15.1**) · [meta/release-notes-2026-08-05-0.15.0.md](meta/release-notes-2026-08-05-0.15.0.md) (Node **0.15.0**) · [meta/release-notes-2026-08-05-0.14.3.md](meta/release-notes-2026-08-05-0.14.3.md) (Node **0.14.3**) · [meta/release-notes-2026-08-05-0.14.2.md](meta/release-notes-2026-08-05-0.14.2.md) (Node **0.14.2**) · [meta/release-notes-2026-08-05-0.14.1.md](meta/release-notes-2026-08-05-0.14.1.md) (Node **0.14.1**) · [meta/release-notes-2026-08-05.md](meta/release-notes-2026-08-05.md) (Node **0.14.0** Control Root) · [meta/release-notes-2026-08-04.md](meta/release-notes-2026-08-04.md) (Node **0.13.0** · Java **0.5.0** · Skills discontinued as a product; source remains under [`../skills/`](../skills/)).
 
@@ -54,7 +55,7 @@ Index: [sdk/README.md](sdk/README.md) · catalog: [sdk/behavioral-contract.md](s
 
 | Stack | Docs | Code |
 | --- | --- | --- |
-| **Node.js** | **[sdk/nodejs/API.md](sdk/nodejs/API.md)** (primary · §6.4 line intercept · §6.5 Annotation Span · §7.7 Control Root; Node ≥ 18; browser phase consume via `xaiop/browser`) · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.15.1** ↔ protocol **0.6.0** |
+| **Node.js** | **[sdk/nodejs/API.md](sdk/nodejs/API.md)** (primary · §6.4 line intercept · §6.5 Annotation Span · §7.7 Control Root; Node ≥ 18; browser phase consume via `@bylan280/xaiop/browser`) · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — npm **`@bylan280/xaiop`** **0.15.1** ↔ protocol **0.6.0** |
 | Java | [sdk/java/](sdk/java/) · **[ALIGNMENT](sdk/java/ALIGNMENT.md)** | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.15.1** — protocol **0.6.0** |
 | Python | [sdk/python/](sdk/python/) · **[ALIGNMENT](sdk/python/ALIGNMENT.md)** | [../xaiop-sdk/python/](../xaiop-sdk/python/) — `xaiop` **0.15.1** — protocol **0.6.0** |
 

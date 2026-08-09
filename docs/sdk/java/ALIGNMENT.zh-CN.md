@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 | 现行对等矩阵（Java 官方移植） |
 | Java 产物 | `io.xaiop:xaiop` **0.15.1** |
-| Node 包 | `xaiop` **0.15.1** |
+| Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
 | 协议线格式 | **0.6.0** Frozen（`Xaiop.PROTOCOL_VERSION`） |
 | 规范性 | **否** — 产品对等清单（非协议符合性） |
 | 权威来源 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |

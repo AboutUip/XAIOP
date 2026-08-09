@@ -9,7 +9,7 @@
 
 | 技术栈 | 状态 | 文档 |
 | --- | --- | --- |
-| [Node.js](nodejs/) | **主实现 / 官方重心** — `xaiop` **0.15.1**（TS）↔ 协议 **0.6.0**；buffer compact · `@` Diff · Diff 隔离 · 控制根 `#!` / `meta.logSeq` / 续传；**2026-08-09** 极限热路径 | **[API.zh-CN.md](nodejs/API.zh-CN.md)**（主入口） · [notes/](nodejs/notes/) · [性能](nodejs/notes/performance.zh-CN.md) |
+| [Node.js](nodejs/) | **主实现 / 官方重心** — npm **`@bylan280/xaiop`** **0.15.1**（TS）↔ 协议 **0.6.0**；buffer compact · `@` Diff · Diff 隔离 · 控制根 `#!` / `meta.logSeq` / 续传；**2026-08-09** 极限热路径 · [npm](https://www.npmjs.com/package/@bylan280/xaiop) | **[API.zh-CN.md](nodejs/API.zh-CN.md)**（主入口） · [notes/](nodejs/notes/) · [性能](nodejs/notes/performance.zh-CN.md) |
 | [Java](java/) | **官方**（`io.xaiop:xaiop` **0.15.1** — 协议 **0.6.0**，与 Node 对齐的产品面） | **[API.zh-CN.md](java/API.zh-CN.md)** · [指南](java/README.zh-CN.md) · [ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md) |
 | [Python](python/) | **官方**（`xaiop` **0.15.1** — 协议 **0.6.0**，与 Node 对齐的产品面） | **[API.zh-CN.md](python/API.zh-CN.md)** · [指南](python/README.zh-CN.md) · [ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md) |
 | [Go](go/) | **官方**（`…/xaiop-sdk/go` **0.15.1** — 协议 **0.6.0**，与 Node 对齐的产品面） | **[API.zh-CN.md](go/API.zh-CN.md)** · [指南](go/README.zh-CN.md) · [ALIGNMENT](go/ALIGNMENT.zh-CN.md) |

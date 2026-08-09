@@ -84,7 +84,7 @@
 ## 5. 示例
 
 ```js
-import { TYPE, TypeRegistry, XaiopWs } from "xaiop";
+import { TYPE, TypeRegistry, XaiopWs } from "@bylan280/xaiop";
 
 const schema = new TypeRegistry();
 schema.register("ok", TYPE.INT);

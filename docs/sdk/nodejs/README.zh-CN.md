@@ -4,10 +4,10 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 包名 | `xaiop` |
+| 包名 | `@bylan280/xaiop`（npm） |
 | SDK | **0.15.1**（TypeScript） |
 | 协议包 | **0.6.0** Frozen（已封存） |
-| 运行时 | Node.js ≥ 18（默认入口）；浏览器 → `xaiop/browser` |
+| 运行时 | Node.js ≥ 18（默认入口）；浏览器 → `@bylan280/xaiop/browser` |
 | 代码 | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` → `dist/`） |
 
 **完整 API：** [API.zh-CN.md](API.zh-CN.md)
@@ -15,9 +15,9 @@
 **入口：**
 
 ```js
-import { parseSync, XaiopWs } from "xaiop";                 // Node 全表面
-import { parseSync, XaiopBrowserWs } from "xaiop/browser"; // 浏览器客户端
-import { parseSync, encodeSync } from "xaiop/core";        // 同构核心
+import { parseSync, XaiopWs } from "@bylan280/xaiop";                 // Node 全表面
+import { parseSync, XaiopBrowserWs } from "@bylan280/xaiop/browser"; // 浏览器客户端
+import { parseSync, encodeSync } from "@bylan280/xaiop/core";        // 同构核心
 ```
 
 **协议包：** [../../protocol/](../../protocol/) · [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)  
@@ -28,6 +28,12 @@ import { parseSync, encodeSync } from "xaiop/core";        // 同构核心
 ---
 
 ## 安装
+
+```bash
+npm install @bylan280/xaiop
+```
+
+从源码：
 
 ```bash
 cd xaiop-sdk/nodejs

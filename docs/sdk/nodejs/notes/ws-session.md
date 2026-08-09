@@ -33,7 +33,7 @@ Dependency: Node `ws` (no polyfill required on Node ≥ 18).
 ## 2. Minimal producer / consumer
 
 ```js
-import { XaiopWs } from "xaiop";
+import { XaiopWs } from "@bylan280/xaiop";
 
 const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
 hub.onConnection(async (conn) => {

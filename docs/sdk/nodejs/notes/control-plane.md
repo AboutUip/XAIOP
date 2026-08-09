@@ -142,7 +142,7 @@ Receive-side demux + optional `session` for inbound cursor. `onChunk(diff, meta)
 ### Cross-reconnect sketch
 
 ```js
-import { ResumeWireLog, XaiopWs, stampWireWithLogSeq } from "xaiop";
+import { ResumeWireLog, XaiopWs, stampWireWithLogSeq } from "@bylan280/xaiop";
 
 const log = new ResumeWireLog();
 const sessionId = "durable-1";

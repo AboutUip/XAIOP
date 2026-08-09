@@ -1,0 +1,2 @@
+# Keep package contents = package.json "files" only; exclude accidental pack artifacts.
+**/*.tgz

@@ -6,7 +6,7 @@
 | --- | --- |
 | Document | Living parity matrix (Go official port) |
 | Go module | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.15.1** |
-| Node package | `xaiop` **0.15.1** |
+| Node package | `@bylan280/xaiop` **0.15.1** (npm) |
 | Protocol wire | **0.6.0** Frozen (`xaiop.ProtocolVersion`) |
 | Normative | **No** — product parity inventory |
 | Authority | Node reference + [../behavioral-contract.md](../behavioral-contract.md) |
@@ -20,7 +20,7 @@
 
 | Stack | Package / module | SDK | Protocol | Status |
 | --- | --- | --- | --- | --- |
-| Node.js (primary) | `xaiop` | **0.15.1** | **0.6.0** | Reference |
+| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | Reference |
 | Java (official) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
 | Python (official) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
 | Go (official port) | `…/xaiop-sdk/go` | **0.15.1** | **0.6.0** | Aligned |

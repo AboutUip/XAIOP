@@ -9,7 +9,7 @@ Architecture: [../SEPARATION.md](../SEPARATION.md).
 
 | Stack | Status | Docs |
 | --- | --- | --- |
-| [Node.js](nodejs/) | **Primary / official focus** — `xaiop` **0.15.1** (TS) ↔ protocol **0.6.0**; buffer compact · `@` Diff · Diff isolation · Control Root `#!` / `meta.logSeq` / resume; **2026-08-09** extreme hot-path | **[API.md](nodejs/API.md)** (primary) · [notes/](nodejs/notes/) · [performance](nodejs/notes/performance.md) |
+| [Node.js](nodejs/) | **Primary / official focus** — npm **`@bylan280/xaiop`** **0.15.1** (TS) ↔ protocol **0.6.0**; buffer compact · `@` Diff · Diff isolation · Control Root `#!` / `meta.logSeq` / resume; **2026-08-09** extreme hot-path · [npm](https://www.npmjs.com/package/@bylan280/xaiop) | **[API.md](nodejs/API.md)** (primary) · [notes/](nodejs/notes/) · [performance](nodejs/notes/performance.md) |
 | [Java](java/) | **Official** (`io.xaiop:xaiop` **0.15.1** — protocol **0.6.0**, Node-aligned product surface) | **[API.md](java/API.md)** · [Guide](java/README.md) · [ALIGNMENT.md](java/ALIGNMENT.md) |
 | [Python](python/) | **Official** (`xaiop` **0.15.1** — protocol **0.6.0**, Node-aligned product surface) | **[API.md](python/API.md)** · [Guide](python/README.md) · [ALIGNMENT.md](python/ALIGNMENT.md) |
 | [Go](go/) | **Official** (`…/xaiop-sdk/go` **0.15.1** — protocol **0.6.0**, Node-aligned product surface) | **[API.md](go/API.md)** · [Guide](go/README.md) · [ALIGNMENT](go/ALIGNMENT.md) |

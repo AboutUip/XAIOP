@@ -3,9 +3,9 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.6.0 Frozen（已封存）  
-**SDK 版本**: 0.15.1（TypeScript）
+**SDK 版本**: 0.15.1（TypeScript）· npm **`@bylan280/xaiop`**  
 **运行时**: 默认入口 **Node.js ≥ 18（ESM）**；浏览器用子路径（见 §0）  
-**代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）  
+**代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）· [npm](https://www.npmjs.com/package/@bylan280/xaiop)  
 **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
 
 ---
@@ -14,13 +14,13 @@
 
 | 入口 | 环境 | 内容 |
 | --- | --- | --- |
-| `import "xaiop"` | **Node.js ≥ 18**（官方主路径） | 全表面：parse/encode/engine/stream/`XaiopWs` listen+connect |
-| `import "xaiop/browser"` | **浏览器**（客户端子集） | core + **相位流式** `XaiopStream`（fetch/SSE/原生 WS）+ `XaiopBrowserWs.connect`；**无** listen/hub |
-| `import "xaiop/core"` | 同构（Node 或 bundler） | 仅线核心：parse/encode/merge/checkpoint/engine；**无**网络 I/O |
+| `import "@bylan280/xaiop"` | **Node.js ≥ 18**（官方主路径） | 全表面：parse/encode/engine/stream/`XaiopWs` listen+connect |
+| `import "@bylan280/xaiop/browser"` | **浏览器**（客户端子集） | core + **相位流式** `XaiopStream`（fetch/SSE/原生 WS）+ `XaiopBrowserWs.connect`；**无** listen/hub |
+| `import "@bylan280/xaiop/core"` | 同构（Node 或 bundler） | 仅线核心：parse/encode/merge/checkpoint/engine；**无**网络 I/O |
 
 | 命题 | |
 | --- | --- |
-| 默认 `"xaiop"` 可在浏览器直接用 | **否**（会拉入 `ws` / `node:stream`） |
+| 默认 `"@bylan280/xaiop"` 可在浏览器直接用 | **否**（会拉入 `ws` / `node:stream`） |
 | 浏览器是否提供服务端 `listen` | **否** — 用 Node `XaiopWs.listen`，浏览器只 `connect` / `XaiopStream` |
 | 浏览器是否支持 **`.` 相位 Diff** | **是** — 与 Node 共用 `DotCheckpointEngine`（`onChunk` / `onPhase`、Commit、可选 `cover` / `mergeChunkWindow` / `typeCheck` / **行拦截** / **Annotation Span** / **控制根**） |
 | 线语义 | 三入口共享同一 `core`（协议包 **0.6.0**） |
@@ -66,7 +66,7 @@ import {
   XaiopStream,
   PROTOCOL_VERSION,
   SDK_VERSION,
-} from "xaiop";
+} from "@bylan280/xaiop";
 
 // 解析 XAIOP → JSON
 parseSync(">\na:1\n");           // → { a: 1 }
@@ -85,10 +85,10 @@ stream.onChunk((diff) => {});
 await stream.send({ transport: "http" });
 ```
 
-浏览器（**相位 Diff 可用**；从 `xaiop/browser` 导入）：
+浏览器（**相位 Diff 可用**；从 `@bylan280/xaiop/browser` 导入）：
 
 ```js
-import { XaiopStream, XaiopBrowserWs, TRANSPORT_KIND } from "xaiop/browser";
+import { XaiopStream, XaiopBrowserWs, TRANSPORT_KIND } from "@bylan280/xaiop/browser";
 
 const stream = new XaiopStream(url);
 stream.onChunk((diff) => { /* 该相 JSON */ });
@@ -218,7 +218,7 @@ parseAsync(source, compat?): Promise<unknown | XaiopFragment>
 - 空源 → `{}`
 
 ```js
-import { parseSync, CompatPolicy } from "xaiop";
+import { parseSync, CompatPolicy } from "@bylan280/xaiop";
 
 parseSync(">\na:1\n");
 parseSync(text, true);
@@ -287,7 +287,7 @@ encode(value, options?: EncodeOptions): Promise<string>
 
 **拒绝的字符串值（抛 `XaiopEncodeError`）：** 含 CR/LF；**以 U+0020 SPACE 开头**（`:` 后空格是强制 string 标记而非载荷——若照常发出，parse 会静默剥掉前导空格）。Tab（`U+0009`）与尾随空格仍可编码。
 ```js
-import { encodeSync, DOT_POLICY } from "xaiop";
+import { encodeSync, DOT_POLICY } from "@bylan280/xaiop";
 
 encodeSync({ a: 1, b: 2 }); // 默认 perTopLevelKey
 encodeSync({ a: 1, b: 2 }, { dotPolicy: DOT_POLICY.NONE });
@@ -333,7 +333,7 @@ encodeSync(obj, { dotPolicy: ["meta", "items[0]"] }); // 路径切相
 `XaiopEngine`：内存 store（运行时 data id）+ 解析 / 编码 / 合并注入。兼容模式默认**关**。
 
 ```js
-import { XaiopEngine } from "xaiop";
+import { XaiopEngine } from "@bylan280/xaiop";
 
 const engine = new XaiopEngine();
 const engineCompat = new XaiopEngine({ compatibilityMode: true });
@@ -405,7 +405,7 @@ const engineCompat = new XaiopEngine({ compatibilityMode: true });
 | 触发点 | `upload` / `uploadSync` / `uploadJson*` / `injectXaiop*` / `injectJson*` |
 
 ```js
-import { XaiopEngine, TYPE, objectType, arrayType } from "xaiop";
+import { XaiopEngine, TYPE, objectType, arrayType } from "@bylan280/xaiop";
 
 const eng = new XaiopEngine();
 eng.registerType("data.fork", TYPE.STRING);
@@ -449,7 +449,7 @@ eng.uploadSync(`>\n>data\nfork:ok\n`); // OK
 HTTP / SSE / WebSocket / RAW **消费端**。文本进入 `DotCheckpointEngine`，按 `.` 发 Diff，EOF 解析终态 Snapshot。
 
 ```js
-import { XaiopStream, STREAM_MODES, TRANSPORT_KIND } from "xaiop";
+import { XaiopStream, STREAM_MODES, TRANSPORT_KIND } from "@bylan280/xaiop";
 
 const stream = new XaiopStream(url, {
   streamProcessing: true,   // 默认
@@ -596,7 +596,7 @@ eng.onAnnotationSpan(fn); // 见 §6.5
 | 改写 / 跳过 | **可以**（返回字符串或 `null`） | **不可以** |
 
 ```js
-import { LINE_KIND, DotCheckpointEngine } from "xaiop";
+import { LINE_KIND, DotCheckpointEngine } from "@bylan280/xaiop";
 
 eng.onLineIntercept(({ raw, view }) => {
   if (view.kind === LINE_KIND.ANNOTATION) return null; // 跳过本行
@@ -668,7 +668,7 @@ eng.onAnnotationSpan((annotation, view) => {
 ### 7.1 `XaiopWs`
 
 ```js
-import { XaiopWs } from "xaiop";
+import { XaiopWs } from "@bylan280/xaiop";
 
 const hub = await XaiopWs.listen({ port: 0, host: "127.0.0.1" });
 hub.onConnection(async (conn) => {
@@ -760,7 +760,7 @@ encodePhaseObject(object, { final?, encodeOptions? }): string
 
 ### 7.6 浏览器 `xaiop/browser` — 相位客户端
 
-从 **`xaiop/browser`** 导入（不要用默认 `"xaiop"`）。与 Node **共用** `core` 的 `DotCheckpointEngine`：按 `.` 切相、later-wins Diff/Commit、可选 `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`**（§5.5）/ **行拦截**（§6.4）/ **Annotation Span**（§6.5）/ **控制根**（§7.7）。
+从 **`@bylan280/xaiop/browser`** 导入（不要用默认 `"@bylan280/xaiop"`）。与 Node **共用** `core` 的 `DotCheckpointEngine`：按 `.` 切相、later-wins Diff/Commit、可选 `cover` / `mergeChunkWindow` / `asyncParse` / **`typeCheck`**（§5.5）/ **行拦截**（§6.4）/ **Annotation Span**（§6.5）/ **控制根**（§7.7）。
 
 | API | 相位 | 说明 |
 | --- | --- | --- |
@@ -770,7 +770,7 @@ encodePhaseObject(object, { final?, encodeOptions? }): string
 | `xaiop/core` | 无网络 | 可本地 `DotCheckpointEngine`，需自行喂文本 |
 
 ```js
-import { XaiopBrowserWs } from "xaiop/browser";
+import { XaiopBrowserWs } from "@bylan280/xaiop/browser";
 
 const client = await XaiopBrowserWs.connect(url, {
   onPhase: (diff) => {
@@ -785,7 +785,7 @@ console.log(await client.done);
 | 与 Node `XaiopWs` 的差异 | |
 | --- | --- |
 | 套接字 | 仅 `globalThis.WebSocket` |
-| `listen` / `XaiopWsHub` | **不提供**（服务端仍用 `import { XaiopWs } from "xaiop"`） |
+| `listen` / `XaiopWsHub` | **不提供**（服务端仍用 `import { XaiopWs } from "@bylan280/xaiop"`） |
 | `connect` 早帧语义 | **相同**：回调放进 options；resolve ≠ 无事件 |
 | 相位 / Diff / Commit / `cover` / `typeCheck` / 行拦截 / Annotation Span / 控制根 | **相同**（同一 checkpoint / 冻结会话）；`pushTypeConsistency` 仅服务端 |
 
@@ -840,7 +840,7 @@ Engine 注入（就地更新 store）：
 `InjectOptions`：`conflict`、`compat`、`as: "json"|"xaiop"`（默认 `json`）、`encodeOptions`。
 
 ```js
-import { mergeToJson, MERGE_CONFLICT, XaiopEngine } from "xaiop";
+import { mergeToJson, MERGE_CONFLICT, XaiopEngine } from "@bylan280/xaiop";
 
 mergeToJson({ a: 1 }, ">\nb:2\n", { conflict: MERGE_CONFLICT.KEEP });
 
@@ -877,7 +877,7 @@ engine.injectXaiopSync(id, ">\nb:2\n");
 导出：`CompatPolicy`、`COMPAT_FIX_IDS`、`COMPAT_FIX_DEFAULTS`。
 
 ```js
-import { parseSync, CompatPolicy } from "xaiop";
+import { parseSync, CompatPolicy } from "@bylan280/xaiop";
 
 parseSync(text, new CompatPolicy({ forcedRoot: false }));
 engine.setCompatibilityMode(true);
@@ -932,7 +932,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | `TypeError` | 参数类型非法（非 string 源、非法 `conflict` / `as`、`pushTypeConsistency` 前提不满足 等） |
 
 ```js
-import { parseSync, encodeSync, XaiopSyntaxError, XaiopEncodeError } from "xaiop";
+import { parseSync, encodeSync, XaiopSyntaxError, XaiopEncodeError } from "@bylan280/xaiop";
 
 try {
   parseSync(">\n&\n"); // 裸 & → XaiopSyntaxError

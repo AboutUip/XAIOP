@@ -84,7 +84,7 @@ Helpers: `applyAnnotationSpans` · `encodeAsSiblingLines` · `pathEscapesTypeChe
 ## 5. Example
 
 ```js
-import { TYPE, TypeRegistry, XaiopWs } from "xaiop";
+import { TYPE, TypeRegistry, XaiopWs } from "@bylan280/xaiop";
 
 const schema = new TypeRegistry();
 schema.register("ok", TYPE.INT);

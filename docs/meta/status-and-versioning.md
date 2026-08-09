@@ -97,7 +97,7 @@ Exact change summaries: [revisions.md](revisions.md). Release tags: [releases.md
 
 ## 5. SDK packages (normative relationship)
 
-1. An SDK package version (e.g. npm `xaiop@0.11.0`) **MUST** declare which **sealed** protocol package version(s) it implements (e.g. `PROTOCOL_VERSION = "0.6.0"`).  
+1. An SDK package version (e.g. npm `@bylan280/xaiop@0.15.1`) **MUST** declare which **sealed** protocol package version(s) it implements (e.g. `PROTOCOL_VERSION = "0.6.0"`).
 2. Publishing a new SDK version **MUST NOT** rewrite a previously published SDK version’s artifacts or changelog entries for that version number.  
 3. Protocol package history and SDK package history are **separate**. Protocol [revisions.md](revisions.md) **MAY** *mention* which SDK release first implemented a wire version; it **MUST NOT** be the sole mutable changelog for SDK packages.  
 4. An old SDK release that targeted protocol `0.4.0` remains a valid artifact for `0.4.0` even after protocol `0.5.0` is sealed.

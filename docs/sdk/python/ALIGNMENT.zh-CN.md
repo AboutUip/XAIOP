@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 | 官方 Python 端口对等矩阵（持续维护） |
 | Python 包 | `xaiop` **0.15.1** |
-| Node 包 | `xaiop` **0.15.1** |
+| Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
 | 线文协议 | **0.6.0** Frozen（`PROTOCOL_VERSION`） |
 | 是否规范正文 | **否** — 产品可观察语义清单（≠ 仅协议符合） |
 | 权威来源 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（若无则见英版） |
@@ -23,7 +23,7 @@
 
 | 栈 | 包 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主） | `xaiop` | **0.15.1** | **0.6.0** | 参考 |
+| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | 参考 |
 | Java（官方） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
 | Python（官方端口） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
 

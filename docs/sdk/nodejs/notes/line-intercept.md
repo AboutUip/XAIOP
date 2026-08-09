@@ -77,7 +77,7 @@ Exports: `LINE_KIND` · `classifyLine` · `emptyLineView` · `runLineInterceptCh
 ## 5. Example
 
 ```js
-import { LINE_KIND, XaiopWs } from "xaiop";
+import { LINE_KIND, XaiopWs } from "@bylan280/xaiop";
 
 const client = await XaiopWs.connect(url, {
   lineIntercept: ({ view }) => {

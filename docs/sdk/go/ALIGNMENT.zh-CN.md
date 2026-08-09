@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 | 现行对等矩阵（Go 官方端口） |
 | Go 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.15.1** |
-| Node 包 | `xaiop` **0.15.1** |
+| Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
 | 协议线文 | **0.6.0** Frozen（`xaiop.ProtocolVersion`） |
 | 规范性 | **否** — 产品对等清单 |
 | 权威 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |
@@ -20,7 +20,7 @@
 
 | 栈 | 包 / 模块 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主） | `xaiop` | **0.15.1** | **0.6.0** | 参考 |
+| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | 参考 |
 | Java（官方） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
 | Python（官方） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
 | Go（官方端口） | `…/xaiop-sdk/go` | **0.15.1** | **0.6.0** | 已对齐 |

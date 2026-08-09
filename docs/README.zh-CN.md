@@ -6,6 +6,7 @@
 **XAIOP 是什么：** [overview/introduction.zh-CN.md](overview/introduction.zh-CN.md)。  
 **Frozen / 已封存** = 不可变协议包版本 — [meta/releases.zh-CN.md](meta/releases.zh-CN.md) · [meta/status-and-versioning.zh-CN.md](meta/status-and-versioning.zh-CN.md)（`META-VER`）。  
 **现行 tip：** 官方产品 SDK **Node · Java · Python · Go** `0.15.1` ↔ 协议 **0.6.0**。Go 对等：[sdk/go/ALIGNMENT.zh-CN.md](sdk/go/ALIGNMENT.zh-CN.md)（产品黄金 **50** · core-wire **46**）。  
+**Node npm：** [`@bylan280/xaiop@0.15.1`](https://www.npmjs.com/package/@bylan280/xaiop) — [release-notes-2026-08-09-nodejs-npm.zh-CN.md](meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md)。  
 **SDK 阶段计时 / 极限性能（2026-08-09）：** [performance.zh-CN.md](performance.zh-CN.md) · [meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。  
 **先前发行说明：** [meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md](meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md)（Go **0.15.1**）· [meta/release-notes-2026-08-08-python-0.15.1.zh-CN.md](meta/release-notes-2026-08-08-python-0.15.1.zh-CN.md)（Python **0.15.1**）· [meta/release-notes-2026-08-05-0.15.1.zh-CN.md](meta/release-notes-2026-08-05-0.15.1.zh-CN.md)（Node **0.15.1**）· [meta/release-notes-2026-08-05-0.15.0.zh-CN.md](meta/release-notes-2026-08-05-0.15.0.zh-CN.md)（Node **0.15.0**）· [meta/release-notes-2026-08-05-0.14.3.zh-CN.md](meta/release-notes-2026-08-05-0.14.3.zh-CN.md)（Node **0.14.3**）· [meta/release-notes-2026-08-05-0.14.2.zh-CN.md](meta/release-notes-2026-08-05-0.14.2.zh-CN.md)（Node **0.14.2**）· [meta/release-notes-2026-08-05-0.14.1.zh-CN.md](meta/release-notes-2026-08-05-0.14.1.zh-CN.md)（Node **0.14.1**）· [meta/release-notes-2026-08-05.zh-CN.md](meta/release-notes-2026-08-05.zh-CN.md)（Node **0.14.0** 控制根）· [meta/release-notes-2026-08-04.zh-CN.md](meta/release-notes-2026-08-04.zh-CN.md)（Node **0.13.0** · Java **0.5.0** · Skill 不再作为产品提供；源码仍在 [`../skills/`](../skills/)）。
 
@@ -54,7 +55,7 @@ LLM 发射 / 评测口径已迁入目标封存：[archive/practice-llm-emit-2026
 
 | 技术栈 | 文档 | 代码 |
 | --- | --- | --- |
-| **Node.js** | **[sdk/nodejs/API.zh-CN.md](sdk/nodejs/API.zh-CN.md)**（主入口 · §6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根；Node ≥ 18；浏览器相位消费用 `xaiop/browser`） · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — `xaiop` **0.15.1** ↔ 协议 **0.6.0** |
+| **Node.js** | **[sdk/nodejs/API.zh-CN.md](sdk/nodejs/API.zh-CN.md)**（主入口 · §6.4 行拦截 · §6.5 Annotation Span · §7.7 控制根；Node ≥ 18；浏览器相位消费用 `@bylan280/xaiop/browser`） · [sdk/nodejs/](sdk/nodejs/) | [../xaiop-sdk/nodejs/](../xaiop-sdk/nodejs/) — npm **`@bylan280/xaiop`** **0.15.1** ↔ 协议 **0.6.0** |
 | Java | [sdk/java/](sdk/java/) · **[ALIGNMENT](sdk/java/ALIGNMENT.zh-CN.md)** | [../xaiop-sdk/java/](../xaiop-sdk/java/) — `io.xaiop:xaiop` **0.15.1** — 协议 **0.6.0** |
 | Python | [sdk/python/](sdk/python/) · **[ALIGNMENT](sdk/python/ALIGNMENT.zh-CN.md)** | [../xaiop-sdk/python/](../xaiop-sdk/python/) — `xaiop` **0.15.1** — 协议 **0.6.0** |
 

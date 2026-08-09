@@ -35,11 +35,13 @@ Full narrative history: [revisions.md](revisions.md).
 
 ---
 
-## 3. SDK packages (Node.js `xaiop`)
+## 3. SDK packages (Node.js `@bylan280/xaiop`)
+
+Published on npm: [`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop).
 
 | SDK | Implements protocol | Git tag (recommended) | Notes |
 | --- | --- | --- | --- |
-| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | Perf tip: **2026-08-09** extreme hot-path (parse four-pack · encode scans · checkpoint) — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); prior: single Diff materialize + faster `cloneJson`; still protocol **0.6.0** |
+| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | **npm published** as `@bylan280/xaiop@0.15.1` — [release-notes-2026-08-09-nodejs-npm.md](release-notes-2026-08-09-nodejs-npm.md); Perf tip **2026-08-09** extreme hot-path — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); prior: single Diff materialize + faster `cloneJson`; still protocol **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted` (long-session wire discard); still protocol **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` cumulative Diff (D2); optional `onChunk` / `emitDiff:false`; still protocol **0.6.0** |
 | `0.14.2` | `0.6.0` | `sdk-nodejs-v0.14.2` | Diff isolation after `.` (D1); keyed-state modeling docs / NG6; still protocol **0.6.0** |
@@ -82,6 +84,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-09 | [release-notes-2026-08-09-nodejs-npm.md](release-notes-2026-08-09-nodejs-npm.md) — first npm publish **`@bylan280/xaiop@0.15.1`** |
 | 2026-08-09 | [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md) — Node/Java/Python/Go tip **0.15.1** extreme hot-path (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) — Go `0.15.1` stable official port (exit alpha) |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md) — Python `0.15.1` internal clone / history / checkpoint structure (no version bump) |
