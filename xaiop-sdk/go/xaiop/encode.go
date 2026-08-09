@@ -11,12 +11,6 @@ import (
 	"unicode"
 )
 
-var encodeFloatRE = regexp.MustCompile(
-	`^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$|^[+-]?\d+[eE][+-]?\d+$`,
-)
-
-var encodeIntRE = regexp.MustCompile(`^[+-]?\d+$`)
-
 var encodePathIdentRE = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 const (
@@ -652,13 +646,78 @@ func formatNumberToken(n any, path string) (string, error) {
 }
 
 func needsForcedString(s string) bool {
-	if s == "true" || s == "false" || s == "null" {
-		return true
+	if s == "" {
+		return false
 	}
-	if encodeIntRE.MatchString(s) {
-		return true
+	// Fast reject on head byte: t/f/n keywords, sign/dot/digit numeric tokens.
+	switch c := s[0]; {
+	case c == 't' || c == 'f' || c == 'n':
+		return s == "true" || s == "false" || s == "null"
+	case c == '+' || c == '-' || c == '.' || (c >= '0' && c <= '9'):
+		return isNumberLikeToken(s)
 	}
-	return encodeFloatRE.MatchString(s)
+	return false
+}
+
+// isNumberLikeToken reports an int or float token per PROT-CONTENT §5 (union
+// of the former encodeIntRE / encodeFloatRE): `[+-]? ( \d+ (\.\d*)? | \.\d+ ) ([eE][+-]?\d+)?`
+// with a lone `.` (no digits at all) rejected. Hand-rolled single pass.
+func isNumberLikeToken(s string) bool {
+	n := len(s)
+	i := 0
+	if s[0] == '+' || s[0] == '-' {
+		i++
+		if i >= n {
+			return false
+		}
+	}
+	intDigits := 0
+	for i < n {
+		c := s[i]
+		if c < '0' || c > '9' {
+			break
+		}
+		intDigits++
+		i++
+	}
+	fracDigits := -1 // -1: no dot seen
+	if i < n && s[i] == '.' {
+		i++
+		fracDigits = 0
+		for i < n {
+			c := s[i]
+			if c < '0' || c > '9' {
+				break
+			}
+			fracDigits++
+			i++
+		}
+	}
+	if intDigits == 0 && fracDigits <= 0 {
+		return false
+	}
+	if i < n {
+		if s[i] != 'e' && s[i] != 'E' {
+			return false
+		}
+		i++
+		if i < n && (s[i] == '+' || s[i] == '-') {
+			i++
+		}
+		expDigits := 0
+		for i < n {
+			c := s[i]
+			if c < '0' || c > '9' {
+				break
+			}
+			expDigits++
+			i++
+		}
+		if expDigits == 0 {
+			return false
+		}
+	}
+	return i == n
 }
 
 func assertKey(key string, path string, symbolKeys bool) error {
@@ -710,17 +769,35 @@ func assertEncodableString(s string, path string) error {
 
 func finalizeWire(lines []string, finalDot bool, trailingNewline bool) string {
 	cleaned := collapseRedundantLeaves(lines)
-	if finalDot {
-		cleaned = append(append([]string{}, cleaned...), ".")
-	}
-	if len(cleaned) == 0 {
+	if len(cleaned) == 0 && !finalDot {
 		return ""
 	}
-	text := strings.Join(cleaned, "\n")
-	if trailingNewline {
-		text += "\n"
+	// Single sized build (no Join + `+= "\n"` re-copy).
+	size := 0
+	for _, l := range cleaned {
+		size += len(l) + 1
 	}
-	return text
+	if finalDot {
+		size += 2
+	}
+	var b strings.Builder
+	b.Grow(size)
+	for i, l := range cleaned {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(l)
+	}
+	if finalDot {
+		if len(cleaned) > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteByte('.')
+	}
+	if trailingNewline {
+		b.WriteByte('\n')
+	}
+	return b.String()
 }
 
 func joinWire(lines []string, trailingNewline bool) string {

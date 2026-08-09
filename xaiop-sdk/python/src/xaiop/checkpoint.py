@@ -417,7 +417,10 @@ class DotCheckpointEngine:
             if len(closed) == 1:
                 self._emit_chunk(self._history.peek_diff(self._history.length - 1))
                 return
-            self._emit_chunk(clone_json(self._peek_commit()))
+            # Clone only when a consumer will actually receive the chunk.
+            self._emit_chunk(
+                clone_json(self._peek_commit()) if self._has_chunk_consumer() else None
+            )
             return
 
         all_lines: list[str] = []
@@ -444,7 +447,11 @@ class DotCheckpointEngine:
             self._emit_chunk(diff)
             return
         self._store_commit(last_end, None, True)
-        self._emit_chunk(materialize_snapshot(self._live.value()))
+        self._emit_chunk(
+            materialize_snapshot(self._live.value())
+            if self._has_chunk_consumer()
+            else None
+        )
 
     def _emit_phase(self, end: int) -> None:
         start = self._segment_start
@@ -725,6 +732,12 @@ class DotCheckpointEngine:
         if self._log_seq_queue:
             self._pending_log_seqs.append(self._log_seq_queue.pop(0))
         return self._phase_seq
+
+    def _has_chunk_consumer(self) -> bool:
+        return callable(self._hooks.get("onChunk", self._hooks.get("on_chunk")))
+
+    def _has_chunk_consumer(self) -> bool:
+        return callable(self._hooks.get("onChunk", self._hooks.get("on_chunk")))
 
     def _emit_chunk(self, diff: Any) -> None:
         escapes = self._pending_type_check_escape

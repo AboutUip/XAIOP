@@ -12,31 +12,54 @@ type LineInfo struct {
 // ReadLine scans one line from text starting at from.
 // When atEOF is false and no newline is found, returns nil (incomplete).
 func ReadLine(text string, from int, atEOF bool) *LineInfo {
-	if from >= len(text) {
+	line, end, consumed, ok := readLineAt(text, from, atEOF)
+	if !ok {
 		return nil
 	}
+	return &LineInfo{Line: line, End: end, ConsumedNewline: consumed}
+}
+
+// readLineAt is the allocation-free variant of ReadLine for hot scan loops.
+// ok=false means incomplete (no newline and !atEOF) or from past the end.
+func readLineAt(text string, from int, atEOF bool) (line string, end int, consumedNewline, ok bool) {
 	n := len(text)
+	if from >= n {
+		return "", 0, false, false
+	}
 	for i := from; i < n; i++ {
 		if text[i] == '\n' {
-			end := i
-			if end > from && text[end-1] == '\r' {
-				end--
+			e := i
+			if e > from && text[e-1] == '\r' {
+				e--
 			}
-			return &LineInfo{
-				Line:            text[from:end],
-				End:             i + 1,
-				ConsumedNewline: true,
-			}
+			return text[from:e], i + 1, true, true
 		}
 	}
 	if !atEOF {
-		return nil
+		return "", 0, false, false
 	}
-	return &LineInfo{
-		Line:            text[from:],
-		End:             n,
-		ConsumedNewline: false,
+	return text[from:], n, false, true
+}
+
+// readLineAtBytes scans one line from a byte buffer (checkpoint hot path).
+func readLineAtBytes(buf []byte, from int, atEOF bool) (line string, end int, consumedNewline, ok bool) {
+	n := len(buf)
+	if from >= n {
+		return "", 0, false, false
 	}
+	for i := from; i < n; i++ {
+		if buf[i] == '\n' {
+			e := i
+			if e > from && buf[e-1] == '\r' {
+				e--
+			}
+			return string(buf[from:e]), i + 1, true, true
+		}
+	}
+	if !atEOF {
+		return "", 0, false, false
+	}
+	return string(buf[from:]), n, false, true
 }
 
 // LinesToWire joins lines with newlines and a trailing newline.

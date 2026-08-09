@@ -98,6 +98,21 @@
 本地规模：`pytest` ≈ **487** 用例。另有 Node↔Python golden CI。  
 计时：与 Node 同阶段名 — [`xaiop-sdk/timing/python/bench.py`](../../../xaiop-sdk/timing/python/bench.py)。
 
+**Parse ↔ JSON 门槛**（STRICT 一次性 `parse_sync` vs 同机 JSON）：
+
+```bash
+cd xaiop-sdk/timing
+npm run bench:python:json-gate:quick
+npm run bench:python:json-gate
+```
+
+| 门槛 | 目标 | 说明 |
+| --- | --- | --- |
+| 主门槛 | `Parse / Node JSON.parse ≤ 1.2` | 本轮仅报告（CPython 对 V8 常吃亏） |
+| 次门槛 | `Parse / json.loads`（报告； ideally ≤1.2） | 同进程公平对照 |
+
+**Before → after**（同机嵌套 fixture；墙钟；±噪声）：quick/full 主门槛约 **56×/59× → 38×/39×**；次门槛约 **35×/29× → 22×/17×**。热路径：无 broadcast 直调、手写 float、content 首字节快路径、one-shot 扫行、STRICT 名字 ASCII 快路径；encode `repr` 浮点快路径；checkpoint 无消费者跳过克隆。阶段计时（**2026-08-09**）：长会话 / D1–D2 ~−20–32%。说明：[../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。产物：`timing/python/last-json-gate.json`。
+
 ---
 
 ## 6. 可接受差异

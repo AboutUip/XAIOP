@@ -22,6 +22,7 @@ import { parseSync, encodeSync } from "xaiop/core";        // isomorphic core
 
 **Protocol:** [../../protocol/](../../protocol/) · [../../meta/releases.md](../../meta/releases.md)  
 **Product catalog:** [../behavioral-contract.md](../behavioral-contract.md)  
+**Performance (stage timing):** [notes/performance.md](notes/performance.md) · [../../performance.md](../../performance.md)  
 **Runtime details:** [API §0](API.md#0-runtime-scope-and-entrypoints)
 
 ---

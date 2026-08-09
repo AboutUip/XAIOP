@@ -12,6 +12,8 @@
     "bench:quick": "node bench.mjs --quick",
     "bench:save-baseline": "node bench.mjs --save-baseline",
     "bench:json": "node bench.mjs --json",
+    "bench:json-gate": "node json_gate.mjs",
+    "bench:json-gate:quick": "node json_gate.mjs --quick",
     "compare": "node compare.mjs",
     "compare:quick": "node compare.mjs --quick"
   },

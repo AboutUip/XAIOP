@@ -161,6 +161,10 @@ func (s *XaiopStream) Snapshot() any {
 func (s *XaiopStream) Buffer() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.engine != nil {
+		// Live view — avoid copying the whole buffer on every Push sync.
+		return s.engine.Buffer()
+	}
 	return s.buffer
 }
 
@@ -507,7 +511,8 @@ func (s *XaiopStream) syncFromEngineLocked() {
 	if s.engine == nil {
 		return
 	}
-	s.buffer = s.engine.Buffer()
+	// Do not materialize engine.Buffer() here: chunked Push would copy O(n)
+	// bytes per chunk (quadratic). XaiopStream.Buffer() reads the engine live.
 	if s.engine.CommittedAt() > 0 {
 		s.committedSnapshot = nil
 		s.committedAvailable = true

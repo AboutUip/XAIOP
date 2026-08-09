@@ -1,9 +1,10 @@
 # XAIOP Node.js SDK
 
 Official Node.js SDK for XAIOP v0.6.0 (Frozen). Package **0.15.1** — TypeScript; `xaiop` / `xaiop/browser` / `xaiop/core`.
-**Docs:** **[API](../../docs/sdk/nodejs/API.md)** · [Notes](../../docs/sdk/nodejs/notes/) · [Node catalog](../../docs/sdk/behavioral-contract.md)  
+**Docs:** **[API](../../docs/sdk/nodejs/API.md)** · [Notes](../../docs/sdk/nodejs/notes/) · [performance](../../docs/sdk/nodejs/notes/performance.md) · [Node catalog](../../docs/sdk/behavioral-contract.md)  
 **Practice:** [streaming transport](../../docs/practice/streaming-transport.md) · [skeleton stream](../../docs/practice/skeleton-stream.md) · [keyed modeling](../../docs/practice/keyed-state-modeling.md) · [sealed LLM archive](../../docs/archive/practice-llm-emit-2026-08-04/)  
-**Protocol (wire only):** [../../docs/protocol/](../../docs/protocol/) · [Separation](../../docs/SEPARATION.md)
+**Protocol (wire only):** [../../docs/protocol/](../../docs/protocol/) · [Separation](../../docs/SEPARATION.md)  
+**Stage timing:** [../../docs/performance.md](../../docs/performance.md) · extreme-perf tip: [../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md)
 
 ```js
 import { parseSync, XaiopWs } from "xaiop";                 // Node (default)

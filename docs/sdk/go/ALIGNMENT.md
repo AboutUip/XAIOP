@@ -131,9 +131,11 @@ npm run bench:go:json-gate         # depth=3 breadth=8
 | Fixture | Parse/Node (primary) | Parse/GoJSON (secondary) |
 | --- | ---: | ---: |
 | Baseline quick / full | **~3.8×** / **~5.3×** | **~1.5×** / **~1.5×** |
-| After quick / full | **~1.3–1.5×** / **~1.7–1.9×** | **~0.45–0.55×** / **~0.55–0.62×** |
+| After quick / full | **~1.3–1.5×** / **~1.7–2.1×** | **~0.45–0.55×** / **~0.55–0.62×** |
 
-Hot-path work: no-broadcast direct calls, hand-rolled float scanner, content first-byte fast-path, one-shot line feeder (no `[]string`), typed cursor frames, array header sync-on-pop, parser `sync.Pool`, STRICT `assertName` ASCII fast-path. Artifact: `timing/go/last-json-gate.json`.
+Hot-path work: no-broadcast direct calls, hand-rolled float scanner, content first-byte fast-path, one-shot line feeder (no `[]string`), typed cursor frames, array header sync-on-pop, parser `sync.Pool`, STRICT `assertName` ASCII fast-path; **encode** native float token fast path + hand `needsForcedString` + sized wire `Builder`; **checkpoint/stream** `[]byte` ingest (no `buffer +=`), demux `carry` `[]byte`, merge-scan no per-Push `phaseLines` copy, live `Buffer()` (no per-Push full-string materialize). Artifact: `timing/go/last-json-gate.json`.
+
+**Stage timing** (vs same-machine baseline after the **2026-08-09** extreme-perf round): encode ~−33%; `checkpoint/long/grow-buffer` ~−58%; `stream.send/PROMISE/chunked-3B` ~−98.5%; summary **19 faster / 0 slower** on a clean run. Narrative: [../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md) · Hub: [../../performance.md](../../performance.md).
 
 Primary ≤1.2× Node remains a stretch while Go `encoding/json`→`map[string]any` itself is typically **~2.5–3.5×** Node on this fixture (runtime/hashmap floor; non-goal: change product tree type). Secondary (beat same-process `encoding/json`) is the reproducible same-runtime bar and currently **passes** (~0.5–0.6×).
 

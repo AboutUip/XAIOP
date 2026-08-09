@@ -101,7 +101,7 @@ def main() -> None:
         body.append("")
 
     if (DOCS / "performance.md").exists():
-        body.append(f"* [Performance stub]({href('performance.md')})")
+        body.append(f"* [Performance (SDK timing)]({href('performance.md')})")
         body.append("")
 
     OUT.write_text("\n".join(body) + "\n", encoding="utf-8", newline="\n")

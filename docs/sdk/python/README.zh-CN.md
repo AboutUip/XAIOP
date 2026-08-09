@@ -49,3 +49,7 @@ cd xaiop-sdk/conformance && npm run golden:python
 ```
 
 Node↔Python 黄金 **50** 例。CI 任务：`.github/workflows/ci.yml` 中的 `python`、`golden-python`。
+
+## 计时
+
+[`xaiop-sdk/timing`](../../../xaiop-sdk/timing/) — `npm run bench:python` · `bench:python:json-gate`。枢纽：[../../performance.zh-CN.md](../../performance.zh-CN.md)。极限性能 tip（**2026-08-09**）：[../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。

@@ -49,3 +49,7 @@ cd xaiop-sdk/conformance && npm run golden:python
 ```
 
 **50** Node↔Python golden cases (encode corpus **30** + ten parse/stream fixtures). Jobs: `python`, `golden-python` in `.github/workflows/ci.yml`.
+
+## Timing
+
+[`xaiop-sdk/timing`](../../../xaiop-sdk/timing/) — `npm run bench:python` · `bench:python:json-gate`. Hub: [../../performance.md](../../performance.md). Extreme-perf tip (**2026-08-09**): [../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md).

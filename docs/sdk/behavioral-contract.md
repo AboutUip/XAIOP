@@ -217,11 +217,13 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 - [ ] Final Snapshot ≡ one-shot parse of full buffer (under same compat)  
 - [ ] WS phase `.\n` / `final` / close codes if offering skeleton sessions  
 
-**Official Java port (`io.xaiop:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port). Stage timing: [`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/) (`StageTimingMain` / `npm run bench:java`).
+**Official Java port (`io.xaiop:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port). Stage timing: [`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/) (`StageTimingMain` / `npm run bench:java`). Parse↔JSON gate: [java/ALIGNMENT.md §5](java/ALIGNMENT.md#5-test-map-node--java).
 
 **Official Python port (`xaiop` 0.15.1):** satisfies this checklist — see [python/ALIGNMENT.md §8](python/ALIGNMENT.md). Verification: pytest (~**487**) + `golden-python` (**50** NDJSON cases) + `core-wire` (**46**) + Python fuzz. Stage timing: [`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/) (`bench.py`).
 
 **Official Go port (`…/xaiop-sdk/go` 0.15.1):** satisfies this checklist — see [go/ALIGNMENT.md §8](go/ALIGNMENT.md). Verification: `go test ./...` + `golden-go` (**50** NDJSON) + `core-wire` (**46**) + Go fuzz. Cross-validation detail: [go/ALIGNMENT.md §5](go/ALIGNMENT.md#5-verification--cross-validation). Stage timing: [`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/) (`npm run bench:go`).
+
+**Node reference (`xaiop` 0.15.1):** suite **688**; stage timing + Parse↔JSON gate: [nodejs/notes/performance.md](nodejs/notes/performance.md) · hub [../performance.md](../performance.md). Extreme-perf tip (2026-08-09, no version bump): [../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md).
 
 **Golden suites (Node):** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`.
 
@@ -235,3 +237,4 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 - Java parity matrix: [java/ALIGNMENT.md](java/ALIGNMENT.md)
 - Python parity matrix: [python/ALIGNMENT.md](python/ALIGNMENT.md)
 - Go parity matrix: [go/ALIGNMENT.md](go/ALIGNMENT.md)
+- SDK stage timing hub: [../performance.md](../performance.md) · extreme-perf tip: [../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md)

@@ -63,7 +63,8 @@ public final class Parser {
     }
   }
 
-  private final List<String> lines;
+  private final String source;
+  private List<String> lines;
   private int lineNo;
   /** Lines accepted via feedLine (live mode). */
   private int fed;
@@ -93,7 +94,8 @@ public final class Parser {
     if (source == null) {
       throw new NullPointerException("XAIOP source must be a string");
     }
-    this.lines = splitLines(source);
+    this.source = source;
+    this.lines = null;
     this.compat = compat;
     this.symbolKeys = symbolKeys;
   }
@@ -160,21 +162,84 @@ public final class Parser {
     return compat != null && Boolean.TRUE.equals(compat.get(id));
   }
 
+  private List<String> lines() {
+    if (lines == null) {
+      lines = splitLines(source);
+    }
+    return lines;
+  }
+
   public Object parse() {
     if (fixEnabled(CompatFixId.forcedRoot)) {
       ensureCompatRootOpener();
       compatRootReady = true;
     }
-    for (int i = 0; i < lines.size(); i++) {
+    if (compat == null) {
+      return parseOneShot(source);
+    }
+    List<String> ls = lines();
+    for (int i = 0; i < ls.size(); i++) {
       lineNo = i + 1;
       // BOM only appears on the first physical line of a stream/document.
-      String line = i == 0 ? stripBom(lines.get(i)) : lines.get(i);
+      String line = i == 0 ? stripBom(ls.get(i)) : ls.get(i);
       if (line.isEmpty()) {
         throw new XaiopSyntaxError("empty line is a Content syntax error", lineNo);
       }
       handleLineCompat(line);
     }
     return result();
+  }
+
+  /** Feed the wire without materializing a full line list (STRICT hot path). */
+  private Object parseOneShot(String src) {
+    int n = src.length();
+    int start = 0;
+    int ln = 0;
+    while (start <= n) {
+      if (start == n) break;
+      int i = start;
+      while (i < n) {
+        char c = src.charAt(i);
+        if (c == '\n' || c == '\r') break;
+        i++;
+      }
+      String line = src.substring(start, i);
+      int next;
+      if (i < n) {
+        if (src.charAt(i) == '\r' && i + 1 < n && src.charAt(i + 1) == '\n') {
+          next = i + 2;
+        } else {
+          next = i + 1;
+        }
+      } else {
+        next = n;
+      }
+      if (line.isEmpty()) {
+        if (restOnlyEols(src, next)) break;
+        ln++;
+        throw new XaiopSyntaxError("empty line is a Content syntax error", ln);
+      }
+      ln++;
+      lineNo = ln;
+      if (ln == 1) {
+        line = stripBom(line);
+        if (line.isEmpty()) {
+          throw new XaiopSyntaxError("empty line is a Content syntax error", ln);
+        }
+      }
+      handleLine(line);
+      if (next >= n) break;
+      start = next;
+    }
+    return result();
+  }
+
+  private static boolean restOnlyEols(String src, int from) {
+    for (int i = from; i < src.length(); i++) {
+      char c = src.charAt(i);
+      if (c != '\n' && c != '\r') return false;
+    }
+    return true;
   }
 
   /**
@@ -184,10 +249,11 @@ public final class Parser {
    * do not enter fragment mode.
    */
   private void ensureCompatRootOpener() {
-    if (lines.isEmpty()) {
+    List<String> ls = lines();
+    if (ls.isEmpty()) {
       return;
     }
-    String first = rewriteCompatLine(stripBom(lines.get(0)));
+    String first = rewriteCompatLine(stripBom(ls.get(0)));
     if (first.equals(">") || first.equals("-")) {
       return;
     }
@@ -308,8 +374,20 @@ public final class Parser {
   }
 
   private void handleLine(String line) {
+    if (line.isEmpty()) {
+      throw new XaiopSyntaxError(
+          "Bare Label or unknown line form: " + Json.stringify(line), lineNo);
+    }
+
+    // Content fast-path: typical nested Encode wires are mostly key:value lines.
+    char head = line.charAt(0);
+    if (!isOperatorLineHead(head)) {
+      handleContentLine(line);
+      return;
+    }
+
     // Protocol 0.6.0+: standalone custom-annotation line — no Cursor / tree effect.
-    if (line.startsWith("#")) {
+    if (head == '#') {
       return;
     }
 
@@ -320,62 +398,83 @@ public final class Parser {
 
     if (line.equals("<")) {
       precheckBroadcastPop();
-      runOnCursors(this::popOnly);
+      if (broadcastStacks == null) {
+        popOnly();
+      } else {
+        runOnCursors(this::popOnly);
+      }
       return;
     }
 
-    if (line.startsWith("<") && line.length() > 1) {
+    if (head == '<' && line.length() > 1) {
       String name = logicalName(line.substring(1));
       assertName(name, lineNo, symbolKeys);
       precheckBroadcastPop();
-      runOnCursors(
-          () -> {
-            popOnly();
-            createEnterNamedObject(name);
-          });
+      if (broadcastStacks == null) {
+        popOnly();
+        createEnterNamedObject(name);
+      } else {
+        runOnCursors(
+            () -> {
+              popOnly();
+              createEnterNamedObject(name);
+            });
+      }
       return;
     }
 
-    if (line.startsWith("=")) {
+    if (head == '=') {
       requireNotBroadcast("=");
       locatePath(line.substring(1));
       return;
     }
 
-    if (line.startsWith("@")) {
+    if (head == '@') {
       exactEnter(line.substring(1));
       return;
     }
 
-    if (line.startsWith("!")) {
+    if (head == '!') {
       requireNotBroadcast("!");
       broadcastEnter(line.substring(1));
       return;
     }
 
-    if (line.startsWith("&")) {
+    if (head == '&') {
       deleteAtPath(line.substring(1));
       return;
     }
 
     if (line.equals(">")) {
-      runOnCursors(this::createEnterAnonymousObject);
+      if (broadcastStacks == null) {
+        createEnterAnonymousObject();
+      } else {
+        runOnCursors(this::createEnterAnonymousObject);
+      }
       return;
     }
 
     if (line.equals("-")) {
-      runOnCursors(this::createEnterAnonymousArray);
+      if (broadcastStacks == null) {
+        createEnterAnonymousArray();
+      } else {
+        runOnCursors(this::createEnterAnonymousArray);
+      }
       return;
     }
 
-    if (line.startsWith(">") && line.endsWith("-") && line.length() > 2) {
+    if (head == '>' && line.endsWith("-") && line.length() > 2) {
       String name = logicalName(line.substring(1, line.length() - 1));
       assertName(name, lineNo, symbolKeys);
-      runOnCursors(() -> createEnterNamedArray(name));
+      if (broadcastStacks == null) {
+        createEnterNamedArray(name);
+      } else {
+        runOnCursors(() -> createEnterNamedArray(name));
+      }
       return;
     }
 
-    if (line.startsWith(">") && line.length() > 1) {
+    if (head == '>' && line.length() > 1) {
       if (line.contains(">>")) {
         throw new XaiopSyntaxError("same-symbol stacking >> is forbidden", lineNo);
       }
@@ -383,29 +482,67 @@ public final class Parser {
       // In-line >a>b composition: allow split
       if (name.indexOf('>') >= 0) {
         List<String> parts = splitKeepEmpty(name);
-        for (String p : parts) assertName(logicalName(p), lineNo, symbolKeys);
-        runOnCursors(
-            () -> {
-              for (String p : parts) createEnterNamedObject(logicalName(p));
-            });
+        List<String> logicalParts = new ArrayList<>(parts.size());
+        for (String p : parts) {
+          String logical = logicalName(p);
+          assertName(logical, lineNo, symbolKeys);
+          logicalParts.add(logical);
+        }
+        if (broadcastStacks == null) {
+          for (String p : logicalParts) createEnterNamedObject(p);
+        } else {
+          runOnCursors(
+              () -> {
+                for (String p : logicalParts) createEnterNamedObject(p);
+              });
+        }
         return;
       }
       String logical = logicalName(name);
       assertName(logical, lineNo, symbolKeys);
-      runOnCursors(() -> createEnterNamedObject(logical));
+      if (broadcastStacks == null) {
+        createEnterNamedObject(logical);
+      } else {
+        runOnCursors(() -> createEnterNamedObject(logical));
+      }
       return;
     }
 
-    // Content: must contain :
+    handleContentLine(line);
+  }
+
+  private void handleContentLine(String line) {
     int colon = line.indexOf(':');
     if (colon == -1) {
       throw new XaiopSyntaxError(
           "Bare Label or unknown line form: " + Json.stringify(line), lineNo);
     }
     String key = logicalName(line.substring(0, colon));
-    String rawValue = line.substring(colon + 1);
-    Object value = parseValue(rawValue);
-    runOnCursors(() -> writeContent(key, value));
+    Object value = parseValue(line.substring(colon + 1));
+    if (broadcastStacks == null) {
+      // Hot path: STRICT one-shot Encode wires never broadcast.
+      writeContent(key, value);
+    } else {
+      runOnCursors(() -> writeContent(key, value));
+    }
+  }
+
+  /** ASCII operator-line heads (content keys never start with these in STRICT). */
+  private static boolean isOperatorLineHead(char c) {
+    switch (c) {
+      case '>':
+      case '<':
+      case '=':
+      case '!':
+      case '&':
+      case '#':
+      case '.':
+      case '-':
+      case '@':
+        return true;
+      default:
+        return false;
+    }
   }
 
   private void requireNotBroadcast(String op) {
@@ -588,7 +725,7 @@ public final class Parser {
       stack.add(new Frame(NodeKind.OBJECT, existingMap, name));
       return;
     }
-    LinkedHashMap<String, Object> next = new LinkedHashMap<>();
+    LinkedHashMap<String, Object> next = new LinkedHashMap<>(8);
     obj.put(name, next);
     stack.add(new Frame(NodeKind.OBJECT, next, name));
   }
@@ -611,7 +748,7 @@ public final class Parser {
       stack.add(new Frame(NodeKind.ARRAY, existingList, name));
       return;
     }
-    ArrayList<Object> next = new ArrayList<>();
+    ArrayList<Object> next = new ArrayList<>(4);
     obj.put(name, next);
     stack.add(new Frame(NodeKind.ARRAY, next, name));
   }
@@ -629,7 +766,7 @@ public final class Parser {
         arr.add(value);
         return;
       }
-      LinkedHashMap<String, Object> wrapper = new LinkedHashMap<>();
+      LinkedHashMap<String, Object> wrapper = new LinkedHashMap<>(4);
       wrapper.put(key, value);
       arr.add(wrapper);
       return;
@@ -966,10 +1103,20 @@ public final class Parser {
 
   /** Splits {@code source} into logical lines (LF / CR / CRLF), dropping trailing empties. */
   static List<String> splitLines(String source) {
-    List<String> lines = new ArrayList<>();
-    if (source.isEmpty()) return lines;
-    int start = 0;
+    if (source.isEmpty()) return new ArrayList<>(0);
     int n = source.length();
+    int nLines = 1;
+    for (int i = 0; i < n; i++) {
+      char c = source.charAt(i);
+      if (c == '\n') {
+        nLines++;
+      } else if (c == '\r') {
+        nLines++;
+        if (i + 1 < n && source.charAt(i + 1) == '\n') i++;
+      }
+    }
+    List<String> lines = new ArrayList<>(nLines);
+    int start = 0;
     for (int i = 0; i < n; i++) {
       char c = source.charAt(i);
       if (c == '\n') {
@@ -1010,8 +1157,6 @@ public final class Parser {
     return msg.replaceFirst("^line \\d+:\\s*", "");
   }
 
-  private static final Pattern WHITESPACE_RE = Pattern.compile("\\s");
-
   private List<String> pathSegments(String path) {
     List<String> segs = splitNonEmpty(path);
     List<String> out = new ArrayList<>(segs.size());
@@ -1022,14 +1167,42 @@ public final class Parser {
   }
 
   private static void assertName(String name, int lineNo, boolean symbolKeys) {
-    if (name == null
-        || name.isEmpty()
-        || WHITESPACE_RE.matcher(name).find()
-        || name.contains(":")) {
+    if (name == null || name.isEmpty()) {
       throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
     }
-    if (!symbolKeys && (name.contains("@") || name.contains("&"))) {
-      throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+    if (symbolKeys) {
+      if (name.indexOf(':') >= 0) {
+        throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+      }
+      for (int i = 0; i < name.length(); i++) {
+        char c = name.charAt(i);
+        if (Character.isWhitespace(c) && c != 0x1F) {
+          throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+        }
+      }
+      return;
+    }
+    // STRICT ASCII-oriented pass (same rejects as before: whitespace / : / @ / &).
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if (c >= 0x80) {
+        for (int j = i; j < name.length(); j++) {
+          char u = name.charAt(j);
+          if (Character.isWhitespace(u)) {
+            throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+          }
+        }
+        if (name.indexOf(':') >= 0 || name.indexOf('@') >= 0 || name.indexOf('&') >= 0) {
+          throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+        }
+        return;
+      }
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ':' || c == '@' || c == '&') {
+        throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+      }
+      if (Character.isWhitespace(c)) {
+        throw new XaiopSyntaxError("invalid label name: " + Json.stringify(name), lineNo);
+      }
     }
   }
 
@@ -1176,8 +1349,9 @@ public final class Parser {
   }
 
   static Object parseValue(String rawValue) {
+    if (rawValue.isEmpty()) return rawValue;
     // Forced string: one or more spaces immediately after :
-    if (!rawValue.isEmpty() && rawValue.charAt(0) == ' ') {
+    if (rawValue.charAt(0) == ' ') {
       int i = 1;
       while (i < rawValue.length() && rawValue.charAt(i) == ' ') i++;
       return rawValue.substring(i);
@@ -1185,19 +1359,22 @@ public final class Parser {
     if (rawValue.equals("true")) return Boolean.TRUE;
     if (rawValue.equals("false")) return Boolean.FALSE;
     if (rawValue.equals("null")) return null;
-    if (isIntToken(rawValue)) {
-      try {
-        long l = Long.parseLong(rawValue);
-        if (l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) {
-          return (int) l;
+    char c0 = rawValue.charAt(0);
+    if (c0 == '+' || c0 == '-' || c0 == '.' || (c0 >= '0' && c0 <= '9')) {
+      if (isIntToken(rawValue)) {
+        try {
+          long l = Long.parseLong(rawValue);
+          if (l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) {
+            return (int) l;
+          }
+          return l;
+        } catch (NumberFormatException overflow) {
+          return Double.parseDouble(rawValue);
         }
-        return l;
-      } catch (NumberFormatException overflow) {
-        return Double.parseDouble(rawValue);
       }
-    }
-    if (isFloatToken(rawValue)) {
-      return Double.parseDouble(rawValue); // IEEE 754 binary64
+      if (isFloatToken(rawValue)) {
+        return Double.parseDouble(rawValue); // IEEE 754 binary64
+      }
     }
     return rawValue;
   }

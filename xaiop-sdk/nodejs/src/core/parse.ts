@@ -178,7 +178,10 @@ class Parser {
    * @param {{ compat?: Readonly<Record<CompatFixId, boolean>>|null, symbolKeys?: boolean }} [options]
    */
   constructor(source, options = {}) {
-    this.lines = splitLines(source);
+    /** @type {string} */
+    this._source = source;
+    /** Lazily split; STRICT one-shot parse never materializes this. @type {string[]|null} */
+    this._lines = null;
     this.lineNo = 0;
     /** Lines accepted via feedLine (live mode). */
     this._fed = 0;
@@ -216,6 +219,14 @@ class Parser {
    */
   static createLive(compat, symbolKeys = false) {
     return new Parser("", { compat, symbolKeys });
+  }
+
+  /** @returns {string[]} */
+  get lines() {
+    if (this._lines === null) {
+      this._lines = splitLines(this._source);
+    }
+    return this._lines;
   }
 
   /** @param {string} wireName */
@@ -301,16 +312,72 @@ class Parser {
       this.ensureCompatRootOpener();
       this._compatRootReady = true;
     }
-    for (let i = 0; i < this.lines.length; i++) {
+    if (this.compat === null) {
+      return this._parseOneShot(this._source);
+    }
+    const lines = this.lines;
+    for (let i = 0; i < lines.length; i++) {
       this.lineNo = i + 1;
       // BOM only appears on the first physical line of a stream/document.
-      const line = i === 0 ? stripBom(this.lines[i]) : this.lines[i];
+      const line = i === 0 ? stripBom(lines[i]) : lines[i];
       if (line.length === 0) {
         throw new XaiopSyntaxError("empty line is a Content syntax error", {
           line: this.lineNo,
         });
       }
       this.handleLineCompat(line);
+    }
+    return this.result();
+  }
+
+  /**
+   * Feed the wire without materializing a full line array (STRICT hot path).
+   * @param {string} source
+   * @returns {unknown|XaiopFragment}
+   */
+  _parseOneShot(source) {
+    const n = source.length;
+    let start = 0;
+    let lineNo = 0;
+    while (start < n) {
+      let i = start;
+      while (i < n) {
+        const c = source.charCodeAt(i);
+        if (c === 10 || c === 13) break;
+        i++;
+      }
+      let line = source.slice(start, i);
+      let next;
+      if (i < n) {
+        next =
+          source.charCodeAt(i) === 13 &&
+          i + 1 < n &&
+          source.charCodeAt(i + 1) === 10
+            ? i + 2
+            : i + 1;
+      } else {
+        next = n;
+      }
+      if (line.length === 0) {
+        if (restOnlyEols(source, next)) break;
+        lineNo++;
+        throw new XaiopSyntaxError("empty line is a Content syntax error", {
+          line: lineNo,
+        });
+      }
+      lineNo++;
+      this.lineNo = lineNo;
+      if (lineNo === 1) {
+        line = stripBom(line);
+        if (line.length === 0) {
+          throw new XaiopSyntaxError("empty line is a Content syntax error", {
+            line: lineNo,
+          });
+        }
+      }
+      this.handleLine(line);
+      if (next >= n) break;
+      start = next;
     }
     return this.result();
   }
@@ -452,8 +519,22 @@ class Parser {
 
   /** @param {string} line */
   handleLine(line) {
+    if (line.length === 0) {
+      throw new XaiopSyntaxError(
+        `Bare Label or unknown line form: ${JSON.stringify(line)}`,
+        { line: this.lineNo },
+      );
+    }
+
+    // Content fast-path: typical nested Encode wires are mostly key:value lines.
+    const head = line.charCodeAt(0);
+    if (!isOperatorHeadCode(head)) {
+      this._handleContentLine(line);
+      return;
+    }
+
     // Protocol 0.6.0+: standalone custom-annotation line — no Cursor / tree effect.
-    if (line.startsWith("#")) {
+    if (head === 35 /* # */) {
       return;
     }
 
@@ -464,61 +545,82 @@ class Parser {
 
     if (line === "<") {
       this.precheckBroadcastPop();
-      this.runOnCursors(() => this.popOnly());
+      if (this.broadcastStacks === null) {
+        this.popOnly();
+      } else {
+        this.runOnCursors(() => this.popOnly());
+      }
       return;
     }
 
-    if (line.startsWith("<") && line.length > 1) {
+    if (head === 60 /* < */ && line.length > 1) {
       const name = this._logicalName(line.slice(1));
       assertName(name, this.lineNo, this.symbolKeys);
       this.precheckBroadcastPop();
-      this.runOnCursors(() => {
+      if (this.broadcastStacks === null) {
         this.popOnly();
         this.createEnterNamedObject(name);
-      });
+      } else {
+        this.runOnCursors(() => {
+          this.popOnly();
+          this.createEnterNamedObject(name);
+        });
+      }
       return;
     }
 
-    if (line.startsWith("=")) {
+    if (head === 61 /* = */) {
       this.requireNotBroadcast("=");
       this.locatePath(line.slice(1));
       return;
     }
 
-    if (line.startsWith("@")) {
+    if (head === 64 /* @ */) {
       this.exactEnter(line.slice(1));
       return;
     }
 
-    if (line.startsWith("!")) {
+    if (head === 33 /* ! */) {
       this.requireNotBroadcast("!");
       this.broadcastEnter(line.slice(1));
       return;
     }
 
-    if (line.startsWith("&")) {
+    if (head === 38 /* & */) {
       this.deleteAtPath(line.slice(1));
       return;
     }
 
     if (line === ">") {
-      this.runOnCursors(() => this.createEnterAnonymousObject());
+      if (this.broadcastStacks === null) {
+        this.createEnterAnonymousObject();
+      } else {
+        this.runOnCursors(() => this.createEnterAnonymousObject());
+      }
       return;
     }
 
     if (line === "-") {
-      this.runOnCursors(() => this.createEnterAnonymousArray());
+      if (this.broadcastStacks === null) {
+        this.createEnterAnonymousArray();
+      } else {
+        this.runOnCursors(() => this.createEnterAnonymousArray());
+      }
       return;
     }
 
-    if (line.startsWith(">") && line.endsWith("-") && line.length > 2) {
+    if (head === 62 /* > */ && line.length > 2 && line.endsWith("-")) {
       const name = this._logicalName(line.slice(1, -1));
       assertName(name, this.lineNo, this.symbolKeys);
-      this.runOnCursors(() => this.createEnterNamedArray(name));
+      if (this.broadcastStacks === null) {
+        this.createEnterNamedArray(name);
+      } else {
+        this.runOnCursors(() => this.createEnterNamedArray(name));
+      }
       return;
     }
 
-    if (line.startsWith(">") && line.length > 1) {
+    if (head === 62 /* > */ && line.length > 1) {
       if (line.includes(">>")) {
         throw new XaiopSyntaxError("same-symbol stacking >> is forbidden", {
           line: this.lineNo,
@@ -529,18 +631,33 @@ class Parser {
       if (name.includes(">")) {
         const parts = name.split(">").map((p) => this._logicalName(p));
         for (const p of parts) assertName(p, this.lineNo, this.symbolKeys);
-        this.runOnCursors(() => {
+        if (this.broadcastStacks === null) {
           for (const p of parts) this.createEnterNamedObject(p);
-        });
+        } else {
+          this.runOnCursors(() => {
+            for (const p of parts) this.createEnterNamedObject(p);
+          });
+        }
         return;
       }
       const logical = this._logicalName(name);
       assertName(logical, this.lineNo, this.symbolKeys);
-      this.runOnCursors(() => this.createEnterNamedObject(logical));
+      if (this.broadcastStacks === null) {
+        this.createEnterNamedObject(logical);
+      } else {
+        this.runOnCursors(() => this.createEnterNamedObject(logical));
+      }
       return;
     }
 
-    // Content: must contain :
+    this._handleContentLine(line);
+  }
+
+  /**
+   * Content `key:value` line (must contain a colon).
+   * @param {string} line
+   */
+  _handleContentLine(line) {
     const colon = line.indexOf(":");
     if (colon === -1) {
       throw new XaiopSyntaxError(
@@ -549,9 +666,13 @@ class Parser {
       );
     }
     const key = this._logicalName(line.slice(0, colon));
-    const rawValue = line.slice(colon + 1);
-    const value = parseValue(rawValue);
-    this.runOnCursors(() => this.writeContent(key, value));
+    const value = parseValue(line.slice(colon + 1));
+    if (this.broadcastStacks === null) {
+      // Hot path: STRICT one-shot Encode wires never broadcast.
+      this.writeContent(key, value);
+    } else {
+      this.runOnCursors(() => this.writeContent(key, value));
+    }
   }
 
   /** @param {string} op */
@@ -1232,6 +1353,38 @@ function stripBom(s) {
   return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
 }
 
+/**
+ * ASCII operator-line heads (content keys never start with these in STRICT).
+ * `> < = ! & # . - @`
+ * @param {number} c char code
+ */
+function isOperatorHeadCode(c) {
+  return (
+    c === 62 || // >
+    c === 60 || // <
+    c === 61 || // =
+    c === 33 || // !
+    c === 38 || // &
+    c === 35 || // #
+    c === 46 || // .
+    c === 45 || // -
+    c === 64 // @
+  );
+}
+
+/**
+ * Only LF/CR remain after `from` (trailing newline run at end of wire).
+ * @param {string} source
+ * @param {number} from
+ */
+function restOnlyEols(source, from) {
+  for (let i = from; i < source.length; i++) {
+    const c = source.charCodeAt(i);
+    if (c !== 10 && c !== 13) return false;
+  }
+  return true;
+}
+
 /** Compare syntax errors ignoring the `line N:` prefix. */
 function syntaxErrorKey(err) {
   return String(err.message || "").replace(/^line \d+:\s*/, "");
@@ -1381,8 +1534,10 @@ function collectPathMatches(node, nodeKind, segments, out, trail = []) {
  * @returns {unknown}
  */
 function parseValue(rawValue) {
+  if (rawValue.length === 0) return rawValue;
+  const c0 = rawValue.charCodeAt(0);
   // Forced string: one or more spaces immediately after :
-  if (rawValue.length > 0 && rawValue.charCodeAt(0) === 32) {
+  if (c0 === 32) {
     let i = 1;
     while (i < rawValue.length && rawValue.charCodeAt(i) === 32) i++;
     return rawValue.slice(i);
@@ -1390,8 +1545,11 @@ function parseValue(rawValue) {
   if (rawValue === "true") return true;
   if (rawValue === "false") return false;
   if (rawValue === "null") return null;
-  if (isIntToken(rawValue)) return Number(rawValue);
-  if (isFloatToken(rawValue)) return Number(rawValue); // IEEE 754 binary64
+  // Fast reject: non-numeric heads cannot be int/float tokens.
+  if (c0 === 43 || c0 === 45 || c0 === 46 || (c0 >= 48 && c0 <= 57)) {
+    if (isIntToken(rawValue)) return Number(rawValue);
+    if (isFloatToken(rawValue)) return Number(rawValue); // IEEE 754 binary64
+  }
   return rawValue;
 }
 
@@ -1408,17 +1566,79 @@ function isIntToken(s) {
   return true;
 }
 
-/** @type {RegExp} */
-const FLOAT_TOKEN_RE =
-  /^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$|^[+-]?\d+[eE][+-]?\d+$/;
-
 /**
  * Float token (PROT-CONTENT §5.2): not int-only; fraction and/or exponent.
- * Parsed with ECMAScript Number (= IEEE 754 binary64).
+ * Parsed with ECMAScript Number (= IEEE 754 binary64). Hand-rolled — no RegExp
+ * allocation per token (mirrors the former FLOAT_TOKEN_RE:
+ * `^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$|^[+-]?\d+[eE][+-]?\d+$`).
  * @param {string} s
  */
 function isFloatToken(s) {
-  return FLOAT_TOKEN_RE.test(s);
+  const n = s.length;
+  if (n === 0) return false;
+  let i = 0;
+  let c = s.charCodeAt(0);
+  if (c === 43 || c === 45) {
+    i = 1;
+    if (i >= n) return false;
+    c = s.charCodeAt(i);
+  }
+  let sawDot = false;
+  let sawDigit = false;
+  if (c === 46) {
+    // leading "."
+    i++;
+    if (i >= n) return false;
+    c = s.charCodeAt(i);
+    if (c < 48 || c > 57) return false;
+    sawDot = true;
+    while (i < n) {
+      c = s.charCodeAt(i);
+      if (c < 48 || c > 57) break;
+      sawDigit = true;
+      i++;
+    }
+  } else {
+    if (c < 48 || c > 57) return false;
+    while (i < n) {
+      c = s.charCodeAt(i);
+      if (c < 48 || c > 57) break;
+      sawDigit = true;
+      i++;
+    }
+    if (i < n && s.charCodeAt(i) === 46) {
+      sawDot = true;
+      i++;
+      while (i < n) {
+        c = s.charCodeAt(i);
+        if (c < 48 || c > 57) break;
+        i++;
+      }
+    }
+  }
+  let sawExp = false;
+  if (i < n) {
+    c = s.charCodeAt(i);
+    if (c === 101 || c === 69) {
+      // e / E
+      sawExp = true;
+      i++;
+      if (i < n) {
+        c = s.charCodeAt(i);
+        if (c === 43 || c === 45) i++;
+      }
+      if (i >= n) return false;
+      c = s.charCodeAt(i);
+      if (c < 48 || c > 57) return false;
+      while (i < n) {
+        c = s.charCodeAt(i);
+        if (c < 48 || c > 57) break;
+        i++;
+      }
+    }
+  }
+  if (i !== n || !sawDigit) return false;
+  return sawDot || sawExp;
 }
 
 /**

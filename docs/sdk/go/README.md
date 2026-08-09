@@ -32,5 +32,6 @@ cd xaiop-sdk/conformance && npm run golden:go && npm run core-wire
 | `golden:go` | Node ↔ Go product NDJSON — **50** cases |
 | `core-wire` | Python ↔ Go STRICT — **46** cases |
 | `bench:go` | Stage timing (same names as Node/Python/Java) — [`timing/go`](../../../xaiop-sdk/timing/go/) |
+| `bench:go:json-gate` | Parse ↔ JSON gate — see [ALIGNMENT.md](ALIGNMENT.md) §5 |
 
-Release: [../../meta/release-notes-2026-08-08-go-0.15.1.md](../../meta/release-notes-2026-08-08-go-0.15.1.md) · Demo: [../../../demos/go/](../../../demos/go/)
+Hub: [../../performance.md](../../performance.md). Extreme-perf tip (**2026-08-09**): [../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md). Release: [../../meta/release-notes-2026-08-08-go-0.15.1.md](../../meta/release-notes-2026-08-08-go-0.15.1.md) · Demo: [../../../demos/go/](../../../demos/go/)

@@ -95,6 +95,10 @@ func decodeOrderedValue(dec *json.Decoder) (any, error) {
 
 // jsNumberToken renders a finite float like ECMAScript Number#toString
 // (port of Java Encoder.jsNumberToken).
+//
+// Fast path: strconv's shortest round-trip decimal ('e' form is uniform to
+// parse) already carries the digits ECMAScript picks; only reformat per the
+// ES fixed/scientific cut-over. The big.Float search stays as fallback.
 func jsNumberToken(value float64) string {
 	sign := ""
 	d := value
@@ -102,21 +106,40 @@ func jsNumberToken(value float64) string {
 		sign = "-"
 		d = -value
 	}
-	exact := new(big.Float).SetPrec(128).SetMode(big.ToNearestEven).SetFloat64(d)
-	upper := significantDigitCount(strconv.FormatFloat(d, 'g', -1, 64))
-	var shortest *big.Float
-	for k := upper; k >= 1; k-- {
-		cand := roundToSignificantDigits(exact, k)
-		cf, _ := cand.Float64()
-		if cf != d {
-			break
-		}
-		shortest = cand
+	if d == 0 {
+		return "0"
 	}
-	if shortest == nil {
-		shortest = roundToSignificantDigits(exact, 17)
+	repr := strconv.FormatFloat(d, 'e', -1, 64)
+	e := strings.IndexByte(repr, 'e')
+	if e < 0 {
+		return jsNumberTokenSlow(value)
 	}
-	digits, n := bigFloatToECMADigits(shortest)
+	mant := repr[:e]
+	exp10, err := strconv.Atoi(repr[e+1:])
+	if err != nil {
+		return jsNumberTokenSlow(value)
+	}
+	if dot := strings.IndexByte(mant, '.'); dot >= 0 {
+		exp10 -= len(mant) - dot - 1
+		mant = mant[:dot] + mant[dot+1:]
+	}
+	// Shortest 'e' form never emits leading/trailing zero digits; stay defensive.
+	for len(mant) > 1 && mant[0] == '0' {
+		mant = mant[1:]
+	}
+	for len(mant) > 1 && mant[len(mant)-1] == '0' {
+		mant = mant[:len(mant)-1]
+		exp10++
+	}
+	if mant == "" || mant == "0" {
+		return jsNumberTokenSlow(value)
+	}
+	return formatECMADigits(sign, mant, len(mant)+exp10)
+}
+
+// formatECMADigits lays out shortest digits per ECMAScript Number::toString
+// with value = 0.<digits> x 10^n.
+func formatECMADigits(sign, digits string, n int) string {
 	k := len(digits)
 	if k <= n && n <= 21 {
 		return sign + digits + strings.Repeat("0", n-k)
@@ -138,6 +161,33 @@ func jsNumberToken(value float64) string {
 		exp = -exp
 	}
 	return sign + mantissa + "e" + expSign + strconv.Itoa(exp)
+}
+
+// jsNumberTokenSlow is the big.Float shortest-round-trip search; reference
+// and fallback path.
+func jsNumberTokenSlow(value float64) string {
+	sign := ""
+	d := value
+	if value < 0 {
+		sign = "-"
+		d = -value
+	}
+	exact := new(big.Float).SetPrec(128).SetMode(big.ToNearestEven).SetFloat64(d)
+	upper := significantDigitCount(strconv.FormatFloat(d, 'g', -1, 64))
+	var shortest *big.Float
+	for k := upper; k >= 1; k-- {
+		cand := roundToSignificantDigits(exact, k)
+		cf, _ := cand.Float64()
+		if cf != d {
+			break
+		}
+		shortest = cand
+	}
+	if shortest == nil {
+		shortest = roundToSignificantDigits(exact, 17)
+	}
+	digits, n := bigFloatToECMADigits(shortest)
+	return formatECMADigits(sign, digits, n)
 }
 
 func significantDigitCount(repr string) int {

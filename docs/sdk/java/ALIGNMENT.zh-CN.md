@@ -146,6 +146,18 @@
 
 约 37 个 JUnit 测试类（`io.xaiop` 下：移植套件 + 薄鲁棒 / 表面冒烟；`mvn test` **564** 个方法）。一致性由 Java 侧断言，期望值从 Node 套件转写。**Node↔Java 黄金比对已接入 CI**（[`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) 的 `golden` job — encode / parse / 流式 Diff NDJSON，见 [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)）。
 
+计时：与 Node / Python / Go 同阶段名 — [`xaiop-sdk/timing/java`](../../../xaiop-sdk/timing/java/)（`npm run bench:java`）。
+
+**Parse ↔ JSON 门槛**（STRICT 一次性 `Parse.parse` vs 同机 JSON）：
+
+```bash
+cd xaiop-sdk/timing
+npm run bench:java:json-gate:quick
+npm run bench:java:json-gate
+```
+
+次门槛对照为 **`io.xaiop.Json.parse`**（JDK 无标准 Map JSON；非 Jackson）。**Before → after**：full 次门槛约 **1.27× → 1.08–1.24×**；主门槛约 **1.4× → 1.3–1.4×**（相对 Node，本轮不硬过）。热路径：无 broadcast 直调、content 首字节快路径、`splitLines` 预分配、one-shot 扫行、容量提示；encode `Double.toString` 浮点快路径；checkpoint 无消费者跳过 snapshot 克隆。阶段计时（**2026-08-09**）：encode ~−27–64%。说明：[../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。产物：`timing/java/last-json-gate.json`。
+
 ---
 
 ## 6. 可接受差异

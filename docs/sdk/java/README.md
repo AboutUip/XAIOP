@@ -397,4 +397,4 @@ mvn -DskipTests package   # target/xaiop-0.15.1.jar
 mvn test                  # includes StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```
 
-Stage timing: [`xaiop-sdk/timing`](../../../xaiop-sdk/timing/) (`npm run bench:java`). Internal 2026-08-08 notes: [../../meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../meta/release-notes-2026-08-08-java-0.15.1-internal.md).
+Stage timing: [`xaiop-sdk/timing`](../../../xaiop-sdk/timing/) (`npm run bench:java` · `bench:java:json-gate`). Hub: [../../performance.md](../../performance.md). Extreme-perf tip (**2026-08-09**): [../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md). Prior: [../../meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../meta/release-notes-2026-08-08-java-0.15.1-internal.md).

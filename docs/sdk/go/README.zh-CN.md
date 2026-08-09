@@ -18,5 +18,7 @@ cd xaiop-sdk/conformance && npm run golden:go && npm run core-wire
 | `go test ./...` | 包级对等 |
 | `golden:go` | Node ↔ Go 产品 NDJSON — **50** 例 |
 | `core-wire` | Python ↔ Go STRICT — **46** 例 |
+| `bench:go` | 阶段计时 — [`timing/go`](../../../xaiop-sdk/timing/go/) |
+| `bench:go:json-gate` | Parse ↔ JSON 门槛 — [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) §5 |
 
-发行说明：[../../meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md](../../meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md) · Demo：[../../../demos/go/](../../../demos/go/)
+枢纽：[../../performance.zh-CN.md](../../performance.zh-CN.md)。极限性能 tip（**2026-08-09**）：[../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。发行说明：[../../meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md](../../meta/release-notes-2026-08-08-go-0.15.1.zh-CN.md) · Demo：[../../../demos/go/](../../../demos/go/)

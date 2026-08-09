@@ -50,6 +50,7 @@ public final class GoldenDumpMain {
       String caseSuffix = "stream-phases".equals(name) ? "phases" : name;
       dumpStream(fixtures, name, caseSuffix);
     }
+    System.out.flush();
   }
 
   private static Path resolveFixtures(String[] args) {
@@ -110,7 +111,9 @@ public final class GoldenDumpMain {
     emit(rec);
   }
 
-  private static void emit(Map<String, Object> record) {
-    System.out.println(Json.stringify(record));
+  private static void emit(Map<String, Object> record) throws IOException {
+    // Always emit UTF-8 bytes — Windows default console charset would corrupt CJK wire.
+    byte[] line = (Json.stringify(record) + "\n").getBytes(StandardCharsets.UTF_8);
+    System.out.write(line);
   }
 }

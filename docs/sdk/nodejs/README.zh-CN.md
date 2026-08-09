@@ -22,7 +22,8 @@ import { parseSync, encodeSync } from "xaiop/core";        // 同构核心
 
 **协议包：** [../../protocol/](../../protocol/) · [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)  
 **产品目录：** [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)  
-**运行时细节：** [API §0](API.zh-CN.md#0-运行时范围与入口)
+**运行时细节：** [API §0](API.zh-CN.md#0-运行时范围与入口)  
+**性能 / 计时：** [notes/performance.zh-CN.md](notes/performance.zh-CN.md) · [../../performance.zh-CN.md](../../performance.zh-CN.md)
 
 ---
 

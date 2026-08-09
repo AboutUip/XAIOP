@@ -43,6 +43,17 @@
             <XAIOP_TIMING_ROOT>${project.basedir}</XAIOP_TIMING_ROOT>
           </environmentVariables>
         </configuration>
+        <executions>
+          <execution>
+            <id>json-gate</id>
+            <configuration>
+              <mainClass>io.xaiop.timing.JsonGateMain</mainClass>
+              <environmentVariables>
+                <XAIOP_TIMING_ROOT>${project.basedir}</XAIOP_TIMING_ROOT>
+              </environmentVariables>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -11,7 +11,9 @@ Guide: [../../docs/sdk/go/README.md](../../docs/sdk/go/README.md) · [ALIGNMENT]
 | `ProtocolVersion` | **0.6.0** |
 | `SDKVersion` | **0.15.1** |
 | Product surface | **Aligned** with Node tip (no browser) |
-| Verify | `go test ./...` · `npm run golden:go` (**50**) · `npm run core-wire` (**46**) · fuzz · `npm run bench:go` |
+| Verify | `go test ./...` · `npm run golden:go` (**50**) · `npm run core-wire` (**46**) · fuzz · `npm run bench:go` · `npm run bench:go:json-gate` |
+
+Timing hub: [../../docs/performance.md](../../docs/performance.md). Extreme-perf tip (**2026-08-09**): [../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md).
 
 ## Test
 

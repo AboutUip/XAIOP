@@ -79,7 +79,9 @@ type DotCheckpointEngine struct {
 	cover            bool
 	phaseSeqEnabled  bool
 
-	buffer           string
+	// buf holds ingested wire bytes. Append is amortized O(1) per byte
+	// (the former `buffer += chunk` string concat was O(n²)).
+	buf              []byte
 	segmentStart     int
 	scanAt           int
 	sawDot           bool
@@ -172,7 +174,7 @@ func (e *DotCheckpointEngine) TypeCheckEscapePaths() []string {
 }
 
 // Buffer returns everything ingested so far.
-func (e *DotCheckpointEngine) Buffer() string { return e.buffer }
+func (e *DotCheckpointEngine) Buffer() string { return string(e.buf) }
 
 // Snapshot returns the latest full-document snapshot (set at Finish).
 func (e *DotCheckpointEngine) Snapshot() any {
@@ -199,7 +201,7 @@ func (e *DotCheckpointEngine) History() *ParseHistory { return e.history }
 
 // BufferStats returns receive-buffer sizes.
 func (e *DotCheckpointEngine) BufferStats() BufferStats {
-	length := len(e.buffer)
+	length := len(e.buf)
 	return BufferStats{
 		Length:       length,
 		CommittedAt:  e.committedAt,
@@ -245,23 +247,24 @@ func (e *DotCheckpointEngine) CompactCommitted(dropHistory bool) (CompactResult,
 	}
 	cut := e.committedAt
 	if cut <= 0 {
-		return CompactResult{DiscardedBytes: 0, Length: len(e.buffer)}, nil
+		return CompactResult{DiscardedBytes: 0, Length: len(e.buf)}, nil
 	}
-	if cut > len(e.buffer) {
-		discarded := len(e.buffer)
-		e.buffer = ""
+	if cut > len(e.buf) {
+		discarded := len(e.buf)
+		e.buf = e.buf[:0]
 		e.committedAt = 0
 		e.segmentStart = 0
 		e.scanAt = 0
 		e.phaseLines = nil
 		return CompactResult{DiscardedBytes: discarded, Length: 0}, nil
 	}
-	e.buffer = e.buffer[cut:]
+	// Drop committed prefix without copying the tail (slice forward).
+	e.buf = e.buf[cut:]
 	e.committedAt = 0
 	e.segmentStart = maxInt(0, e.segmentStart-cut)
 	e.scanAt = maxInt(0, e.scanAt-cut)
 	e.phaseLines = nil
-	return CompactResult{DiscardedBytes: cut, Length: len(e.buffer)}, nil
+	return CompactResult{DiscardedBytes: cut, Length: len(e.buf)}, nil
 }
 
 // JumpTo realtime-jumps the live head forward to history index.
@@ -286,6 +289,16 @@ func (e *DotCheckpointEngine) NoteLogSeq(seq int) error {
 	return nil
 }
 
+// appendBuffer grows the wire buffer (amortized O(1) per byte).
+func (e *DotCheckpointEngine) appendBuffer(chunk string) {
+	e.buf = append(e.buf, chunk...)
+}
+
+// setBuffer replaces the buffer contents (compaction / history rebuild).
+func (e *DotCheckpointEngine) setBuffer(s string) {
+	e.buf = append(e.buf[:0], s...)
+}
+
 // Push synchronously ingests a wire chunk.
 func (e *DotCheckpointEngine) Push(chunk string) error {
 	if e.closed {
@@ -294,7 +307,7 @@ func (e *DotCheckpointEngine) Push(chunk string) error {
 	if chunk == "" {
 		return nil
 	}
-	e.buffer += chunk
+	e.appendBuffer(chunk)
 	if e.streamProcessing {
 		e.scanDots(false)
 	}
@@ -312,25 +325,25 @@ func (e *DotCheckpointEngine) Finish() {
 func (e *DotCheckpointEngine) finishBody() {
 	e.closed = true
 	if !e.streamProcessing {
-		value := e.parseOwned(e.buffer)
-		e.storeCommit(len(e.buffer), value, false)
+		value := e.parseOwned(string(e.buf))
+		e.storeCommit(len(e.buf), value, false)
 		e.allocPhaseSeq()
 		e.emitChunk(value)
 		e.latestSnapshot = value
 		e.hasLatest = true
-		e.segmentStart = len(e.buffer)
-		e.scanAt = len(e.buffer)
+		e.segmentStart = len(e.buf)
+		e.scanAt = len(e.buf)
 		e.phaseLines = nil
 		return
 	}
 	e.scanDots(true)
 	e.flushTail()
-	if e.committedAt == len(e.buffer) {
+	if e.committedAt == len(e.buf) {
 		e.latestSnapshot = e.CommittedSnapshot()
 		e.hasLatest = true
 	} else {
-		e.latestSnapshot = e.parseOwned(e.buffer)
-		e.storeCommit(len(e.buffer), e.latestSnapshot, false)
+		e.latestSnapshot = e.parseOwned(string(e.buf))
+		e.storeCommit(len(e.buf), e.latestSnapshot, false)
 		e.hasLatest = true
 	}
 }
@@ -340,24 +353,24 @@ func (e *DotCheckpointEngine) scanDots(atEOF bool) {
 		e.scanDotsMerged(atEOF)
 		return
 	}
-	for e.scanAt < len(e.buffer) {
-		info := ReadLine(e.buffer, e.scanAt, atEOF)
-		if info == nil {
+	for e.scanAt < len(e.buf) {
+		line, end, consumedNL, ok := readLineAtBytes(e.buf, e.scanAt, atEOF)
+		if !ok {
 			break
 		}
-		e.scanAt = info.End
-		accepted := e.acceptLine(info.Line)
-		if accepted == nil {
-			if !info.ConsumedNewline && atEOF {
+		e.scanAt = end
+		accepted, kept := e.acceptLine(line)
+		if !kept {
+			if !consumedNL && atEOF {
 				break
 			}
 			continue
 		}
-		e.phaseLines = append(e.phaseLines, *accepted)
-		if *accepted == "." {
-			e.emitPhase(info.End)
+		e.phaseLines = append(e.phaseLines, accepted)
+		if accepted == "." {
+			e.emitPhase(end)
 		}
-		if !info.ConsumedNewline && atEOF {
+		if !consumedNL && atEOF {
 			break
 		}
 	}
@@ -365,37 +378,34 @@ func (e *DotCheckpointEngine) scanDots(atEOF bool) {
 
 func (e *DotCheckpointEngine) scanDotsMerged(atEOF bool) {
 	var closed []closedPhase
-	phaseLines := append([]string(nil), e.phaseLines...)
-	segmentStart := e.segmentStart
-	for e.scanAt < len(e.buffer) {
-		info := ReadLine(e.buffer, e.scanAt, atEOF)
-		if info == nil {
+	for e.scanAt < len(e.buf) {
+		line, end, consumedNL, ok := readLineAtBytes(e.buf, e.scanAt, atEOF)
+		if !ok {
 			break
 		}
-		e.scanAt = info.End
-		accepted := e.acceptLine(info.Line)
-		if accepted == nil {
-			if !info.ConsumedNewline && atEOF {
+		e.scanAt = end
+		accepted, kept := e.acceptLine(line)
+		if !kept {
+			if !consumedNL && atEOF {
 				break
 			}
 			continue
 		}
-		phaseLines = append(phaseLines, *accepted)
-		if *accepted == "." {
+		e.phaseLines = append(e.phaseLines, accepted)
+		if accepted == "." {
+			// Take ownership of the closed phase's lines (no per-Push copy).
 			closed = append(closed, closedPhase{
-				start: segmentStart,
-				end:   info.End,
-				lines: phaseLines,
+				start: e.segmentStart,
+				end:   end,
+				lines: e.phaseLines,
 			})
-			phaseLines = nil
-			segmentStart = info.End
+			e.phaseLines = nil
+			e.segmentStart = end
 		}
-		if !info.ConsumedNewline && atEOF {
+		if !consumedNL && atEOF {
 			break
 		}
 	}
-	e.phaseLines = phaseLines
-	e.segmentStart = segmentStart
 	if len(closed) == 0 {
 		return
 	}
@@ -455,7 +465,11 @@ func (e *DotCheckpointEngine) emitClosedWindow(closed []closedPhase) {
 			e.emitChunk(diff)
 			return
 		}
-		e.emitChunk(xaiop.CloneJSON(e.peekCommit()))
+		if e.hooks.OnChunk == nil {
+			e.emitChunk(nil) // no consumer: skip the snapshot clone
+		} else {
+			e.emitChunk(xaiop.CloneJSON(e.peekCommit()))
+		}
 		return
 	}
 
@@ -487,14 +501,20 @@ func (e *DotCheckpointEngine) emitClosedWindow(closed []closedPhase) {
 		return
 	}
 	e.storeCommit(lastEnd, nil, true)
-	e.emitChunk(e.materializeLive())
+	if e.hooks.OnChunk == nil {
+		e.emitChunk(nil) // no consumer: skip the snapshot materialize
+	} else {
+		e.emitChunk(e.materializeLive())
+	}
 }
 
 func (e *DotCheckpointEngine) emitPhase(end int) {
 	start := e.segmentStart
-	lines := e.applyAnnotationSpans(append([]string(nil), e.phaseLines...))
-	raw := e.phaseWire(lines, start, end)
+	// Take ownership of the closed phase's lines instead of copying them.
+	taken := e.phaseLines
 	e.phaseLines = nil
+	lines := e.applyAnnotationSpans(taken)
+	raw := e.phaseWire(lines, start, end)
 	if e.cover {
 		e.emitCoverPhase(lines, start, end, false)
 		e.segmentStart = end
@@ -530,14 +550,15 @@ func (e *DotCheckpointEngine) emitPhase(end int) {
 }
 
 func (e *DotCheckpointEngine) flushTail() {
-	if e.segmentStart < len(e.buffer) {
+	if e.segmentStart < len(e.buf) {
 		start := e.segmentStart
-		lines := e.applyAnnotationSpans(append([]string(nil), e.phaseLines...))
-		raw := e.phaseWire(lines, start, len(e.buffer))
+		taken := e.phaseLines
 		e.phaseLines = nil
+		lines := e.applyAnnotationSpans(taken)
+		raw := e.phaseWire(lines, start, len(e.buf))
 		if e.cover {
-			e.emitCoverPhase(lines, start, len(e.buffer), true)
-			e.segmentStart = len(e.buffer)
+			e.emitCoverPhase(lines, start, len(e.buf), true)
+			e.segmentStart = len(e.buf)
 			return
 		}
 		e.allocPhaseSeq()
@@ -560,13 +581,13 @@ func (e *DotCheckpointEngine) flushTail() {
 		} else {
 			built = e.buildDiff(raw)
 		}
-		e.segmentStart = len(e.buffer)
-		e.storeCommit(len(e.buffer), built.committed, built.fromLive)
+		e.segmentStart = len(e.buf)
+		e.storeCommit(len(e.buf), built.committed, built.fromLive)
 		if e.history != nil {
 			e.history.RecordOwned(HistoryEntry{
 				Kind:        HistoryKindTail,
 				BufferStart: start,
-				BufferEnd:   len(e.buffer),
+				BufferEnd:   len(e.buf),
 				Wire:        raw,
 				HasWire:     true,
 				Before:      before,
@@ -577,7 +598,7 @@ func (e *DotCheckpointEngine) flushTail() {
 		e.emitChunk(built.diff)
 		return
 	}
-	if !e.sawDot && len(e.buffer) == 0 {
+	if !e.sawDot && len(e.buf) == 0 {
 		e.phaseLines = nil
 		e.storeCommit(0, nil, false)
 		e.emitChunk(nil)
@@ -744,16 +765,18 @@ func (e *DotCheckpointEngine) emitCoverChunk(
 	e.emitChunk(diff)
 }
 
-func (e *DotCheckpointEngine) acceptLine(line string) *string {
+// acceptLine returns the (possibly rewritten) line and whether it was accepted.
+// Value returns keep the no-interceptor hot path free of per-line heap escapes.
+func (e *DotCheckpointEngine) acceptLine(line string) (string, bool) {
 	if len(e.lineInterceptors) == 0 {
-		return &line
+		return line, true
 	}
 	meta := map[string]any{"kind": xaiop.ClassifyLine(line)}
 	out, ok := xaiop.RunLineInterceptChain(line, meta, e.lineInterceptors)
 	if !ok {
-		return nil
+		return "", false
 	}
-	return &out
+	return out, true
 }
 
 func (e *DotCheckpointEngine) applyAnnotationSpans(lines []string) []string {
@@ -769,8 +792,8 @@ func (e *DotCheckpointEngine) phaseWire(lines []string, bufferStart, bufferEnd i
 	if len(e.lineInterceptors) > 0 || len(e.annotationSpanHandlers) > 0 {
 		return LinesToWire(lines)
 	}
-	if bufferStart >= 0 && bufferEnd <= len(e.buffer) && bufferStart <= bufferEnd {
-		return e.buffer[bufferStart:bufferEnd]
+	if bufferStart >= 0 && bufferEnd <= len(e.buf) && bufferStart <= bufferEnd {
+		return string(e.buf[bufferStart:bufferEnd])
 	}
 	return LinesToWire(lines)
 }
@@ -934,21 +957,21 @@ func (e *DotCheckpointEngine) materializeLive() any {
 func (e *DotCheckpointEngine) rebuildFromHistoryJump(result *JumpResult) {
 	end := result.BufferEnd
 	if result.HasWirePrefix {
-		e.buffer = result.WirePrefix
-	} else if end <= len(e.buffer) {
-		e.buffer = e.buffer[:end]
+		e.setBuffer(result.WirePrefix)
+	} else if end <= len(e.buf) {
+		e.buf = e.buf[:end]
 	} else {
-		e.buffer = e.buffer[:minInt(end, len(e.buffer))]
+		e.buf = e.buf[:minInt(end, len(e.buf))]
 	}
 	e.live = xaiop.NewLiveParser()
-	if len(e.buffer) > 0 {
-		e.live.FeedText(e.buffer)
+	if len(e.buf) > 0 {
+		e.live.FeedText(string(e.buf))
 	}
 	e.sawDot = true
-	e.segmentStart = len(e.buffer)
-	e.scanAt = len(e.buffer)
+	e.segmentStart = len(e.buf)
+	e.scanAt = len(e.buf)
 	e.phaseLines = nil
-	e.committedAt = len(e.buffer)
+	e.committedAt = len(e.buf)
 	e.committedSnap = result.After
 	e.commitFromLive = false
 	e.latestSnapshot = nil

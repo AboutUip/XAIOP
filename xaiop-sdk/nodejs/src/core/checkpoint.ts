@@ -778,8 +778,13 @@ export class DotCheckpointEngine {
         this._emitChunk(this._history.getDiff(this._history.length - 1));
         return;
       }
-      // Cumulative Diff for merged multi-`.` window — one clone only.
-      this._emitChunk(cloneJson(this._peekCommit()));
+      // Cumulative Diff for merged multi-`.` window — one clone only,
+      // and only when a consumer will actually receive it.
+      this._emitChunk(
+        typeof this._hooks.onChunk === "function"
+          ? cloneJson(this._peekCommit())
+          : null,
+      );
       return;
     }
 
@@ -819,7 +824,11 @@ export class DotCheckpointEngine {
     // Multi-phase window: one Commit + one Diff = cumulative tree after batch.
     // Commit stays live-backed; Diff is a single materialize (no second isolate clone).
     this._storeCommit(lastEnd, undefined, true);
-    this._emitChunk(materializeSnapshot(this._live.value()));
+    this._emitChunk(
+      typeof this._hooks.onChunk === "function"
+        ? materializeSnapshot(this._live.value())
+        : null,
+    );
   }
 
   /** @param {number} end exclusive end of the `.` line */

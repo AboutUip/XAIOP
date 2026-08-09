@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `META-REL` |
 | Status | Informative |
-| Last updated | 2026-08-08 |
+| Last updated | 2026-08-09 |
 | Normative | **No** — release index; seal rules live in `META-VER` |
 | Depends on | `META-VER`, `META-REV` |
 
@@ -39,7 +39,7 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Implements protocol | Git tag (recommended) | Notes |
 | --- | --- | --- | --- |
-| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | Perf: single Diff materialize + faster `cloneJson`; still protocol **0.6.0** |
+| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | Perf tip: **2026-08-09** extreme hot-path (parse four-pack · encode scans · checkpoint) — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); prior: single Diff materialize + faster `cloneJson`; still protocol **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted` (long-session wire discard); still protocol **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` cumulative Diff (D2); optional `onChunk` / `emitDiff:false`; still protocol **0.6.0** |
 | `0.14.2` | `0.6.0` | `sdk-nodejs-v0.14.2` | Diff isolation after `.` (D1); keyed-state modeling docs / NG6; still protocol **0.6.0** |
@@ -58,7 +58,7 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Protocol implemented | Notes |
 | --- | --- | --- |
-| `0.15.1` | `0.6.0` | Stream consumer wires cover/history/typeCheck/control/intercept/Annotation Span + `chunks()`; **2026-08-08** internal perf/structure (Diff deliver aligned with Node, history ownership, checkpoint helpers) — [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md). Living parity matrix: [../sdk/java/ALIGNMENT.md](../sdk/java/ALIGNMENT.md) |
+| `0.15.1` | `0.6.0` | Stream consumer wires cover/history/typeCheck/control/intercept/Annotation Span + `chunks()`; **2026-08-09** extreme hot-path (float fast path · encode scans · checkpoint) — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); **2026-08-08** internal Diff/history — [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md). Living parity: [../sdk/java/ALIGNMENT.md](../sdk/java/ALIGNMENT.md) |
 | `0.15.0` | `0.6.0` | Full Node-aligned surface: WS · Control Root · cover · typeCheck · intercept / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` consumer (HTTP / SSE / RAW); still wire **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
@@ -68,9 +68,9 @@ Full narrative history: [revisions.md](revisions.md).
 
 | SDK | Protocol | Notes |
 | --- | --- | --- |
-| Python **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-08** internal clone/history/structure — [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
+| Python **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-09** extreme hot-path — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); **2026-08-08** clone/history — [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
 | Python **0.15.0a1** | `0.6.0` | Official product port (alpha archive); [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) |
-| Go **0.15.1** | `0.6.0` | Official product port (stable); Node-aligned; product golden **50** + core-wire **46**; [../sdk/go/ALIGNMENT.md](../sdk/go/ALIGNMENT.md) · [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) |
+| Go **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-09** extreme hot-path (chunked ingest O(n²) fixes) — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); product golden **50** + core-wire **46**; [../sdk/go/ALIGNMENT.md](../sdk/go/ALIGNMENT.md) · [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) |
 | Go **0.15.0-alpha.1** | `0.6.0` | Product promotion development archive |
 | Go **0.6.0-alpha.2** | `0.6.0` | Core-protocol track archive (STRICT wire); fuzz + expanded core-wire |
 
@@ -82,6 +82,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-09 | [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md) — Node/Java/Python/Go tip **0.15.1** extreme hot-path (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) — Go `0.15.1` stable official port (exit alpha) |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md) — Python `0.15.1` internal clone / history / checkpoint structure (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md) — Java `0.15.1` internal perf / checkpoint structure (no version bump) |

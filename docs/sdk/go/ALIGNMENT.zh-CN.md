@@ -94,9 +94,11 @@ npm run bench:go:json-gate
 | Fixture | Parse/Node | Parse/GoJSON |
 | --- | ---: | ---: |
 | 优化前 quick / full | **~3.8×** / **~5.3×** | **~1.5×** / **~1.5×** |
-| 优化后 quick / full | **~1.3–1.5×** / **~1.7–1.9×** | **~0.45–0.55×** / **~0.55–0.62×** |
+| 优化后 quick / full | **~1.3–1.5×** / **~1.7–2.1×** | **~0.45–0.55×** / **~0.55–0.62×** |
 
-热路径：无 broadcast 直调、手写 float、content 首字节快路径、one-shot 扫行、typed frames、数组 sync-on-pop、`sync.Pool`、容量提示、STRICT `assertName` ASCII 快路径。产物：`timing/go/last-json-gate.json`。
+热路径：无 broadcast 直调、手写 float、content 首字节快路径、one-shot 扫行、typed frames、数组 sync-on-pop、`sync.Pool`、容量提示、STRICT `assertName` ASCII 快路径；encode 原生浮点快路径 + 手写 `needsForcedString`；checkpoint `[]byte` 摄取、demux carry、merge 扫行免每 Push 拷贝 `phaseLines`。产物：`timing/go/last-json-gate.json`。
+
+阶段计时（相对基线 · **2026-08-09**）：encode ~−33%；`long/grow-buffer` ~−58%；`chunked-3B` ~−98.5%。说明：[../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md) · 枢纽：[../../performance.zh-CN.md](../../performance.zh-CN.md)。
 
 主门槛 ≤1.2× Node 受 Go `encoding/json`→`map[string]any` 相对 V8 的运行时下限约束（同 fixture 上 `encoding/json` 常为 Node 的 **~2.5–3.5×**）；次门槛（同进程击败 `encoding/json`）为可复现的同运行时条，当前 **通过**（约 **0.5–0.6×**）。
 

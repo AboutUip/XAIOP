@@ -217,11 +217,13 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 - [ ] 最终 Snapshot ≡ 同兼容策略下全缓冲一次性 parse  
 - [ ] 若提供骨架会话：WS 相位 `.\n` / `final` / 关闭码  
 
-**Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。
+**Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。Parse↔JSON 门槛：[java/ALIGNMENT.zh-CN.md §5](java/ALIGNMENT.zh-CN.md)。
 
 **Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest（~**487**）+ `golden-python`（**50** NDJSON）+ `core-wire`（**46**）+ Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
 
 **Go 官方端口（`…/xaiop-sdk/go` 0.15.1）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**50** NDJSON）+ `core-wire`（**46**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
+
+**Node 参考实现（`xaiop` 0.15.1）：** 单测 **688**；阶段计时 + Parse↔JSON：[nodejs/notes/performance.zh-CN.md](nodejs/notes/performance.zh-CN.md) · 枢纽 [../performance.zh-CN.md](../performance.zh-CN.md)。极限性能 tip（2026-08-09，不升版本）：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。
 
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 
@@ -233,3 +235,6 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 - 隔离：[../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)  
 - Node 指南：[nodejs/README.zh-CN.md](nodejs/README.zh-CN.md)  
 - Java 对等矩阵：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)
+- Python 对等矩阵：[python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)
+- Go 对等矩阵：[go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)
+- SDK 阶段计时枢纽：[../performance.zh-CN.md](../performance.zh-CN.md) · 极限性能 tip：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)

@@ -359,4 +359,4 @@ mvn -DskipTests package   # target/xaiop-0.15.1.jar
 mvn test                  # 含 StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```
 
-阶段计时：[`xaiop-sdk/timing`](../../../xaiop-sdk/timing/)（`npm run bench:java`）。2026-08-08 内部维护说明：[../../meta/release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](../../meta/release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。
+阶段计时：[`xaiop-sdk/timing`](../../../xaiop-sdk/timing/)（`npm run bench:java` · `bench:java:json-gate`）。枢纽：[../../performance.zh-CN.md](../../performance.zh-CN.md)。极限性能 tip（**2026-08-09**）：[../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。此前：[../../meta/release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](../../meta/release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。

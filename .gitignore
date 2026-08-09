@@ -162,12 +162,16 @@ xaiop-sdk/timing/node/node_modules/
 xaiop-sdk/timing/node/last-report.json
 xaiop-sdk/timing/node/last-bench.json
 xaiop-sdk/timing/node/baseline-bench.json
+xaiop-sdk/timing/node/last-json-gate.json
 xaiop-sdk/timing/python/last-bench.json
 xaiop-sdk/timing/python/baseline-bench.json
+xaiop-sdk/timing/python/last-json-gate.json
 xaiop-sdk/timing/java/last-bench.json
 xaiop-sdk/timing/java/baseline-bench.json
+xaiop-sdk/timing/java/last-json-gate.json
 xaiop-sdk/timing/go/last-bench.json
 xaiop-sdk/timing/go/baseline-bench.json
+xaiop-sdk/timing/go/last-json-gate.json
 xaiop-sdk/timing/java/target/
 # legacy flat artifacts (pre runtime split)
 xaiop-sdk/timing/node_modules/

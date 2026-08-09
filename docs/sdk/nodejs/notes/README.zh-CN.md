@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `SDK-NODE-NOTE-INDEX` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-05 |
+| 最近更新 | 2026-08-09 |
 | 规范性 | **否** |
 
 上级指南：**[../API.zh-CN.md](../API.zh-CN.md)**（主入口） · [../README.zh-CN.md](../README.zh-CN.md)  
@@ -22,4 +22,5 @@
 | [annotation-span.zh-CN.md](annotation-span.zh-CN.md) | `SDK-NODE-NOTE-ANNSPAN` | 相位 `#` Annotation Span（**typeCheck 前**；处理区逃逸类型检查） |
 | [control-plane.zh-CN.md](control-plane.zh-CN.md) | `SDK-NODE-NOTE-CONTROL` | SDK 控制根 `#!` — demux、会话 / seq / 续传 / ack / snapshot |
 | [encode-attention.zh-CN.md](encode-attention.zh-CN.md) | `SDK-NODE-NOTE-ENCODE` | JSON → XAIOP 编码坑点（SDK；路径数组 `dotPolicy`） |
+| [performance.zh-CN.md](performance.zh-CN.md) | `SDK-NODE-NOTE-PERF` | 阶段计时 · Parse↔JSON 门槛 · **2026-08-09** 极限性能轮 |
 | [adjustment-policy.zh-CN.md](adjustment-policy.zh-CN.md) | `SDK-NODE-NOTE-ADJUST` | 按设计 vs 可慎重调整 |

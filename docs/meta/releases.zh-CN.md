@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `META-REL` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-08 |
+| 最近更新 | 2026-08-09 |
 | 规范性 | **否** — 发行索引；封存规则见 `META-VER` |
 | 依赖 | `META-VER`, `META-REV` |
 
@@ -39,7 +39,7 @@
 
 | SDK | 实现的协议 | Git 标签（建议） | 说明 |
 | --- | --- | --- | --- |
-| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | 性能：Diff/Commit 去双克隆、更快 `cloneJson`；仍协议 **0.6.0** |
+| `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | tip 性能：**2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；此前 Diff/Commit 去双克隆；仍协议 **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted`（长会话丢弃已提交线文）；仍协议 **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` 累积 Diff（D2）；可选 `onChunk` / `emitDiff:false`；仍协议 **0.6.0** |
 | `0.14.2` | `0.6.0` | `sdk-nodejs-v0.14.2` | `.` 后 Diff 隔离（D1）；键控建模文档 / NG6；仍协议 **0.6.0** |
@@ -58,7 +58,7 @@
 
 | SDK | 实现的协议 | 说明 |
 | --- | --- | --- |
-| `0.15.1` | `0.6.0` | 流式消费端接通 cover/history/typeCheck/control/拦截/Annotation Span + `chunks()`；**2026-08-08** 内部性能/结构（Diff 投递对齐 Node、history 所有权、checkpoint 协作类）— [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。现行对等矩阵：[../sdk/java/ALIGNMENT.zh-CN.md](../sdk/java/ALIGNMENT.zh-CN.md) |
+| `0.15.1` | `0.6.0` | 流式消费端接通 cover/history/typeCheck/control/拦截/Annotation Span + `chunks()`；**2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；**2026-08-08** 内部 Diff/history — [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。现行对等：[../sdk/java/ALIGNMENT.zh-CN.md](../sdk/java/ALIGNMENT.zh-CN.md) |
 | `0.15.0` | `0.6.0` | 与 Node 对齐的完整产品面：WS · 控制根 · cover · typeCheck · 行拦截 / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` 消费端（HTTP / SSE / RAW）；线格式仍为 **0.4.0** |
 | `0.4.0` | `0.4.0` | parse · encode · merge · checkpoint |
@@ -68,9 +68,9 @@
 
 | SDK | 协议 | 说明 |
 | --- | --- | --- |
-| Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-08** 内部 clone/history/结构 — [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
+| Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；**2026-08-08** clone/history — [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
 | Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha 档案）；[release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) |
-| Go **0.15.1** | `0.6.0` | 官方产品端口（稳定）；与 Node 对齐；[../sdk/go/ALIGNMENT.zh-CN.md](../sdk/go/ALIGNMENT.zh-CN.md) · [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) |
+| Go **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-09** 极限热路径（分片 ingest O(n²) 修复）— [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；[../sdk/go/ALIGNMENT.zh-CN.md](../sdk/go/ALIGNMENT.zh-CN.md) · [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) |
 | Go **0.15.0-alpha.1** | `0.6.0` | 产品晋级开发档档案 |
 | Go **0.6.0-alpha.2** | `0.6.0` | 核心协议轨档案（STRICT 线文）；fuzz + 扩展 core-wire |
 
@@ -82,6 +82,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-09 | [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md) — Node/Java/Python/Go tip **0.15.1** 极限热路径（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) — Go `0.15.1` 稳定官方端口（退出 alpha） |
 | 2026-08-08 | [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md) — Python `0.15.1` 内部 clone / history / checkpoint 结构（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md) — Java `0.15.1` 内部性能 / checkpoint 结构（不升版本） |

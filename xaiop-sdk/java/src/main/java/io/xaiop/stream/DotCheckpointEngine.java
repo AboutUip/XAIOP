@@ -118,7 +118,8 @@ public final class DotCheckpointEngine implements AutoCloseable {
   private final boolean phaseSeqEnabled;
 
   private final StringBuilder buffer = new StringBuilder();
-  private final List<String> phaseLines = new ArrayList<>();
+  /** Swapped out (not copied) when a phase closes; always non-null. */
+  private List<String> phaseLines = new ArrayList<>();
   private int segmentStart;
   private int scanAt;
   private boolean sawDot;
@@ -475,7 +476,9 @@ public final class DotCheckpointEngine implements AutoCloseable {
   /** Collects every complete {@code .} currently available, feeds once, emits once. */
   private void scanDotsMerged(boolean atEof) {
     List<CheckpointScan.ClosedPhase> closedPhases = new ArrayList<>();
-    List<String> pending = new ArrayList<>(phaseLines);
+    // Take ownership; the unclosed remainder is swapped back below.
+    List<String> pending = phaseLines;
+    phaseLines = new ArrayList<>();
     int start = segmentStart;
 
     while (scanAt < buffer.length()) {
@@ -496,8 +499,7 @@ public final class DotCheckpointEngine implements AutoCloseable {
       if (!info.consumedNewline() && atEof) break;
     }
 
-    phaseLines.clear();
-    phaseLines.addAll(pending);
+    phaseLines = pending;
     segmentStart = start;
 
     if (closedPhases.isEmpty()) return;
@@ -553,7 +555,8 @@ public final class DotCheckpointEngine implements AutoCloseable {
         emitChunk(history.peekDiff(history.length() - 1));
         return;
       }
-      emitChunk(Json.deepClone(peekCommit()));
+      // Clone only when someone will actually receive the chunk.
+      emitChunk(onChunk == null ? null : Json.deepClone(peekCommit()));
       return;
     }
 
@@ -588,15 +591,17 @@ public final class DotCheckpointEngine implements AutoCloseable {
     }
 
     storeCommit(lastEnd, null, true);
-    emitChunk(Materialize.materializeSnapshot(live.value()));
+    emitChunk(onChunk == null ? null : Materialize.materializeSnapshot(live.value()));
   }
 
   /** @param end exclusive end of the {@code .} line */
   private void emitPhase(int end) {
     int start = segmentStart;
-    List<String> lines = applyAnnotationSpans(new ArrayList<>(phaseLines));
+    // Take ownership of the closed phase's lines instead of copying them.
+    List<String> taken = phaseLines;
+    phaseLines = new ArrayList<>();
+    List<String> lines = applyAnnotationSpans(taken);
     String raw = phaseWire(lines, start, end);
-    phaseLines.clear();
     if (cover) {
       emitCoverPhase(lines, start, end, false);
       segmentStart = end;
@@ -628,9 +633,10 @@ public final class DotCheckpointEngine implements AutoCloseable {
   private void flushTail() {
     if (segmentStart < buffer.length()) {
       int start = segmentStart;
-      List<String> lines = applyAnnotationSpans(new ArrayList<>(phaseLines));
+      List<String> taken = phaseLines;
+      phaseLines = new ArrayList<>();
+      List<String> lines = applyAnnotationSpans(taken);
       String raw = phaseWire(lines, start, buffer.length());
-      phaseLines.clear();
       if (cover) {
         emitCoverPhase(lines, start, buffer.length(), true);
         segmentStart = buffer.length();
@@ -930,13 +936,19 @@ public final class DotCheckpointEngine implements AutoCloseable {
   }
 
   private void emitChunk(Object diff) {
+    if (onChunk == null) {
+      // No consumer: drain pending state without building the copies.
+      pendingTypeCheckEscape.clear();
+      pendingSeqs.clear();
+      pendingLogSeqs.clear();
+      return;
+    }
     List<String> escapes = new ArrayList<>(pendingTypeCheckEscape);
     pendingTypeCheckEscape.clear();
     List<Integer> seqs = new ArrayList<>(pendingSeqs);
     pendingSeqs.clear();
     List<Integer> logSeqs = new ArrayList<>(pendingLogSeqs);
     pendingLogSeqs.clear();
-    if (onChunk == null) return;
 
     List<String> uniqueEscapes = escapes.isEmpty() ? null : uniqueEscape(escapes);
     Integer seq = seqs.isEmpty() ? null : seqs.get(seqs.size() - 1);

@@ -138,6 +138,37 @@ Legend: ✅ = present and aligned at observable-semantics level.
 
 **Timing:** same stage names as Node — [`xaiop-sdk/timing/python/bench.py`](../../../xaiop-sdk/timing/python/bench.py) (`npm run bench:python`).
 
+**Parse ↔ JSON gate** (STRICT one-shot `parse_sync` vs same-machine JSON on one nested fixture):
+
+```bash
+cd xaiop-sdk/timing
+npm run bench:python:json-gate:quick   # depth=2 breadth=5
+npm run bench:python:json-gate         # depth=3 breadth=8
+```
+
+| Side | Input | Op |
+| --- | --- | --- |
+| JSON | `json.dumps` of tree | Node `JSON.parse` · Python `json.loads` |
+| XAIOP | `encode_sync(..., dot_policy="none")` of same tree | `parse_sync` |
+
+| Gate | Target | Notes |
+| --- | --- | --- |
+| Primary | `Parse / Node JSON.parse ≤ 1.2` | Report only this round (CPython vs V8 floor) |
+| Secondary | `Parse / json.loads` (report; ≤1.2 preferred) | Same-process fairness |
+
+**Before → after** (same machine, nested fixture; wall-clock; ratios vary ±~few× run-to-run):
+
+| Fixture | Parse/Node (primary) | Parse/PyJSON (secondary) |
+| --- | ---: | ---: |
+| Baseline quick / full | **~56×** / **~59×** | **~35×** / **~29×** |
+| After quick / full | **~38×** / **~39×** | **~22×** / **~17×** |
+
+Hot-path work: no-broadcast direct calls, hand-rolled float scanner, content first-byte fast-path, STRICT `assert_name` ASCII pass, one-shot line feeder (no full line list), `split_lines` capacity; **encode** `repr` float fast path (Decimal fallback) + head-char `_needs_forced_string` + insertion-order key view; **checkpoint** skip snapshot clone when no chunk consumer. Artifact: `timing/python/last-json-gate.json`.
+
+**Stage timing** (vs baseline · **2026-08-09**): encode slight win; long-session / D1–D2 / chunked stream ~−20–32%; `parseSync` wall-clock can jitter ±10% on this machine. Narrative: [../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md) · Hub: [../../performance.md](../../performance.md).
+
+Primary ≤1.2× Node remains a stretch under CPython/`dict` vs V8. Secondary still loses clearly to `json.loads` (C extension); recorded improvement is relative to the pre-tune baseline. Non-goal: change product tree type.
+
 ---
 
 ## 6. Acceptable differences

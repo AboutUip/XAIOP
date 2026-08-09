@@ -14,7 +14,7 @@ type DemuxResult struct {
 
 // ControlDemux peels #! frames; remainder is document wire text.
 type ControlDemux struct {
-	carry                  string
+	carry                  []byte
 	pendingHeader          *Frame
 	skipBodyAfterBadHeader string
 	skipNextEmptyWireLine  bool
@@ -32,46 +32,78 @@ func (d *ControlDemux) Push(text string, finalizeBodies bool) DemuxResult {
 	var wireParts []string
 
 	if text != "" {
-		d.carry += text
+		// Amortized O(1) per byte — the former `carry += text` was O(n²) on chunked feeds.
+		d.carry = append(d.carry, text...)
 	}
 
 	start := 0
 	for start < len(d.carry) {
-		nl := strings.IndexByte(d.carry[start:], '\n')
+		nl := indexByteFrom(d.carry, start, '\n')
 		if nl < 0 {
 			break
 		}
-		nl += start
 		line := d.carry[start:nl]
-		if strings.HasSuffix(line, "\r") {
+		if len(line) > 0 && line[len(line)-1] == '\r' {
 			line = line[:len(line)-1]
 		}
 		rawLineWithNl := d.carry[start : nl+1]
 		start = nl + 1
-		d.handleCompleteLine(line, rawLineWithNl, &wireParts, &frames, &errors)
+		d.handleCompleteLine(string(line), string(rawLineWithNl), &wireParts, &frames, &errors)
 	}
-	d.carry = d.carry[start:]
+	if start > 0 {
+		n := copy(d.carry, d.carry[start:])
+		d.carry = d.carry[:n]
+	}
 
 	if finalizeBodies {
 		d.finalizePending(&wireParts, &frames, &errors)
-	} else if d.pendingHeader != nil && d.carry != "" {
-		if looksCompleteJSON(d.carry) {
-			d.completeFrame(d.carry, &frames)
+	} else if d.pendingHeader != nil && len(d.carry) > 0 {
+		carryStr := string(d.carry)
+		if looksCompleteJSON(carryStr) {
+			d.completeFrame(carryStr, &frames)
 			d.pendingHeader = nil
-			d.carry = ""
+			d.carry = d.carry[:0]
 			d.skipNextEmptyWireLine = true
 		}
-	} else if d.skipBodyAfterBadHeader != "" && d.carry != "" {
+	} else if d.skipBodyAfterBadHeader != "" && len(d.carry) > 0 {
 		d.skipBodyAfterBadHeader = ""
-		d.carry = ""
+		d.carry = d.carry[:0]
 		d.skipNextEmptyWireLine = true
 	}
 
 	return DemuxResult{
-		WireText: strings.Join(wireParts, ""),
+		WireText: joinWireParts(wireParts),
 		Frames:   frames,
 		Errors:   errors,
 	}
+}
+
+func indexByteFrom(b []byte, from int, c byte) int {
+	for i := from; i < len(b); i++ {
+		if b[i] == c {
+			return i
+		}
+	}
+	return -1
+}
+
+func joinWireParts(parts []string) string {
+	switch len(parts) {
+	case 0:
+		return ""
+	case 1:
+		return parts[0]
+	}
+	n := 0
+	for _, p := range parts {
+		n += len(p)
+	}
+	var b strings.Builder
+	b.Grow(n)
+	for _, p := range parts {
+		b.WriteString(p)
+	}
+	return b.String()
 }
 
 // Flush ends the stream and completes pending bodies.
@@ -81,7 +113,7 @@ func (d *ControlDemux) Flush() DemuxResult {
 
 // HasPending reports incomplete control state.
 func (d *ControlDemux) HasPending() bool {
-	return d.carry != "" || d.pendingHeader != nil || d.skipBodyAfterBadHeader != ""
+	return len(d.carry) > 0 || d.pendingHeader != nil || d.skipBodyAfterBadHeader != ""
 }
 
 func (d *ControlDemux) handleCompleteLine(
@@ -122,9 +154,9 @@ func (d *ControlDemux) handleCompleteLine(
 }
 
 func (d *ControlDemux) finalizePending(wireParts *[]string, frames *[]*Frame, errors *[]*ControlError) {
-	if d.carry != "" {
-		rem := d.carry
-		d.carry = ""
+	if len(d.carry) > 0 {
+		rem := string(d.carry)
+		d.carry = d.carry[:0]
 		if d.pendingHeader != nil {
 			d.completeFrame(rem, frames)
 			d.pendingHeader = nil

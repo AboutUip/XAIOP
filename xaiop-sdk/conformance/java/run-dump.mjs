@@ -74,7 +74,15 @@ if (!existsSync(join(testClasses, "io", "xaiop", "conformance", "GoldenDumpMain.
 }
 
 const cp = `${classes}${SEP}${testClasses}`;
-const javaArgs = ["-cp", cp, "io.xaiop.conformance.GoldenDumpMain", FIXTURES];
+const javaArgs = [
+  "-Dfile.encoding=UTF-8",
+  "-Dstdout.encoding=UTF-8",
+  "-Dstderr.encoding=UTF-8",
+  "-cp",
+  cp,
+  "io.xaiop.conformance.GoldenDumpMain",
+  FIXTURES,
+];
 let dump;
 if (process.platform === "win32") {
   const quoted = ["java", ...javaArgs]
@@ -85,6 +93,7 @@ if (process.platform === "win32") {
     encoding: "utf8",
     shell: true,
     maxBuffer: 32 * 1024 * 1024,
+    env: { ...process.env, JAVA_TOOL_OPTIONS: undefined },
   });
 } else {
   dump = spawnSync("java", javaArgs, {

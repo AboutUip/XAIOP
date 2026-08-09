@@ -23,6 +23,7 @@ cd ../conformance && npm run golden:python
 
 ```bash
 cd ../timing && python python/bench.py --quick
+# Parse ↔ JSON：在 timing/ 下 npm run bench:python:json-gate
 ```
 
-2026-08-08 内部维护说明：[../../docs/meta/release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](../../docs/meta/release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)。
+枢纽：[../../docs/performance.zh-CN.md](../../docs/performance.zh-CN.md)。极限性能 tip（**2026-08-09**）：[../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。此前：[../../docs/meta/release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](../../docs/meta/release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)。

@@ -49,7 +49,7 @@ mvn -DskipTests package
 
 Artifact: `target/xaiop-0.15.1.jar` · Requires JDK 17+.
 
-Stage timing (same stage names as Node/Python): from [`../timing/`](../timing/) run `npm run bench:java` (writes `java/last-bench.json`). Internal 2026-08-08 perf notes: [../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md).
+Stage timing (same stage names as Node/Python/Go): from [`../timing/`](../timing/) run `npm run bench:java` (writes `java/last-bench.json`). Parse↔JSON: `npm run bench:java:json-gate`. Extreme-perf tip (**2026-08-09**): [../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md). Prior internal notes: [../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md).
 
 ## Layout
 

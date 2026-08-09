@@ -14,11 +14,9 @@ from .label_escape import decode_wire_label
 NodeKind = Literal["object", "array", "fragment"]
 DocKind = Literal["none", "object", "array", "fragment"]
 
-FLOAT_TOKEN_RE = re.compile(
-    r"^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$|^[+-]?\d+[eE][+-]?\d+$"
-)
-
 _OPERATOR_HEADS = frozenset("><=!&#.-")
+# Content keys never start with these in STRICT Encode wires (includes @).
+_OPERATOR_LINE_HEADS = frozenset("><=!&#.-@")
 
 
 @dataclass
@@ -105,7 +103,9 @@ class Parser:
         compat: dict[str, bool] | None = None,
         symbol_keys: bool = False,
     ) -> None:
-        self.lines = split_lines(source)
+        self._source = source
+        # Lazily split only for compat / live helpers that still need a line list.
+        self._lines: list[str] | None = None
         self.line_no = 0
         self._fed = 0
         self._compat_root_ready = False
@@ -117,6 +117,16 @@ class Parser:
         self.phase: Literal["init", "active"] = "init"
         self.compat = compat
         self.symbol_keys = symbol_keys
+
+    @property
+    def lines(self) -> list[str]:
+        if self._lines is None:
+            self._lines = split_lines(self._source)
+        return self._lines
+
+    @lines.setter
+    def lines(self, value: list[str]) -> None:
+        self._lines = value
 
     @staticmethod
     def create_live(
@@ -165,6 +175,8 @@ class Parser:
         if self.fix_enabled("forcedRoot"):
             self.ensure_compat_root_opener()
             self._compat_root_ready = True
+        if self.compat is None:
+            return self._parse_one_shot(self._source)
         for i, raw in enumerate(self.lines):
             self.line_no = i + 1
             line = strip_bom(raw) if i == 0 else raw
@@ -173,6 +185,49 @@ class Parser:
                     "empty line is a Content syntax error", line=self.line_no
                 )
             self.handle_line_compat(line)
+        return self.result()
+
+    def _parse_one_shot(self, source: str) -> Any | XaiopFragment:
+        """Feed the wire without materializing a full line list (STRICT hot path)."""
+        n = len(source)
+        start = 0
+        line_no = 0
+        while start <= n:
+            if start == n:
+                break
+            i = start
+            while i < n:
+                c = source[i]
+                if c == "\n" or c == "\r":
+                    break
+                i += 1
+            line = source[start:i]
+            if i < n:
+                if source[i] == "\r" and i + 1 < n and source[i + 1] == "\n":
+                    nxt = i + 2
+                else:
+                    nxt = i + 1
+            else:
+                nxt = n
+            if len(line) == 0:
+                if _rest_only_eols(source, nxt):
+                    break
+                line_no += 1
+                raise XaiopSyntaxError(
+                    "empty line is a Content syntax error", line=line_no
+                )
+            line_no += 1
+            self.line_no = line_no
+            if line_no == 1:
+                line = strip_bom(line)
+                if len(line) == 0:
+                    raise XaiopSyntaxError(
+                        "empty line is a Content syntax error", line=line_no
+                    )
+            self.handle_line(line)
+            if nxt >= n:
+                break
+            start = nxt
         return self.result()
 
     def ensure_compat_root_opener(self) -> None:
@@ -258,7 +313,18 @@ class Parser:
         raise original_err
 
     def handle_line(self, line: str) -> None:
-        if line.startswith("#"):
+        if not line:
+            raise XaiopSyntaxError(
+                f"Bare Label or unknown line form: {line!r}", line=self.line_no
+            )
+
+        # Content fast-path: typical nested Encode wires are mostly key:value lines.
+        head = line[0]
+        if head not in _OPERATOR_LINE_HEADS:
+            self._handle_content_line(line)
+            return
+
+        if head == "#":
             return
 
         if line == ".":
@@ -267,54 +333,70 @@ class Parser:
 
         if line == "<":
             self.precheck_broadcast_pop()
-            self.run_on_cursors(self.pop_only)
+            if self.broadcast_stacks is None:
+                self.pop_only()
+            else:
+                self.run_on_cursors(self.pop_only)
             return
 
-        if line.startswith("<") and len(line) > 1:
+        if head == "<" and len(line) > 1:
             name = self._logical_name(line[1:])
             assert_name(name, self.line_no, self.symbol_keys)
-
-            def op() -> None:
+            self.precheck_broadcast_pop()
+            if self.broadcast_stacks is None:
                 self.pop_only()
                 self.create_enter_named_object(name)
+            else:
 
-            self.precheck_broadcast_pop()
-            self.run_on_cursors(op)
+                def op() -> None:
+                    self.pop_only()
+                    self.create_enter_named_object(name)
+
+                self.run_on_cursors(op)
             return
 
-        if line.startswith("="):
+        if head == "=":
             self.require_not_broadcast("=")
             self.locate_path(line[1:])
             return
 
-        if line.startswith("@"):
+        if head == "@":
             self.exact_enter(line[1:])
             return
 
-        if line.startswith("!"):
+        if head == "!":
             self.require_not_broadcast("!")
             self.broadcast_enter(line[1:])
             return
 
-        if line.startswith("&"):
+        if head == "&":
             self.delete_at_path(line[1:])
             return
 
         if line == ">":
-            self.run_on_cursors(self.create_enter_anonymous_object)
+            if self.broadcast_stacks is None:
+                self.create_enter_anonymous_object()
+            else:
+                self.run_on_cursors(self.create_enter_anonymous_object)
             return
 
         if line == "-":
-            self.run_on_cursors(self.create_enter_anonymous_array)
+            if self.broadcast_stacks is None:
+                self.create_enter_anonymous_array()
+            else:
+                self.run_on_cursors(self.create_enter_anonymous_array)
             return
 
-        if line.startswith(">") and line.endswith("-") and len(line) > 2:
+        if head == ">" and line.endswith("-") and len(line) > 2:
             name = self._logical_name(line[1:-1])
             assert_name(name, self.line_no, self.symbol_keys)
-            self.run_on_cursors(lambda: self.create_enter_named_array(name))
+            if self.broadcast_stacks is None:
+                self.create_enter_named_array(name)
+            else:
+                self.run_on_cursors(lambda: self.create_enter_named_array(name))
             return
 
-        if line.startswith(">") and len(line) > 1:
+        if head == ">" and len(line) > 1:
             if ">>" in line:
                 raise XaiopSyntaxError(
                     "same-symbol stacking >> is forbidden", line=self.line_no
@@ -324,27 +406,40 @@ class Parser:
                 parts = [self._logical_name(p) for p in name.split(">")]
                 for p in parts:
                     assert_name(p, self.line_no, self.symbol_keys)
-
-                def op_multi() -> None:
+                if self.broadcast_stacks is None:
                     for p in parts:
                         self.create_enter_named_object(p)
+                else:
 
-                self.run_on_cursors(op_multi)
+                    def op_multi() -> None:
+                        for p in parts:
+                            self.create_enter_named_object(p)
+
+                    self.run_on_cursors(op_multi)
                 return
             logical = self._logical_name(name)
             assert_name(logical, self.line_no, self.symbol_keys)
-            self.run_on_cursors(lambda: self.create_enter_named_object(logical))
+            if self.broadcast_stacks is None:
+                self.create_enter_named_object(logical)
+            else:
+                self.run_on_cursors(lambda: self.create_enter_named_object(logical))
             return
 
+        self._handle_content_line(line)
+
+    def _handle_content_line(self, line: str) -> None:
         colon = line.find(":")
         if colon == -1:
             raise XaiopSyntaxError(
                 f"Bare Label or unknown line form: {line!r}", line=self.line_no
             )
         key = self._logical_name(line[:colon])
-        raw_value = line[colon + 1 :]
-        value = parse_value(raw_value)
-        self.run_on_cursors(lambda: self.write_content(key, value))
+        value = parse_value(line[colon + 1 :])
+        if self.broadcast_stacks is None:
+            # Hot path: STRICT one-shot Encode wires never broadcast.
+            self.write_content(key, value)
+        else:
+            self.run_on_cursors(lambda: self.write_content(key, value))
 
     def require_not_broadcast(self, op: str) -> None:
         if self.broadcast_stacks:
@@ -755,32 +850,57 @@ class Parser:
 def split_lines(source: str) -> list[str]:
     if len(source) == 0:
         return []
-    lines: list[str] = []
+    n = len(source)
+    n_lines = 1
+    i = 0
+    while i < n:
+        c = source[i]
+        if c == "\n":
+            n_lines += 1
+        elif c == "\r":
+            n_lines += 1
+            if i + 1 < n and source[i + 1] == "\n":
+                i += 1
+        i += 1
+    lines: list[str] = [""] * n_lines
     start = 0
     i = 0
-    n = len(source)
+    li = 0
     while i < n:
-        c = ord(source[i])
-        if c == 10:
-            lines.append(source[start:i])
+        c = source[i]
+        if c == "\n":
+            lines[li] = source[start:i]
+            li += 1
             start = i + 1
-        elif c == 13:
-            lines.append(source[start:i])
-            if i + 1 < n and ord(source[i + 1]) == 10:
+        elif c == "\r":
+            lines[li] = source[start:i]
+            li += 1
+            if i + 1 < n and source[i + 1] == "\n":
                 start = i + 2
                 i += 1
             else:
                 start = i + 1
         i += 1
     if start < n:
-        lines.append(source[start:])
-    while lines and lines[-1] == "":
-        lines.pop()
+        lines[li] = source[start:]
+        li += 1
+    while li > 0 and lines[li - 1] == "":
+        li -= 1
+    if li != n_lines:
+        del lines[li:]
     return lines
 
 
 def strip_bom(s: str) -> str:
     return s[1:] if s and ord(s[0]) == 0xFEFF else s
+
+
+def _rest_only_eols(source: str, from_idx: int) -> bool:
+    for i in range(from_idx, len(source)):
+        c = source[i]
+        if c != "\n" and c != "\r":
+            return False
+    return True
 
 
 def syntax_error_key(err: XaiopSyntaxError) -> str:
@@ -789,15 +909,29 @@ def syntax_error_key(err: XaiopSyntaxError) -> str:
 
 
 def assert_name(name: str, line_no: int, symbol_keys: bool = False) -> None:
-    if (
-        not name
-        or any(c.isspace() and ord(c) != 0x1F for c in name)
-        or ":" in name
-        or (not symbol_keys and name.endswith("-"))
-        or (not symbol_keys and name and name[0] in _OPERATOR_HEADS)
-        or (not symbol_keys and ("@" in name or "&" in name))
-    ):
+    if not name:
         raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
+    if symbol_keys:
+        if ":" in name or any(c.isspace() and ord(c) != 0x1F for c in name):
+            raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
+        return
+    # STRICT ASCII-oriented fast path (Encode / normal wires).
+    head = name[0]
+    if head in _OPERATOR_HEADS or name.endswith("-"):
+        raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
+    for i, c in enumerate(name):
+        o = ord(c)
+        if o >= 0x80:
+            if any(ch.isspace() and ord(ch) != 0x1F for ch in name[i:]):
+                raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
+            if ":" in name or "@" in name or "&" in name:
+                raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
+            return
+        if c == " " or c == "\t" or c == "\n" or c == "\r" or c == ":" or c == "@" or c == "&":
+            raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
+        # Other Unicode whitespace in ASCII range (rare): fall through to full check.
+        if c.isspace():
+            raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
 
 
 def split_path_segments(
@@ -822,9 +956,12 @@ def split_path_segments(
 
 
 def parse_value(raw_value: str) -> Any:
-    if raw_value and ord(raw_value[0]) == 32:
+    if not raw_value:
+        return raw_value
+    c0 = raw_value[0]
+    if c0 == " ":
         i = 1
-        while i < len(raw_value) and ord(raw_value[i]) == 32:
+        while i < len(raw_value) and raw_value[i] == " ":
             i += 1
         return raw_value[i:]
     if raw_value == "true":
@@ -833,10 +970,12 @@ def parse_value(raw_value: str) -> Any:
         return False
     if raw_value == "null":
         return None
-    if is_int_token(raw_value):
-        return int(raw_value)
-    if is_float_token(raw_value):
-        return float(raw_value)
+    # Fast reject: non-numeric heads cannot be int/float tokens.
+    if c0 == "+" or c0 == "-" or c0 == "." or ("0" <= c0 <= "9"):
+        if is_int_token(raw_value):
+            return int(raw_value)
+        if is_float_token(raw_value):
+            return float(raw_value)
     return raw_value
 
 
@@ -855,7 +994,49 @@ def is_int_token(s: str) -> bool:
 
 
 def is_float_token(s: str) -> bool:
-    return bool(FLOAT_TOKEN_RE.match(s))
+    """Float token (PROT-CONTENT): fraction and/or exponent. No regexp alloc."""
+    n = len(s)
+    if n == 0:
+        return False
+    i = 0
+    if s[0] == "+" or s[0] == "-":
+        i = 1
+        if i >= n:
+            return False
+    saw_dot = False
+    saw_digit = False
+    if s[i] == ".":
+        i += 1
+        if i >= n or not ("0" <= s[i] <= "9"):
+            return False
+        saw_dot = True
+        while i < n and "0" <= s[i] <= "9":
+            i += 1
+            saw_digit = True
+    else:
+        if not ("0" <= s[i] <= "9"):
+            return False
+        while i < n and "0" <= s[i] <= "9":
+            i += 1
+            saw_digit = True
+        if i < n and s[i] == ".":
+            saw_dot = True
+            i += 1
+            while i < n and "0" <= s[i] <= "9":
+                i += 1
+    saw_exp = False
+    if i < n and (s[i] == "e" or s[i] == "E"):
+        saw_exp = True
+        i += 1
+        if i < n and (s[i] == "+" or s[i] == "-"):
+            i += 1
+        if i >= n or not ("0" <= s[i] <= "9"):
+            return False
+        while i < n and "0" <= s[i] <= "9":
+            i += 1
+    if i != n or not saw_digit:
+        return False
+    return saw_dot or saw_exp
 
 
 def try_exact_descend(

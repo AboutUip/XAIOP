@@ -6,6 +6,8 @@
 
 | Docs | Link |
 | --- | --- |
+| Extreme-perf tip (2026-08-09 · all runtimes) | [../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md) |
+| SDK stage timing hub | [../docs/performance.md](../docs/performance.md) · [timing/](timing/) |
 | Release notes (2026-08-08 · Go 0.15.1) | [../docs/meta/release-notes-2026-08-08-go-0.15.1.md](../docs/meta/release-notes-2026-08-08-go-0.15.1.md) |
 | Release notes (2026-08-08 · Python 0.15.1) | [../docs/meta/release-notes-2026-08-08-python-0.15.1.md](../docs/meta/release-notes-2026-08-08-python-0.15.1.md) |
 | Release notes (2026-08-07 · Python 0.15.0a1) | [../docs/meta/release-notes-2026-08-07-python-0.15.0a1.md](../docs/meta/release-notes-2026-08-07-python-0.15.0a1.md) |
@@ -28,8 +30,8 @@
 
 | Directory | Status |
 | --- | --- |
-| [nodejs/](nodejs/) | **Active** — `xaiop` **0.15.1** <-> protocol **0.6.0** (parse · stream · encode · merge · history · WS · Control Root / logSeq · Diff isolation / `@` Diff · buffer compact) |
+| [nodejs/](nodejs/) | **Active** — `xaiop` **0.15.1** <-> protocol **0.6.0** (parse · stream · encode · merge · history · WS · Control Root / logSeq · Diff isolation / `@` Diff · buffer compact; **2026-08-09** extreme hot-path tip) |
 | [java/](java/) | **Active** — `io.xaiop:xaiop` **0.15.1** — protocol **0.6.0** (full Node-aligned surface; [ALIGNMENT](../docs/sdk/java/ALIGNMENT.md)) |
 | [python/](python/) | **Active** — `xaiop` **0.15.1** — protocol **0.6.0** ([ALIGNMENT](../docs/sdk/python/ALIGNMENT.md)) |
 | [go/](go/) | **Official** — `ProtocolVersion` **0.6.0** · module **0.15.1** ([ALIGNMENT](../docs/sdk/go/ALIGNMENT.md) · [API](../docs/sdk/go/API.md)) |
-| [timing/](timing/) | SDK stage microbench (Node + Python + Java + **Go**) — not a product package |
+| [timing/](timing/) | SDK stage microbench + Parse↔JSON gates (Node + Python + Java + **Go**) — not a product package |

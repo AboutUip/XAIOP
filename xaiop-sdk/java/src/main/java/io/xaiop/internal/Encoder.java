@@ -29,13 +29,8 @@ public final class Encoder {
   /** Sentinel policy name for the path-array mode (mirrors the JS {@code "__paths__"}). */
   private static final String PATHS = "__paths__";
 
-  private static final Pattern INT_TOKEN = Pattern.compile("^[+-]?\\d+$");
-  private static final Pattern FLOAT_TOKEN =
-      Pattern.compile("^[+-]?(?:\\d+\\.\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?$|^[+-]?\\d+[eE][+-]?\\d+$");
   private static final Pattern PLAIN_SEGMENT = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
   private static final Pattern BAD_SEGMENT = Pattern.compile("[\\s:><=!]");
-  private static final Pattern WHITESPACE = Pattern.compile("\\s");
-  private static final Pattern CURSOR_CHAR = Pattern.compile("[><=!&]");
 
   /** Largest integer exactly representable by a IEEE-754 double (JS {@code MAX_SAFE_INTEGER}). */
   private static final long MAX_SAFE_INTEGER = 9007199254740991L;
@@ -705,7 +700,7 @@ public final class Encoder {
     }
 
     String s = n instanceof BigDecimal bd ? bd.toPlainString() : n.toString();
-    if (INT_TOKEN.matcher(s).matches() || FLOAT_TOKEN.matcher(s).matches()) {
+    if (isNumberLikeToken(s)) {
       return s;
     }
     throw new XaiopEncodeError("cannot format number: " + s, path);
@@ -722,6 +717,70 @@ public final class Encoder {
    * count, which it always is.
    */
   private static String jsNumberToken(double value) {
+    double d = Math.abs(value);
+    if (d == 0.0) {
+      return "0";
+    }
+    String sign = value < 0 ? "-" : "";
+
+    // Fast path: JDK 19+ Double.toString already emits the shortest round-trip
+    // decimal (the digits ECMAScript picks); reformat per the ES fixed/scientific
+    // rules. Known exception: the smallest subnormals may carry one extra digit
+    // (4.9E-324 vs ES 5e-324) — the (k-1)-digit round-trip probe below catches
+    // any such case and falls back to the BigDecimal reference.
+    String repr = Double.toString(d);
+    int e = repr.indexOf('E');
+    String mant = e < 0 ? repr : repr.substring(0, e);
+    int exp10 = e < 0 ? 0 : Integer.parseInt(repr.substring(e + 1));
+    int dot = mant.indexOf('.');
+    if (dot >= 0) {
+      exp10 -= mant.length() - dot - 1;
+      mant = mant.substring(0, dot) + mant.substring(dot + 1);
+    }
+    int from = 0;
+    int to = mant.length();
+    while (from < to && mant.charAt(from) == '0') {
+      from++;
+    }
+    while (to > from && mant.charAt(to - 1) == '0') {
+      to--;
+      exp10++;
+    }
+    if (from < to && to - from <= 17) {
+      String digits = mant.substring(from, to);
+      int k = digits.length();
+      if (k == 1 || !shorterDecimalRoundTrips(digits, exp10, d)) {
+        return formatEcmaDigits(sign, digits, k + exp10);
+      }
+    }
+    return jsNumberTokenSlow(value);
+  }
+
+  /**
+   * True when a (k-1)-significant-digit decimal parses back to {@code d} — i.e. the native
+   * rendering was not minimal. Only the two nearest neighbours on the coarser grid can
+   * possibly round-trip, so two {@code parseDouble} probes decide it.
+   */
+  private static boolean shorterDecimalRoundTrips(String digits, int exp10, double d) {
+    long head = Long.parseLong(digits.substring(0, digits.length() - 1));
+    int exp = exp10 + 1;
+    return Double.parseDouble(head + "e" + exp) == d
+        || Double.parseDouble((head + 1) + "e" + exp) == d;
+  }
+
+  /** ECMAScript Number::toString layout for shortest digits with `value = 0.<digits> x 10^n`. */
+  private static String formatEcmaDigits(String sign, String digits, int n) {
+    int k = digits.length();
+    if (k <= n && n <= 21) return sign + digits + "0".repeat(n - k);
+    if (n > 0 && n <= 21) return sign + digits.substring(0, n) + "." + digits.substring(n);
+    if (n > -6 && n <= 0) return sign + "0." + "0".repeat(-n) + digits;
+    String mantissa = k == 1 ? digits : digits.charAt(0) + "." + digits.substring(1);
+    int exponent = n - 1;
+    return sign + mantissa + "e" + (exponent >= 0 ? "+" : "-") + Math.abs(exponent);
+  }
+
+  /** BigDecimal shortest-round-trip search; reference and fallback path. */
+  private static String jsNumberTokenSlow(double value) {
     double d = Math.abs(value);
     String sign = value < 0 ? "-" : "";
 
@@ -768,15 +827,76 @@ public final class Encoder {
 
   /** A scalar string that would otherwise parse back as a bool / null / number. */
   private static boolean needsForcedString(String s) {
-    if (s.equals("true") || s.equals("false") || s.equals("null")) return true;
-    return INT_TOKEN.matcher(s).matches() || FLOAT_TOKEN.matcher(s).matches();
+    if (s.isEmpty()) return false;
+    char c = s.charAt(0);
+    // Fast reject on head char: t/f/n keywords, sign/dot/digit numeric tokens.
+    if (c == 't' || c == 'f' || c == 'n') {
+      return s.equals("true") || s.equals("false") || s.equals("null");
+    }
+    if (c == '+' || c == '-' || c == '.' || (c >= '0' && c <= '9')) {
+      return isNumberLikeToken(s);
+    }
+    return false;
+  }
+
+  /**
+   * Int or float token per PROT-CONTENT §5 (union of the former INT_TOKEN / FLOAT_TOKEN
+   * patterns): {@code [+-]? ( \d+ (\.\d*)? | \.\d+ ) ([eE][+-]?\d+)?} with a lone {@code .}
+   * (no digits at all) rejected. Hand-rolled single pass, no regex.
+   */
+  private static boolean isNumberLikeToken(String s) {
+    int n = s.length();
+    if (n == 0) return false;
+    int i = 0;
+    char c = s.charAt(0);
+    if (c == '+' || c == '-') {
+      i++;
+      if (i >= n) return false;
+    }
+    int intDigits = 0;
+    while (i < n) {
+      c = s.charAt(i);
+      if (c < '0' || c > '9') break;
+      intDigits++;
+      i++;
+    }
+    int fracDigits = -1; // -1: no dot seen
+    if (i < n && s.charAt(i) == '.') {
+      i++;
+      fracDigits = 0;
+      while (i < n) {
+        c = s.charAt(i);
+        if (c < '0' || c > '9') break;
+        fracDigits++;
+        i++;
+      }
+    }
+    if (intDigits == 0 && fracDigits <= 0) return false;
+    if (i < n) {
+      c = s.charAt(i);
+      if (c != 'e' && c != 'E') return false;
+      i++;
+      if (i < n) {
+        c = s.charAt(i);
+        if (c == '+' || c == '-') i++;
+      }
+      int expDigits = 0;
+      while (i < n) {
+        c = s.charAt(i);
+        if (c < '0' || c > '9') break;
+        expDigits++;
+        i++;
+      }
+      if (expDigits == 0) return false;
+    }
+    return i == n;
   }
 
   private static void assertKey(String key, String path, boolean symbolKeys) {
     if (key == null || key.isEmpty()) {
       throw new XaiopEncodeError("object keys must be non-empty strings", path);
     }
-    if (WHITESPACE.matcher(key).find() || key.indexOf(':') >= 0) {
+    if (hasJavaRegexWhitespaceOrColon(key)) {
       throw new XaiopEncodeError("invalid label name: " + Json.stringify(key), path);
     }
     if (key.endsWith("-")) {
@@ -791,10 +911,28 @@ public final class Encoder {
     }
     String body =
         LabelEscape.keyNeedsSymbolEscape(key) && symbolKeys ? key.substring(1) : key;
-    if (CURSOR_CHAR.matcher(body).find()) {
+    if (hasCursorChar(body)) {
       throw new XaiopEncodeError(
           "invalid label name (contains Cursor/operator character): " + Json.stringify(key), path);
     }
+  }
+
+  /** Exact {@code \s} class of the former WHITESPACE pattern ([ \t\n\x0B\f\r]) or ':'. */
+  private static boolean hasJavaRegexWhitespaceOrColon(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == ':' || c == ' ' || (c >= '\t' && c <= '\r')) return true;
+    }
+    return false;
+  }
+
+  /** Any Cursor/operator character {@code > < = ! &}. */
+  private static boolean hasCursorChar(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '>' || c == '<' || c == '=' || c == '!' || c == '&') return true;
+    }
+    return false;
   }
 
   private static String wireLabel(String key, String path, boolean symbolKeys) {
@@ -830,26 +968,43 @@ public final class Encoder {
 
   private static String joinWire(List<String> lines, boolean finalDot) {
     List<String> cleaned = collapseRedundantLeavesBeforePhase(lines);
-    if (finalDot) cleaned.add(".");
     int n = cleaned.size();
-    if (n == 0) return "\n";
-    int size = n; // newlines
-    for (String line : cleaned) size += line.length();
+    if (n == 0 && !finalDot) return "\n";
+    int size = n + (finalDot ? 3 : 1); // newlines + optional "\n." tail
+    for (int i = 0; i < n; i++) size += cleaned.get(i).length();
     StringBuilder sb = new StringBuilder(size);
     for (int i = 0; i < n; i++) {
       if (i > 0) sb.append('\n');
       sb.append(cleaned.get(i));
     }
+    if (finalDot) {
+      if (n > 0) sb.append('\n');
+      sb.append('.');
+    }
     sb.append('\n');
     return sb.toString();
   }
 
-  /** A `<` immediately before `.` (or EOF) is a no-op: the phase reset already leaves. */
+  /**
+   * A `<` immediately before `.` (or EOF) is a no-op: the phase reset already leaves.
+   * Returns the input list unchanged (no copy) when nothing collapses; callers must not mutate.
+   */
   private static List<String> collapseRedundantLeavesBeforePhase(List<String> lines) {
-    List<String> out = new ArrayList<>(lines.size());
-    for (int i = 0; i < lines.size(); i++) {
+    int n = lines.size();
+    int first = -1;
+    for (int i = 0; i < n; i++) {
+      String next = i + 1 < n ? lines.get(i + 1) : null;
+      if (lines.get(i).equals("<") && (next == null || next.equals("."))) {
+        first = i;
+        break;
+      }
+    }
+    if (first < 0) return lines;
+    List<String> out = new ArrayList<>(n - 1);
+    out.addAll(lines.subList(0, first));
+    for (int i = first + 1; i < n; i++) {
       String line = lines.get(i);
-      String next = i + 1 < lines.size() ? lines.get(i + 1) : null;
+      String next = i + 1 < n ? lines.get(i + 1) : null;
       if (line.equals("<") && (next == null || next.equals("."))) {
         continue;
       }

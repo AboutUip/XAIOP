@@ -9,9 +9,8 @@ from typing import Any, Callable, Literal
 from .errors import XaiopEncodeError
 from .label_escape import encode_wire_label, key_needs_symbol_escape
 
-_FLOAT_RE = re.compile(
-    r"^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$|^[+-]?\d+[eE][+-]?\d+$"
-)
+# Int or float token per PROT-CONTENT §5 (union of the former int/float REs).
+_NUMBER_LIKE_RE = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\Z")
 
 DOT_POLICY = {
     "NONE": "none",
@@ -261,16 +260,18 @@ def _resolve_root(value: Any, root: RootKind) -> Literal["object", "array", "fra
     return "object"
 
 
-def _ordered_keys(obj: dict[str, Any], key_order: KeyOrder) -> list[str]:
-    keys = list(obj.keys())
+def _ordered_keys(obj: dict[str, Any], key_order: KeyOrder):
     if key_order == "sorted":
-        keys.sort()
-    return keys
+        return sorted(obj)
+    # Insertion order: dict view, no list copy on the hot path (callers iterate).
+    return obj.keys()
 
 
-def _plan_phases(keys: list[str], opt: dict[str, Any]) -> list[list[str]]:
+def _plan_phases(keys, opt: dict[str, Any]) -> list[list[str]]:
     if not keys:
         return []
+    if not isinstance(keys, list):
+        keys = list(keys)  # phase planning slices; dict views cannot
     dot_policy = opt["dot_policy"]
     if dot_policy == DOT_POLICY["NONE"]:
         return [keys[:]]
@@ -444,7 +445,54 @@ def _significant_digits(repr_s: str) -> int:
 
 
 def _js_number_token(value: float) -> str:
-    """Shortest round-trip decimal matching ECMAScript Number#toString."""
+    """Shortest round-trip decimal matching ECMAScript Number#toString.
+
+    Fast path: CPython ``repr(float)`` already emits the shortest decimal that
+    round-trips (the same digits ECMAScript picks); only the fixed/scientific
+    cut-over differs, so reformat those digits per the ES rules (scientific
+    when the decimal exponent n is > 21 or <= -6). The Decimal slow path is
+    kept as fallback for unexpected repr forms.
+    """
+    if value == 0.0:
+        return "0"
+    sign = "-" if value < 0 else ""
+    r = repr(value if value >= 0 else -value)
+    e = r.find("e")
+    if e >= 0:
+        mant = r[:e]
+        exp10 = int(r[e + 1 :])
+    else:
+        mant = r
+        exp10 = 0
+    dot = mant.find(".")
+    if dot >= 0:
+        digits_all = mant[:dot] + mant[dot + 1 :]
+        exp10 -= len(mant) - dot - 1
+    else:
+        digits_all = mant
+    digs = digits_all.lstrip("0")
+    if not digs or not digs.isdigit():
+        return _js_number_token_slow(value)
+    stripped = digs.rstrip("0")
+    exp10 += len(digs) - len(stripped)
+    digs = stripped
+    k = len(digs)
+    # ECMAScript: value = 0.<digits> x 10^n
+    n = k + exp10
+
+    if k <= n <= 21:
+        return sign + digs + ("0" * (n - k))
+    if 0 < n <= 21:
+        return sign + digs[:n] + "." + digs[n:]
+    if -6 < n <= 0:
+        return sign + "0." + ("0" * (-n)) + digs
+    mantissa = digs if k == 1 else digs[0] + "." + digs[1:]
+    exponent = n - 1
+    return sign + mantissa + "e" + ("+" if exponent >= 0 else "-") + str(abs(exponent))
+
+
+def _js_number_token_slow(value: float) -> str:
+    """Decimal-based reference (shortest round-trip search); fallback path."""
     from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 
     d_abs = abs(value)
@@ -499,11 +547,15 @@ def _js_number_token(value: float) -> str:
 
 
 def _needs_forced_string(s: str) -> bool:
-    if s in ("true", "false", "null"):
-        return True
-    if re.match(r"^[+-]?\d+$", s):
-        return True
-    return bool(_FLOAT_RE.match(s))
+    # Head-char fast reject: typical strings never reach the regex at all.
+    if not s:
+        return False
+    c = s[0]
+    if c in "tfn":
+        return s in ("true", "false", "null")
+    if c in "+-.0123456789":
+        return _NUMBER_LIKE_RE.match(s) is not None
+    return False
 
 
 def _assert_key(key: str, path: str, symbol_keys: bool = False) -> None:

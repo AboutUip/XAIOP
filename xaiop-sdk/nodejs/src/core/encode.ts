@@ -1023,27 +1023,115 @@ function formatNumberToken(n, path) {
     return String(n);
   }
   const s = String(n);
-  if (/^[+-]?\d+$/.test(s)) return s;
-  if (
-    /^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(s) ||
-    /^[+-]?\d+[eE][+-]?\d+$/.test(s)
-  ) {
-    return s;
-  }
+  if (isNumberLikeToken(s)) return s;
   const j = JSON.stringify(n);
   if (typeof j === "string") return j;
   throw new XaiopEncodeError(`cannot format number: ${String(n)}`, { path });
 }
 
+/**
+ * Int or float token per PROT-CONTENT §5 (union of the former int/float
+ * classification regexes): `[+-]? ( \d+ (\.\d*)? | \.\d+ ) ([eE][+-]?\d+)?`
+ * with a lone `.` (no digits at all) rejected. Hand-rolled single pass.
+ * @param {string} s
+ */
+function isNumberLikeToken(s) {
+  const n = s.length;
+  if (n === 0) return false;
+  let i = 0;
+  let c = s.charCodeAt(0);
+  if (c === 43 || c === 45) {
+    i++;
+    if (i >= n) return false;
+  }
+  let intDigits = 0;
+  while (i < n) {
+    c = s.charCodeAt(i);
+    if (c < 48 || c > 57) break;
+    intDigits++;
+    i++;
+  }
+  let fracDigits = -1; // -1: no dot seen
+  if (i < n && s.charCodeAt(i) === 46) {
+    i++;
+    fracDigits = 0;
+    while (i < n) {
+      c = s.charCodeAt(i);
+      if (c < 48 || c > 57) break;
+      fracDigits++;
+      i++;
+    }
+  }
+  // Need digits somewhere; `.` and `.e5` have none.
+  if (intDigits === 0 && fracDigits <= 0) return false;
+  if (i < n) {
+    c = s.charCodeAt(i);
+    if (c !== 101 && c !== 69) return false;
+    i++;
+    if (i < n) {
+      c = s.charCodeAt(i);
+      if (c === 43 || c === 45) i++;
+    }
+    let expDigits = 0;
+    while (i < n) {
+      c = s.charCodeAt(i);
+      if (c < 48 || c > 57) break;
+      expDigits++;
+      i++;
+    }
+    if (expDigits === 0) return false;
+  }
+  return i === n;
+}
+
 /** @param {string} s */
 function needsForcedString(s) {
-  if (s === "true" || s === "false" || s === "null") return true;
-  if (/^[+-]?\d+$/.test(s)) return true;
-  if (
-    /^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(s) ||
-    /^[+-]?\d+[eE][+-]?\d+$/.test(s)
-  ) {
-    return true;
+  if (s.length === 0) return false;
+  const c0 = s.charCodeAt(0);
+  // Fast reject on head byte: t/f/n keywords, sign/dot/digit numeric tokens.
+  if (c0 === 116 || c0 === 102 || c0 === 110) {
+    return s === "true" || s === "false" || s === "null";
+  }
+  if (c0 === 43 || c0 === 45 || c0 === 46 || (c0 >= 48 && c0 <= 57)) {
+    return isNumberLikeToken(s);
+  }
+  return false;
+}
+
+/**
+ * Exact JS `\s` class (incl. Unicode spaces) or `:` — hand scan, no RegExp.
+ * @param {string} s
+ */
+function hasWhitespaceOrColon(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 58 /* : */ || c === 32 || (c >= 9 && c <= 13)) return true;
+    if (c < 128) continue;
+    if (
+      c === 0xa0 ||
+      c === 0x1680 ||
+      (c >= 0x2000 && c <= 0x200a) ||
+      c === 0x2028 ||
+      c === 0x2029 ||
+      c === 0x202f ||
+      c === 0x205f ||
+      c === 0x3000 ||
+      c === 0xfeff
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Any Cursor/operator character `> < = ! &`.
+ * @param {string} s
+ */
+function hasOperatorChar(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 62 || c === 60 || c === 61 || c === 33 || c === 38) return true;
   }
   return false;
 }
@@ -1059,7 +1147,7 @@ function assertKey(key, path, symbolKeys = false) {
       path,
     });
   }
-  if (/\s/.test(key) || key.includes(":")) {
+  if (hasWhitespaceOrColon(key)) {
     throw new XaiopEncodeError(
       `invalid label name: ${JSON.stringify(key)}`,
       { path },
@@ -1079,7 +1167,7 @@ function assertKey(key, path, symbolKeys = false) {
   }
   // Cursor/operator characters after an escaped head (or anywhere when unescaped)
   const body = keyNeedsSymbolEscape(key) && symbolKeys ? key.slice(1) : key;
-  if (/[><=!&]/.test(body)) {
+  if (hasOperatorChar(body)) {
     throw new XaiopEncodeError(
       `invalid label name (contains Cursor/operator character): ${JSON.stringify(key)}`,
       { path },

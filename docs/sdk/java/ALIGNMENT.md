@@ -146,6 +146,39 @@ Legend: ✅ = present and aligned at observable-semantics level.
 
 ≈37 JUnit classes under `io.xaiop` (ported suite + thin robustness / surface smokes; **564** methods in `mvn test`). Parity is asserted by Java-side expectations transcribed from the Node suite. **Node↔Java golden comparison runs in CI** ([`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) `golden` job — encode / parse / stream Diff NDJSON dumps under [`xaiop-sdk/conformance/`](../../../xaiop-sdk/conformance/)).
 
+**Timing:** same stage names as Node / Python / Go — [`xaiop-sdk/timing/java`](../../../xaiop-sdk/timing/java/) (`npm run bench:java` / `bench:java:quick`).
+
+**Parse ↔ JSON gate** (STRICT one-shot `Parse.parse` vs same-machine JSON on one nested fixture):
+
+```bash
+cd xaiop-sdk/timing
+npm run bench:java:json-gate:quick   # depth=2 breadth=5
+npm run bench:java:json-gate         # depth=3 breadth=8
+```
+
+| Side | Input | Op |
+| --- | --- | --- |
+| JSON | `Json.stringify` of tree | Node `JSON.parse` · `io.xaiop.Json.parse` (not Jackson) |
+| XAIOP | `Encode.encode(..., DotPolicy.NONE)` of same tree | `Parse.parse` |
+
+| Gate | Target | Notes |
+| --- | --- | --- |
+| Primary | `Parse / Node JSON.parse ≤ 1.2` | Report only this round (JVM vs V8 floor) |
+| Secondary | `Parse / Json.parse` (report; ≤1.2 preferred) | Same product tree shape; JDK has no std Map JSON |
+
+**Before → after** (same machine, nested fixture; wall-clock; ratios vary ±~0.2× run-to-run):
+
+| Fixture | Parse/Node (primary) | Parse/JavaJSON (secondary) |
+| --- | ---: | ---: |
+| Baseline quick / full | **~2.5×** / **~1.4×** | **~1.15×** / **~1.27×** |
+| After quick / full | **~3.0–3.4×** / **~1.3–1.4×** | **~1.20×** / **~1.08–1.24×** |
+
+Hot-path work: no-broadcast direct calls, content first-byte fast-path, hand-rolled float (already present), `splitLines` capacity, STRICT `assertName` ASCII pass, one-shot line feeder, small map/list capacity hints; **encode** `Double.toString` float fast path (BigDecimal fallback) + hand `needsForcedString`/`assertKey`; **checkpoint** phase-line ownership swap + skip snapshot clone when no `onChunk`. Artifact: `timing/java/last-json-gate.json`.
+
+**Stage timing** (vs baseline · **2026-08-09**): encode ~−27–64%; stream CALLBACK ~−69%; clean re-run **20 faster / 0 slower** (tiny locate/long rows can jitter). Narrative: [../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md) · Hub: [../../performance.md](../../performance.md).
+
+Secondary on the full fixture is near the ≤1.2 bar (~1.08–1.24× `Json.parse`). Primary ≤1.2× Node remains a stretch under JVM/`LinkedHashMap` vs V8. Non-goal: introduce Jackson only for a column, or change product tree type.
+
 ---
 
 ## 6. ACCEPTABLE differences
