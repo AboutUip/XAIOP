@@ -13,8 +13,8 @@ import {
  * Also: `emitDiff: false` without `onChunk` must not throw.
  */
 describe("checkpoint Diff isolation (D1 + D2 + emitDiff)", () => {
-  test("SDK_VERSION is 0.15.1", () => {
-    assert.equal(SDK_VERSION, "0.15.1");
+  test("SDK_VERSION is 0.16.0", () => {
+    assert.equal(SDK_VERSION, "0.16.0");
   });
 
   test("onChunk Diff mutation does not touch committedSnapshot", () => {

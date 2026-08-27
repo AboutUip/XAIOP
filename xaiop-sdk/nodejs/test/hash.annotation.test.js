@@ -12,7 +12,7 @@ import {
 describe("protocol 0.6.0 # custom annotation", () => {
   test("versions", () => {
     assert.equal(PROTOCOL_VERSION, "0.7.0");
-    assert.equal(SDK_VERSION, "0.15.1");
+    assert.equal(SDK_VERSION, "0.16.0");
   });
 
   test("standalone # lines are ignored anywhere", () => {

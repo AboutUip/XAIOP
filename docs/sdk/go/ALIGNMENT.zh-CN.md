@@ -5,8 +5,8 @@
 | 字段 | 值 |
 | --- | --- |
 | 文档 | 现行对等矩阵（Go 官方端口） |
-| Go 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.15.1** |
-| Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
+| Go 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.16.0** |
+| Node 包 | `@bylan280/xaiop` **0.16.0** 本树（上次 npm **0.15.1**） |
 | 协议线文 | **0.7.0** Draft（`xaiop.ProtocolVersion`） |
 | 规范性 | **否** — 产品对等清单 |
 | 权威 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |
@@ -20,10 +20,10 @@
 
 | 栈 | 包 / 模块 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | 参考 |
-| Java（官方） | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
-| Python（官方） | `xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
-| Go（官方端口） | `github.com/AboutUip/XAIOP/xaiop-sdk/go` | **0.15.1** | **0.7.0** Draft | 已对齐 |
+| Node.js（主） | `@bylan280/xaiop` | **0.16.0** | **0.7.0** Draft | 参考 |
+| Java（官方） | `io.github.aboutuip:xaiop` | **0.16.0** | **0.7.0** Draft | 已对齐 |
+| Python（官方） | `xaiop` | **0.16.0** | **0.7.0** Draft | 已对齐 |
+| Go（官方端口） | `github.com/AboutUip/XAIOP/xaiop-sdk/go` | **0.16.0** | **0.7.0** Draft | 已对齐 |
 
 ---
 

@@ -9,7 +9,7 @@ func TestProtocolVersion(t *testing.T) {
 }
 
 func TestSDKVersion(t *testing.T) {
-	if SDKVersion != "0.15.1" {
-		t.Fatalf("SDKVersion = %q, want 0.15.1", SDKVersion)
+	if SDKVersion != "0.16.0" {
+		t.Fatalf("SDKVersion = %q, want 0.16.0", SDKVersion)
 	}
 }

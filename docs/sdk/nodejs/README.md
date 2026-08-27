@@ -5,8 +5,8 @@
 | Field | Value |
 | --- | --- |
 | Package | `@bylan280/xaiop` (npm) |
-| SDK | **0.15.1** (TypeScript) |
-| Protocol package | **0.6.0** Frozen (sealed) |
+| SDK | **0.16.0** (TypeScript) |
+| Protocol package | **0.7.0** Draft |
 | Runtime | Node.js ≥ 18 (default entry); browsers → `@bylan280/xaiop/browser` |
 | Code | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` → `dist/`) |
 
@@ -28,6 +28,8 @@ import { parseSync, encodeSync } from "@bylan280/xaiop/core";        // isomorph
 ---
 
 ## Install
+
+Last published npm is **0.15.1**. This tree is **0.16.0** (`npm install` from the registry still resolves 0.15.1 until this cut is published).
 
 ```bash
 npm install @bylan280/xaiop

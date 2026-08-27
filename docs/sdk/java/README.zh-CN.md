@@ -4,13 +4,13 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 产物 | `io.github.aboutuip:xaiop` **0.15.1**（Maven Central JAR；Java 包名 `io.xaiop.*`） |
+| 产物 | `io.github.aboutuip:xaiop` **0.16.0** 本树（Central 上仍是 **0.15.1**；Java 包名 `io.xaiop.*`） |
 | 协议 | v0.7.0 Draft（`Xaiop.PROTOCOL_VERSION`） |
-| SDK 版本常量 | `Xaiop.SDK_VERSION` = `0.15.1` |
+| SDK 版本常量 | `Xaiop.SDK_VERSION` = `0.16.0` |
 | 运行时 | Java 17+（零 runtime 依赖） |
 | 代码 | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-本包在**可观测语义**上对齐 Node.js 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1** ↔ 协议 **0.7.0** Draft）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `@bylan280/xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
+本包在**可观测语义**上对齐 Node.js 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.16.0** ↔ 协议 **0.7.0** Draft）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `@bylan280/xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
 
 **API 参考（权威）：** **[API.zh-CN.md](API.zh-CN.md)** — 完整表面（§0–§11）：Parse · Encode · Engine · Stream · WS · Control · Compat · 类型 · 错误。  
 **对等矩阵（Java ↔ Node）：** **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** — 功能表 · 惯用法 · 包映射 · 测试映射 · 可接受差异 · §8 清单。  
@@ -105,18 +105,18 @@ io.xaiop/                 门面 · Parse · Encode · Merge · Engine · 选项
 
 ## 安装
 
-Maven Central：**`io.github.aboutuip:xaiop`** **0.15.1**。Java 包名仍是 **`io.xaiop.*`**。旧文档若仍写未上架的 GAV `io.xaiop:xaiop`，消费方必须用 `io.github.aboutuip`。
+Maven Central 上次发布 **`io.github.aboutuip:xaiop:0.15.1`**。本树为 **0.16.0** — 下方片段跟树版本。Java 包名仍是 **`io.xaiop.*`**。旧文档若仍写未上架的 GAV `io.xaiop:xaiop`，消费方必须用 `io.github.aboutuip`。
 
 ```xml
 <dependency>
   <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
 ```kotlin
-implementation("io.github.aboutuip:xaiop:0.15.1")
+implementation("io.github.aboutuip:xaiop:0.16.0")
 ```
 
 检索：[Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)。维护者发布：[MAVEN-CENTRAL.zh-CN.md](../../../xaiop-sdk/java/MAVEN-CENTRAL.zh-CN.md)。
@@ -368,7 +368,7 @@ encode 线文以 `\n` 结尾；`feedText` / `Parse.parse` 会丢掉末尾空段�
 ```bash
 cd xaiop-sdk/java
 mvn test                  # 全量（含 StreamAdvancedTest）
-mvn -DskipTests package   # target/xaiop-0.15.1.jar
+mvn -DskipTests package   # target/xaiop-0.16.0.jar
 mvn test                  # 含 StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```
 

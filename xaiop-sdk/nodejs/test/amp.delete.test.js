@@ -16,9 +16,9 @@ function wire(...lines) {
 }
 
 describe("amp.delete ??versions", () => {
-  test("protocol 0.6.0 / SDK 0.15.1", () => {
+  test("protocol 0.7.0 / SDK 0.16.0", () => {
     assert.equal(PROTOCOL_VERSION, "0.7.0");
-    assert.equal(SDK_VERSION, "0.15.1");
+    assert.equal(SDK_VERSION, "0.16.0");
   });
 });
 

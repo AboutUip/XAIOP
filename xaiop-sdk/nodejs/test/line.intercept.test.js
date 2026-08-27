@@ -23,7 +23,7 @@ import {
 describe("line intercept ?versions + classify", () => {
   test("SDK / protocol versions", () => {
     assert.equal(PROTOCOL_VERSION, "0.7.0");
-    assert.equal(SDK_VERSION, "0.15.1");
+    assert.equal(SDK_VERSION, "0.16.0");
   });
 
   test("LINE_KIND is frozen with stable ids", () => {

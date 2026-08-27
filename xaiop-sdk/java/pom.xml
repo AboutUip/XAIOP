@@ -6,11 +6,11 @@
 
   <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
   <packaging>jar</packaging>
 
   <name>XAIOP</name>
-  <description>XAIOP protocol SDK for Java (artifact 0.15.1 · protocol 0.7.0 Draft)</description>
+  <description>XAIOP protocol SDK for Java (artifact 0.16.0 · protocol 0.7.0 Draft)</description>
   <url>https://github.com/AboutUip/XAIOP/tree/main/xaiop-sdk/java</url>
 
   <licenses>
@@ -33,7 +33,7 @@
     <connection>scm:git:https://github.com/AboutUip/XAIOP.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/AboutUip/XAIOP.git</developerConnection>
     <url>https://github.com/AboutUip/XAIOP/tree/main/xaiop-sdk/java</url>
-    <tag>sdk-java-v0.15.1</tag>
+    <tag>sdk-java-v0.16.0</tag>
   </scm>
 
   <properties>

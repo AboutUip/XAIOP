@@ -38,7 +38,7 @@ English text is authoritative; Chinese mirrors track the same entries.
 | `PROT-SYNTAX` §1.8 / §3 | Physical vs semantic multiline |
 | `PROT-NOTE-LABEL-ESC` | Draft note [protocol/notes/label-escape.md](../protocol/notes/label-escape.md) |
 | `PROT-HIER` §9 / §12.5 | `?` element select; bare `&` deletes the current array element |
-| Node.js / Java / Python / Go SDK | Parse unescape + encode escape; `symbolKeys` on encode + parse; `?` / bare `&` |
+| Node.js / Java / Python / Go SDK | Product **0.16.0**: Content unescape/escape; `symbolKeys`; `?` / bare `&`; `LINE_KIND.SELECT` |
 
 ---
 

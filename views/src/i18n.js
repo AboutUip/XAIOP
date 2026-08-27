@@ -63,7 +63,7 @@ const messages = {
     "home.exploreOps": "Explore operators →",
     "home.sdkTitle": "SDK",
     "home.sdkBody":
-      "Node.js is the reference; Java 0.15.1 and Python 0.15.1 are official ports. Each stack renders its live docs/sdk/*/API.md.",
+      "Node.js is the reference; Java 0.16.0 and Python 0.16.0 are official ports. Each stack renders its live docs/sdk/*/API.md.",
     "home.openApi": "Open API reference →",
     "home.tryTitle": "Try it",
     "home.tryBody":
@@ -230,7 +230,7 @@ const messages = {
     "home.exploreOps": "浏览算子 →",
     "home.sdkTitle": "SDK",
     "home.sdkBody":
-      "Node.js 为参考实现；Java 0.15.1 与 Python 0.15.1 为官方端口。各栈渲染对应 docs/sdk/*/API.md。",
+      "Node.js 为参考实现；Java 0.16.0 与 Python 0.16.0 为官方端口。各栈渲染对应 docs/sdk/*/API.md。",
     "home.openApi": "打开 API 参考 →",
     "home.tryTitle": "试用",
     "home.tryBody":

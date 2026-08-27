@@ -1,22 +1,22 @@
 # XAIOP Java SDK
 
-Maven project producing a publishable **JAR** (`io.github.aboutuip:xaiop` **0.15.1**, Java packages `io.xaiop.*`) for XAIOP protocol **v0.7.0 Draft**, aligned with the Node.js reference ([`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1**).
+Maven project producing a publishable **JAR** (`io.github.aboutuip:xaiop` **0.16.0**, Java packages `io.xaiop.*`) for XAIOP protocol **v0.7.0 Draft**, aligned with the Node.js reference ([`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.16.0**).
 
 Guide: [../../docs/sdk/java/README.md](../../docs/sdk/java/README.md) · 简体中文: [../../docs/sdk/java/README.zh-CN.md](../../docs/sdk/java/README.zh-CN.md)  
 **Parity matrix:** [../../docs/sdk/java/ALIGNMENT.md](../../docs/sdk/java/ALIGNMENT.md) · [中文](../../docs/sdk/java/ALIGNMENT.zh-CN.md)  
 Behavioral contract: [../../docs/sdk/behavioral-contract.md](../../docs/sdk/behavioral-contract.md)  
-**Maven Central:** [MAVEN-CENTRAL.md](MAVEN-CENTRAL.md) · [中文](MAVEN-CENTRAL.zh-CN.md) — consumers: `io.github.aboutuip:xaiop:0.15.1`
+**Maven Central:** [MAVEN-CENTRAL.md](MAVEN-CENTRAL.md) · [中文](MAVEN-CENTRAL.zh-CN.md) — this tree `io.github.aboutuip:xaiop:0.16.0` (last on Central **0.15.1**)
 
 ```xml
 <dependency>
   <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
 ```kotlin
-implementation("io.github.aboutuip:xaiop:0.15.1")
+implementation("io.github.aboutuip:xaiop:0.16.0")
 ```
 
 Java packages remain `io.xaiop.*`. Guide: [../../docs/sdk/java/README.md](../../docs/sdk/java/README.md#install).
@@ -62,7 +62,7 @@ mvn test                  # full suite
 mvn -DskipTests package
 ```
 
-Artifact: `target/xaiop-0.15.1.jar` · Requires JDK 17+.
+Artifact: `target/xaiop-0.16.0.jar` · Requires JDK 17+.
 
 Stage timing (same stage names as Node/Python/Go): from [`../timing/`](../timing/) run `npm run bench:java` (writes `java/last-bench.json`). Parse↔JSON: `npm run bench:java:json-gate`. Extreme-perf tip (**2026-08-09**): [../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md). Prior internal notes: [../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md](../../docs/meta/release-notes-2026-08-08-java-0.15.1-internal.md).
 

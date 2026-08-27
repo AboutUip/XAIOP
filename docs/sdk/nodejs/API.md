@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.7.0 Draft  
-**SDK**: 0.15.1 (TypeScript) · npm **`@bylan280/xaiop`**  
+**SDK**: 0.16.0 (TypeScript) · npm **`@bylan280/xaiop`**  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
 **Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`) · [npm](https://www.npmjs.com/package/@bylan280/xaiop)  
 **Node product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) (optional guide; not a cross-language mandate) · **Releases**: [../../meta/releases.md](../../meta/releases.md)
@@ -23,7 +23,7 @@
 | Default `"@bylan280/xaiop"` works in browsers as-is | **No** (pulls `ws` / `node:stream`) |
 | Browser server `listen` | **No** — use Node `XaiopWs.listen`; browser only `connect` / `XaiopStream` |
 | Browser **`.` phase Diff** | **Yes** — same `DotCheckpointEngine` as Node (`onChunk` / `onPhase`, Commit, optional `cover` / `mergeChunkWindow` / `typeCheck` / **line intercept** / **Annotation Span** / **Control Root**) |
-| Wire semantics | All three entries share one `core` (protocol package **0.6.0**) |
+| Wire semantics | All three entries share one `core` (protocol package **0.7.0** Draft) |
 
 This repository’s **SDK focus is Node.js**; other-language ports need not match the full Node surface.
 
@@ -106,7 +106,7 @@ Primary methods are **async**, with matching **sync** variants (parse / encode /
 
 ## 2. Core concepts
 
-**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **sealed protocol package 0.6.0** (SDK **0.15.1**).
+**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. The legacy name “eXtensible AI Output Protocol” is **not** the definition. These SDK docs describe the Node.js implementation of **protocol package 0.7.0 Draft** (SDK **0.16.0**).
 
 - Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 - Seal and release index: [../../meta/releases.md](../../meta/releases.md)
@@ -147,7 +147,7 @@ Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 ### 2.2 Phase
 
 `.` resets Cursor to Root and is the streaming **Diff boundary** (SDK policy: phase on `.`, not on Blocks).  
-Phases that contain `=` / `!` / `&` must see the **cumulative tree so far**; the official streamer parses a cumulative prefix for those phases.
+Phases that contain `=` / `!` / `&` / `?` must see the **cumulative tree so far**; the official streamer parses a cumulative prefix for those phases.
 
 ### 2.3 Root shapes
 
@@ -912,7 +912,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.7.0"` |
-| `SDK_VERSION` | `"0.15.1"` |
+| `SDK_VERSION` | `"0.16.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

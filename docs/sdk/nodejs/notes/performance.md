@@ -65,7 +65,7 @@ Primary ≤1.2× remains a stretch: XAIOP builds a Cursor/product tree from line
 | `checkpoint/streamOff/phased` | **~−40%** |
 | Clean re-run | up to **20 faster / 0 slower** |
 
-Correctness: Node suite **688** · product golden **50/50** vs Java/Python/Go.
+Correctness: Node suite **901** · product golden **60/60** vs Java/Python/Go.
 
 ---
 

@@ -2,7 +2,7 @@
 
 [English](#english) · [简体中文](#简体中文)
 
-Harness **0.2.1** · targets Node / Python / Java / Go SDK **0.15.1+** / protocol **0.7.0**.
+Harness **0.2.1** · targets Node / Python / Java / Go SDK **0.16.0+** / protocol **0.7.0**.
 
 One folder per runtime — stage **names match** across harnesses for cross-runtime compare.
 

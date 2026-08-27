@@ -5,8 +5,8 @@
 | Field | Value |
 | --- | --- |
 | Document | Living parity matrix (Java official port) |
-| Java artifact | `io.github.aboutuip:xaiop` **0.15.1** (Maven Central; packages `io.xaiop.*`) |
-| Node package | `@bylan280/xaiop` **0.15.1** (npm) |
+| Java artifact | `io.github.aboutuip:xaiop` **0.16.0** this tree (last Central **0.15.1**; packages `io.xaiop.*`) |
+| Node package | `@bylan280/xaiop` **0.16.0** this tree (last npm **0.15.1**) |
 | Protocol wire | **0.7.0** Draft (`Xaiop.PROTOCOL_VERSION`) |
 | Normative | **No** — product parity inventory (not protocol conformance) |
 | Authority | Node reference + [../behavioral-contract.md](../behavioral-contract.md) |
@@ -22,9 +22,9 @@ This document is the **definitive parity matrix** for the Java port against the 
 
 | Stack | Package / artifact | SDK | Protocol | Status |
 | --- | --- | --- | --- | --- |
-| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | Reference |
-| Java (official port) | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
-| Python (official port) | `xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
+| Node.js (primary) | `@bylan280/xaiop` | **0.16.0** | **0.7.0** Draft | Reference |
+| Java (official port) | `io.github.aboutuip:xaiop` | **0.16.0** | **0.7.0** Draft | Aligned |
+| Python (official port) | `xaiop` | **0.16.0** | **0.7.0** Draft | Aligned |
 
 Pin the Maven artifact version; read `Xaiop.PROTOCOL_VERSION` for the wire package. Java has **no** `xaiop/browser` subpath — listen and connect share one JDK package (`io.xaiop.ws`).
 
@@ -53,7 +53,7 @@ Pin the Maven artifact version; read `Xaiop.PROTOCOL_VERSION` for the wire packa
 | `XaiopStream` SSE | ✅ | ✅ | Multi-`data:` joined with `\n` |
 | `XaiopStream` RAW | ✅ | ✅ | `Iterable` / `InputStream` |
 | `XaiopStream` WebSocket | ✅ | ✅ | Via `Transport`; long sessions → `XaiopWs` |
-| Stream options (cover · history · typeCheck · intercept · annotationSpan · session / autoAck · control callbacks · `chunks()`) | ✅ | ✅ | Wired on `XaiopStream.Options` / setters (0.15.1) |
+| Stream options (cover · history · typeCheck · intercept · annotationSpan · session / autoAck · control callbacks · `chunks()`) | ✅ | ✅ | Wired on `XaiopStream.Options` / setters (0.16.0) |
 | typeCheck / TypeRegistry / freeze | ✅ | ✅ | `io.xaiop.types` |
 | Line intercept | ✅ | ✅ | `LineIntercept` |
 | Annotation Span | ✅ | ✅ | `AnnotationSpan.KEEP` ↔ Node `undefined` keep |
@@ -222,7 +222,7 @@ cd xaiop-sdk/timing && npm run bench:java:quick   # optional same-machine stage 
 
 ## 8. Behavioral-contract §8 checklist (Java official port)
 
-All items **satisfied** by `io.github.aboutuip:xaiop` **0.15.1** (see [../behavioral-contract.md](../behavioral-contract.md) §8):
+All items **satisfied** by `io.github.aboutuip:xaiop` **0.16.0** (see [../behavioral-contract.md](../behavioral-contract.md) §8):
 
 - [x] Strict default; compat opt-in; encode always strict  
 - [x] Eight compat fixes with same rewrite / pop-and-retry / locate retries  

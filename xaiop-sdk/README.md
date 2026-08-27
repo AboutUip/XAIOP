@@ -1,6 +1,6 @@
 # XAIOP SDK
 
-> Official multi-runtime **SDK** — Node npm **`@bylan280/xaiop`** **0.15.1** (protocol **0.7.0** Draft) · Java `io.github.aboutuip:xaiop` **0.15.1** (Maven Central) · Python `xaiop` **0.15.1** · Go `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1**
+> Official multi-runtime **SDK** — this tree **0.16.0** (protocol **0.7.0** Draft). Last published artifacts: Node npm **`@bylan280/xaiop@0.15.1`** · Java `io.github.aboutuip:xaiop:0.15.1` · Python `xaiop` **0.15.1** · Go `…/xaiop-sdk/go@v0.15.1`
 
 [English](README.md) · Simplified Chinese: [README.zh-CN.md](README.zh-CN.md)
 
@@ -8,7 +8,8 @@
 | --- | --- |
 | Node npm publish (2026-08-09) | [../docs/meta/release-notes-2026-08-09-nodejs-npm.md](../docs/meta/release-notes-2026-08-09-nodejs-npm.md) · [npm](https://www.npmjs.com/package/@bylan280/xaiop) |
 | Java Maven Central | [java/MAVEN-CENTRAL.md](java/MAVEN-CENTRAL.md) · [central.sonatype.com](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop) · [install](../docs/sdk/java/README.md#install) |
-| Go module | [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · [install](../docs/sdk/go/README.md#install) |
+| Go module | last tagged [pkg.go.dev@v0.15.1](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · this tree **0.16.0** · [install](../docs/sdk/go/README.md#install) |
+| Release notes (2026-08-27 · SDK 0.16.0) | [../docs/meta/release-notes-2026-08-27-sdk-0.16.0.md](../docs/meta/release-notes-2026-08-27-sdk-0.16.0.md) |
 | Extreme-perf tip (2026-08-09 · all runtimes) | [../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md) |
 | SDK stage timing hub | [../docs/performance.md](../docs/performance.md) · [timing/](timing/) |
 | Release notes (2026-08-08 · Go 0.15.1) | [../docs/meta/release-notes-2026-08-08-go-0.15.1.md](../docs/meta/release-notes-2026-08-08-go-0.15.1.md) |
@@ -33,8 +34,8 @@
 
 | Directory | Status |
 | --- | --- |
-| [nodejs/](nodejs/) | **Active** — npm **`@bylan280/xaiop`** **0.15.1** <-> protocol **0.7.0** Draft (parse · stream · encode · merge · history · WS · Control Root / logSeq · Diff isolation / `@` Diff · buffer compact; **2026-08-09** extreme hot-path tip) |
-| [java/](java/) | **Active** — `io.github.aboutuip:xaiop` **0.15.1** (Maven Central) — protocol **0.7.0** Draft (full Node-aligned surface; [ALIGNMENT](../docs/sdk/java/ALIGNMENT.md) · [install](../docs/sdk/java/README.md#install)) |
-| [python/](python/) | **Active** — `xaiop` **0.15.1** — protocol **0.7.0** Draft ([ALIGNMENT](../docs/sdk/python/ALIGNMENT.md)) |
-| [go/](go/) | **Official** — `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1** — protocol **0.7.0** Draft ([ALIGNMENT](../docs/sdk/go/ALIGNMENT.md) · [API](../docs/sdk/go/API.md) · [install](../docs/sdk/go/README.md#install)) |
+| [nodejs/](nodejs/) | **Active** — npm **`@bylan280/xaiop`** **0.16.0** <-> protocol **0.7.0** Draft (parse · stream · encode · merge · history · WS · Control Root / logSeq · Diff isolation / `@` Diff · buffer compact; **2026-08-09** extreme hot-path tip) |
+| [java/](java/) | **Active** — `io.github.aboutuip:xaiop` **0.16.0** (Maven Central) — protocol **0.7.0** Draft (full Node-aligned surface; [ALIGNMENT](../docs/sdk/java/ALIGNMENT.md) · [install](../docs/sdk/java/README.md#install)) |
+| [python/](python/) | **Active** — `xaiop` **0.16.0** — protocol **0.7.0** Draft ([ALIGNMENT](../docs/sdk/python/ALIGNMENT.md)) |
+| [go/](go/) | **Official** — `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.16.0** — protocol **0.7.0** Draft ([ALIGNMENT](../docs/sdk/go/ALIGNMENT.md) · [API](../docs/sdk/go/API.md) · [install](../docs/sdk/go/README.md#install)) |
 | [timing/](timing/) | SDK stage microbench + Parse↔JSON gates (Node + Python + Java + **Go**) — not a product package |

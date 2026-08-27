@@ -2,7 +2,8 @@
 
 [English](MAVEN-CENTRAL.md) · [简体中文](MAVEN-CENTRAL.zh-CN.md)
 
-Published coordinates: **`io.github.aboutuip:xaiop:0.15.1`** · Protocol **0.6.0**.  
+Published coordinates: **last on Central `io.github.aboutuip:xaiop:0.15.1`** (protocol **0.6.0**).  
+This tree: **`0.16.0`** · protocol **0.7.0** Draft — snippets below match the tree; Central still serves **0.15.1** until this cut is deployed.  
 Java packages remain **`io.xaiop.*`**. Older docs may still write the unpublished GAV `io.xaiop:xaiop` — consumers must use `io.github.aboutuip`.
 
 Portal: [central.sonatype.com/artifact/io.github.aboutuip/xaiop](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)
@@ -15,14 +16,14 @@ Maven:
 <dependency>
   <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
 Gradle:
 
 ```kotlin
-implementation("io.github.aboutuip:xaiop:0.15.1")
+implementation("io.github.aboutuip:xaiop:0.16.0")
 ```
 
 Guide: [../../docs/sdk/java/README.md](../../docs/sdk/java/README.md).

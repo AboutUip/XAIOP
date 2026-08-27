@@ -80,6 +80,7 @@
   * [release notes 2026 08 08 python 0.15.1](/meta/release-notes-2026-08-08-python-0.15.1.md)
   * [release notes 2026 08 09 nodejs npm](/meta/release-notes-2026-08-09-nodejs-npm.md)
   * [release notes 2026 08 09 sdk extreme perf internal](/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md)
+  * [release notes 2026 08 27 sdk 0.16.0](/meta/release-notes-2026-08-27-sdk-0.16.0.md)
   * [releases](/meta/releases.md)
   * [revisions](/meta/revisions.md)
   * [status and versioning](/meta/status-and-versioning.md)

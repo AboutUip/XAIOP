@@ -60,7 +60,7 @@ content 首字节快路径 · 手写 float · 无 broadcast 直调 · STRICT one
 | `checkpoint/streamOff/phased` | **~−40%** |
 | 干净复跑 | 最多 **20 faster / 0 slower** |
 
-正确性：单测 **688** · 产品黄金 **50/50**。
+正确性：单测 **901** · 产品黄金 **60/60**。
 
 ---
 

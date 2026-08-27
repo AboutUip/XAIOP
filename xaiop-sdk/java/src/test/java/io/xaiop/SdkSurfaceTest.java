@@ -38,7 +38,7 @@ class SdkSurfaceTest {
   @Test
   void protocolAndSdkVersions() {
     assertEquals("0.7.0", Xaiop.PROTOCOL_VERSION);
-    assertEquals("0.15.1", Xaiop.SDK_VERSION);
+    assertEquals("0.16.0", Xaiop.SDK_VERSION);
   }
 
   @Test

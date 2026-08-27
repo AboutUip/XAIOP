@@ -7,18 +7,18 @@
 | 包名 | `xaiop` |
 | 轨道 | **官方产品 SDK** |
 | 协议 | **0.7.0** Draft（`PROTOCOL_VERSION`） |
-| SDK | `0.15.1`（`SDK_VERSION`） |
+| SDK | `0.16.0`（`SDK_VERSION`） |
 | 代码 | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
 | **API 参考** | **[API.zh-CN.md](API.zh-CN.md)**（权威表面） |
 | 对等 | **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** |
 
-官方端口对齐 Node `xaiop` **0.15.1** 产品面（无 browser）。线文协议为 **0.7.0** Draft。
+官方端口对齐 Node `xaiop` **0.16.0** 产品面（无 browser）。线文协议为 **0.7.0** Draft。
 
 完整 Python API（parse / encode / engine / stream / WS / control / types）见 **[API.zh-CN.md](API.zh-CN.md)**。
 
 ## 状态
 
-**0.15.1** — 稳定版。产品面在可观察语义层面与 Node **0.15.1** 对齐（见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
+**0.16.0** — 本树（PyPI 在上架前仍是 **0.15.1**）。产品面在可观察语义层面与 Node **0.16.0** 对齐（见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
 
 ## 公共 API（节选）
 

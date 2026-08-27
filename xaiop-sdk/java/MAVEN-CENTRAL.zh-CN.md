@@ -2,7 +2,8 @@
 
 [English](MAVEN-CENTRAL.md) · [简体中文](MAVEN-CENTRAL.zh-CN.md)
 
-已发布坐标：**`io.github.aboutuip:xaiop:0.15.1`** · 协议 **0.6.0**。  
+已发布坐标：Central 上仍是 **`io.github.aboutuip:xaiop:0.15.1`**（协议 **0.6.0**）。  
+本树：**`0.16.0`** · 协议 **0.7.0** Draft — 下方片段跟树版本；Central 在本切发布前仍提供 **0.15.1**。  
 Java 包名仍是 **`io.xaiop.*`**。旧文档若仍写未上架的 GAV `io.xaiop:xaiop`，消费方必须用 `io.github.aboutuip`。
 
 检索：[central.sonatype.com/artifact/io.github.aboutuip/xaiop](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)
@@ -15,14 +16,14 @@ Maven：
 <dependency>
   <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
 Gradle：
 
 ```kotlin
-implementation("io.github.aboutuip:xaiop:0.15.1")
+implementation("io.github.aboutuip:xaiop:0.16.0")
 ```
 
 指南：[../../docs/sdk/java/README.zh-CN.md](../../docs/sdk/java/README.zh-CN.md)。

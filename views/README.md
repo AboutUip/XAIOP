@@ -31,6 +31,6 @@ npm run sidebar
 | Stream scenarios | `src/data/stream-scenarios.js` |
 | Playground sim | `src/lib/stream-sim.js` |
 | Live server | `npm run live-server` / `scripts/live-stream-server.mjs` |
-| Operator cheat-sheet (lab UI only) | `src/data/xaiop-catalog.js` — versions tip: protocol **0.6.0** · Node/Java/Python **0.15.1**; **not** a substitute for `docs/sdk/*/API.md` |
+| Operator cheat-sheet (lab UI only) | `src/data/xaiop-catalog.js` — versions tip: protocol **0.6.0** · Node/Java/Python **0.16.0**; **not** a substitute for `docs/sdk/*/API.md` |
 | SDK API pages | `/sdk/nodejs` · `/sdk/java` · `/sdk/python` render live `docs/sdk/<stack>/API.md` (?raw); Go stays core-wire track |
 | SDK wire (browser) | Vite aliases `xaiop/parse|materialize|checkpoint|clone` → `../xaiop-sdk/nodejs/dist/core/*.js` (run `npm run build:ts` in the SDK package after core changes) |

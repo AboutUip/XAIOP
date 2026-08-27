@@ -66,7 +66,7 @@ function schema(map) {
 describe("annotation span ??versions + exports", () => {
   test("SDK / protocol", () => {
     assert.equal(PROTOCOL_VERSION, "0.7.0");
-    assert.equal(SDK_VERSION, "0.15.1");
+    assert.equal(SDK_VERSION, "0.16.0");
   });
 
   test("helpers exported", () => {

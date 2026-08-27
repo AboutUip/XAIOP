@@ -2,14 +2,16 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-官方产品端口：**0.15.1** · 协议 **0.7.0** Draft。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) · API：[API.zh-CN.md](API.zh-CN.md)。
+官方产品端口：**0.16.0** · 协议 **0.7.0** Draft。对等矩阵：[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) · API：[API.zh-CN.md](API.zh-CN.md)。
 
 **已实现：** 与 Node tip 对齐的产品面（parse · Compat ×8 · encode · merge · engine · stream · WS · control · typeCheck · 拦截 / Annotation Span · `symbolKeys`）。**范围外：** browser（同 Java / Python）。
 
 ## 安装
 
+在打标签前，上次发布的模块是 `@v0.15.1`。本树为 **0.16.0**。
+
 ```bash
-go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1
+go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.16.0
 ```
 
 ```go
@@ -19,7 +21,7 @@ v, err := xaiop.Parse(source)
 wire, err := xaiop.Encode(v, xaiop.EncodeOptions{TrailingNewline: true})
 ```
 
-模块：[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)。Git 标签：`xaiop-sdk/go/v0.15.1`。
+模块：上次标签 [pkg.go.dev@v0.15.1](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)。拟用标签：`xaiop-sdk/go/v0.16.0`。
 
 ## 验证
 

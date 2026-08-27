@@ -8,11 +8,11 @@
 | 状态 | 信息性 |
 | 最近更新 | 2026-08-27 |
 | 规范性 | **否** — SDK 产品目录（非协议符合性） |
-| 参考实现（重心） | Node.js `xaiop` **0.15.1**（`xaiop-sdk/nodejs/`） |
-| Java 官方移植 | `io.github.aboutuip:xaiop` **0.15.1**（Maven Central；包名 `io.xaiop.*`）— 已对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md) · [安装](java/README.zh-CN.md#安装)） |
-| Python 官方移植 | `xaiop` **0.15.1** — 已对齐（[python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)） |
-| Go 官方移植 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1**（[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)）— 已对齐（[go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md) · [安装](go/README.zh-CN.md#安装)） |
-| 协议线文 | Frozen **v0.6.0** |
+| 参考实现（重心） | Node.js `xaiop` **0.16.0**（`xaiop-sdk/nodejs/`） |
+| Java 官方移植 | `io.github.aboutuip:xaiop` **0.16.0** 本树（Central 上仍是 **0.15.1**；包名 `io.xaiop.*`）— 已对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md) · [安装](java/README.zh-CN.md#安装)） |
+| Python 官方移植 | `xaiop` **0.16.0** — 已对齐（[python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)） |
+| Go 官方移植 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.16.0** 本树（上次标签 [v0.15.1](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)）— 已对齐（[go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md) · [安装](go/README.zh-CN.md#安装)） |
+| 协议线文 | **0.7.0** Draft |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
 **立场：** 协议 IR ≠ 产品营销面 — [../overview/introduction.zh-CN.md](../overview/introduction.zh-CN.md)。  
@@ -185,9 +185,9 @@ finish 时:
 
 API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md)。
 
-**Java（`io.github.aboutuip:xaiop` 0.15.1）：** 与 Node **0.15.1** 对齐的官方移植（协议 **0.7.0** Draft）。`XaiopStream` 接通消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)。
+**Java（`io.github.aboutuip:xaiop` 0.16.0）：** 与 Node **0.16.0** 对齐的官方移植（协议 **0.7.0** Draft）。`XaiopStream` 接通消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)。
 
-**Python（`xaiop` 0.15.1）：** 同一 Node **0.15.1** 产品面的官方移植（协议 **0.7.0** Draft；无 browser）。Stream / WS / control / typeCheck / intercept / Annotation Span / history 见 [python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)。
+**Python（`xaiop` 0.16.0）：** 同一 Node **0.16.0** 产品面的官方移植（协议 **0.7.0** Draft；无 browser）。Stream / WS / control / typeCheck / intercept / Annotation Span / history 见 [python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)。
 
 ---
 
@@ -221,13 +221,13 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 - [ ] 最终 Snapshot ≡ 同兼容策略下全缓冲一次性 parse  
 - [ ] 若提供骨架会话：WS 相位 `.\n` / `final` / 关闭码  
 
-**Java 官方移植（`io.github.aboutuip:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。Parse↔JSON 门槛：[java/ALIGNMENT.zh-CN.md §5](java/ALIGNMENT.zh-CN.md)。
+**Java 官方移植（`io.github.aboutuip:xaiop` 0.16.0）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。Parse↔JSON 门槛：[java/ALIGNMENT.zh-CN.md §5](java/ALIGNMENT.zh-CN.md)。
 
-**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest + `golden-python`（**60** NDJSON）+ `core-wire`（**152**）+ Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
+**Python 官方端口（`xaiop` 0.16.0）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest + `golden-python`（**60** NDJSON）+ `core-wire`（**152**）+ Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
 
-**Go 官方端口（`github.com/AboutUip/XAIOP/xaiop-sdk/go` 0.15.1）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**60** NDJSON）+ `core-wire`（**152**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
+**Go 官方端口（`github.com/AboutUip/XAIOP/xaiop-sdk/go` 0.16.0）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**60** NDJSON）+ `core-wire`（**152**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
 
-**Node 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) 0.15.1）：** 单测 **688**；阶段计时 + Parse↔JSON：[nodejs/notes/performance.zh-CN.md](nodejs/notes/performance.zh-CN.md) · 枢纽 [../performance.zh-CN.md](../performance.zh-CN.md)。极限性能 tip（2026-08-09，不升版本）：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。npm 上架：[../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md](../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md)。
+**Node 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) 0.16.0 本树；上次 npm **0.15.1**）：** 单测 **901**；阶段计时 + Parse↔JSON：[nodejs/notes/performance.zh-CN.md](nodejs/notes/performance.zh-CN.md) · 枢纽 [../performance.zh-CN.md](../performance.zh-CN.md)。极限性能 tip（2026-08-09，不升版本）：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。npm 上架：[../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md](../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md)。
 
 **黄金套件（Node）：** `engine.test.js` · `encode.stability.test.js` · `merge.test.js` · `checkpoint.window.test.js` · `stream.consistency.test.js` · `ws.session.test.js` · `ws.phase-encode.test.js`。
 

@@ -42,6 +42,7 @@ Published on npm: [`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xa
 
 | SDK | Implements protocol | Git tag (recommended) | Notes |
 | --- | --- | --- | --- |
+| `0.16.0` | `0.7.0` Draft | `sdk-nodejs-v0.16.0` | **This tree** — `?` / bare `&` / Content escapes / `LINE_KIND.SELECT`; not on npm yet (last published **0.15.1**). [release-notes-2026-08-27-sdk-0.16.0.md](release-notes-2026-08-27-sdk-0.16.0.md) |
 | `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | **npm published** as `@bylan280/xaiop@0.15.1` — [release-notes-2026-08-09-nodejs-npm.md](release-notes-2026-08-09-nodejs-npm.md); Perf tip **2026-08-09** extreme hot-path — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); prior: single Diff materialize + faster `cloneJson`; still protocol **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted` (long-session wire discard); still protocol **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` cumulative Diff (D2); optional `onChunk` / `emitDiff:false`; still protocol **0.6.0** |
@@ -63,6 +64,7 @@ Maven Central: [`io.github.aboutuip:xaiop`](https://central.sonatype.com/artifac
 
 | SDK | Protocol implemented | Notes |
 | --- | --- | --- |
+| `0.16.0` | `0.7.0` Draft | **This tree** — same product surface as Node **0.16.0**; Central still **0.15.1** until deploy. [release-notes-2026-08-27-sdk-0.16.0.md](release-notes-2026-08-27-sdk-0.16.0.md) |
 | `0.15.1` | `0.6.0` | Stream consumer wires cover/history/typeCheck/control/intercept/Annotation Span + `chunks()`; **2026-08-09** extreme hot-path (float fast path · encode scans · checkpoint) — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); **2026-08-08** internal Diff/history — [release-notes-2026-08-08-java-0.15.1-internal.md](release-notes-2026-08-08-java-0.15.1-internal.md). Living parity: [../sdk/java/ALIGNMENT.md](../sdk/java/ALIGNMENT.md) |
 | `0.15.0` | `0.6.0` | Full Node-aligned surface: WS · Control Root · cover · typeCheck · intercept / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` consumer (HTTP / SSE / RAW); still wire **0.4.0** |
@@ -71,10 +73,12 @@ Maven Central: [`io.github.aboutuip:xaiop`](https://central.sonatype.com/artifac
 
 ### SDK packages (Python `xaiop` · Go module)
 
-Go: `go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · [install](../sdk/go/README.md#install).
+Go last tagged: `go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1). This tree is **0.16.0** (tag after publish) · [install](../sdk/go/README.md#install).
 
 | SDK | Protocol | Notes |
 | --- | --- | --- |
+| Python **0.16.0** | `0.7.0` Draft | **This tree** — same product surface as Node **0.16.0**; PyPI still **0.15.1** until publish. [release-notes-2026-08-27-sdk-0.16.0.md](release-notes-2026-08-27-sdk-0.16.0.md) |
+| Go **0.16.0** | `0.7.0` Draft | **This tree** — last tagged **v0.15.1**; product golden **60** · core-wire **152**. [release-notes-2026-08-27-sdk-0.16.0.md](release-notes-2026-08-27-sdk-0.16.0.md) |
 | Python **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-09** extreme hot-path — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); **2026-08-08** clone/history — [release-notes-2026-08-08-python-0.15.1-internal.md](release-notes-2026-08-08-python-0.15.1-internal.md); [../sdk/python/ALIGNMENT.md](../sdk/python/ALIGNMENT.md) |
 | Python **0.15.0a1** | `0.6.0` | Official product port (alpha archive); [release-notes-2026-08-07-python-0.15.0a1.md](release-notes-2026-08-07-python-0.15.0a1.md) |
 | Go **0.15.1** | `0.6.0` | Official product port (stable); **2026-08-09** extreme hot-path (chunked ingest O(n²) fixes) — [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md); product golden **50** + core-wire **46**; [../sdk/go/ALIGNMENT.md](../sdk/go/ALIGNMENT.md) · [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) |
@@ -89,6 +93,7 @@ Other languages: declare their own sealed mapping in language READMEs.
 
 | Date | Notes |
 | --- | --- |
+| 2026-08-27 | [release-notes-2026-08-27-sdk-0.16.0.md](release-notes-2026-08-27-sdk-0.16.0.md) — SDK **0.16.0** this tree (protocol **0.7.0** Draft); registries still **0.15.1** |
 | 2026-08-09 | [release-notes-2026-08-09-nodejs-npm.md](release-notes-2026-08-09-nodejs-npm.md) — first npm publish **`@bylan280/xaiop@0.15.1`** |
 | 2026-08-09 | [release-notes-2026-08-09-sdk-extreme-perf-internal.md](release-notes-2026-08-09-sdk-extreme-perf-internal.md) — Node/Java/Python/Go tip **0.15.1** extreme hot-path (no version bump) |
 | 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.md](release-notes-2026-08-08-go-0.15.1.md) — Go `0.15.1` stable official port (exit alpha) |

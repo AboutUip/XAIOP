@@ -38,6 +38,7 @@ XAIOP **规范包**的有序修订历史。
 | `PROT-SYNTAX` §1.8 / §3 | 物理 vs 语义多行 |
 | `PROT-NOTE-LABEL-ESC` | Draft 笔记 [protocol/notes/label-escape.zh-CN.md](../protocol/notes/label-escape.zh-CN.md) |
 | `PROT-HIER` §9 / §12.5 | `?` 选元素；裸 `&` 删元素 |
+| Node.js / Java / Python / Go SDK | 产品 **0.16.0**：Content 解/转义；`symbolKeys`；`?` / 裸 `&`；`LINE_KIND.SELECT` |
 
 ---
 

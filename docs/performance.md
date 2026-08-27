@@ -50,7 +50,7 @@ Harness README: [`../xaiop-sdk/timing/README.md`](../xaiop-sdk/timing/README.md)
 
 Parity matrices §5: [sdk/go/ALIGNMENT.md](sdk/go/ALIGNMENT.md) · [sdk/java/ALIGNMENT.md](sdk/java/ALIGNMENT.md) · [sdk/python/ALIGNMENT.md](sdk/python/ALIGNMENT.md) · [sdk/nodejs/notes/performance.md](sdk/nodejs/notes/performance.md).
 
-### Extreme-perf round (2026-08-09 · tip `0.15.1`, no version bump)
+### Extreme-perf round (2026-08-09 · tip `0.16.0`, no version bump)
 
 Pure same-language hot paths; **byte-identical encode**; golden **50/50** ×3 + core-wire **46/46**.
 

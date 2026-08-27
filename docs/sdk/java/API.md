@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **Protocol**: v0.7.0 Draft  
-**SDK**: 0.15.1 (Java)  
+**SDK**: 0.16.0 (Java)  
 **Runtime**: **Java 17+** · artifact **`io.github.aboutuip:xaiop`** (Maven Central; Java packages `io.xaiop.*`; single JAR, zero runtime deps)  
 **Code**: [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) (`src/main/java/io/xaiop/`)  
 **Parity matrix**: [ALIGNMENT.md](ALIGNMENT.md) · **Product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) · **Releases**: [../../meta/releases.md](../../meta/releases.md)  
@@ -30,7 +30,7 @@ Java ships **one JAR**. There is **no** `xaiop/browser` / `xaiop/core` subpath s
 | Server `listen` | **Yes** — `XaiopWs.listen` (zero-dep RFC6455 `ServerSocket`) |
 | Client `connect` | **Yes** — JDK `HttpClient` WebSocket (`XaiopWs.connect`) |
 | Phase Diff (`.` / cover / intercept / Annotation Span / Control Root / typeCheck) | **Yes** — same observable semantics as Node |
-| Wire semantics | Protocol package **0.6.0**; cross-checked against Node via **golden CI** ([ALIGNMENT.md §7](ALIGNMENT.md#7-how-parity-is-verified)) |
+| Wire semantics | Protocol package **0.7.0** Draft; cross-checked against Node via **golden CI** ([ALIGNMENT.md §7](ALIGNMENT.md#7-how-parity-is-verified)) |
 
 ### Java idioms (vs Node)
 
@@ -71,7 +71,7 @@ Java ships **one JAR**. There is **no** `xaiop/browser` / `xaiop/core` subpath s
 <dependency>
   <groupId>io.xaiop</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
@@ -128,7 +128,7 @@ Primary methods are **sync**; async mirrors return `CompletableFuture` where Nod
 
 ## 2. Core concepts
 
-**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. These SDK docs describe the Java implementation of **sealed protocol package 0.6.0** (SDK **0.15.1**), aligned with the Node reference at the observable-semantics level ([ALIGNMENT.md](ALIGNMENT.md)).
+**XAIOP wire** is a streaming, line-oriented **cursor-construction protocol**. These SDK docs describe the Java implementation of **protocol package 0.7.0 Draft** (SDK **0.16.0**), aligned with the Node reference at the observable-semantics level ([ALIGNMENT.md](ALIGNMENT.md)).
 
 - Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 - Seal and release index: [../../meta/releases.md](../../meta/releases.md)
@@ -169,7 +169,7 @@ Full grammar: [../../protocol/syntax.md](../../protocol/syntax.md)
 ### 2.2 Phase
 
 `.` resets Cursor to Root and is the streaming **Diff boundary** (SDK policy: phase on `.`, not on Blocks).  
-Phases that contain `=` / `!` / `&` must see the **cumulative tree so far**; the official streamer parses a cumulative prefix for those phases.
+Phases that contain `=` / `!` / `&` / `?` must see the **cumulative tree so far**; the official streamer parses a cumulative prefix for those phases.
 
 ### 2.3 Root shapes
 
@@ -957,7 +957,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 | Export | Value / notes |
 | --- | --- |
 | `Xaiop.PROTOCOL_VERSION` | `"0.7.0"` |
-| `Xaiop.SDK_VERSION` | `"0.15.1"` |
+| `Xaiop.SDK_VERSION` | `"0.16.0"` |
 | `DotPolicy` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` (string constants) |
 | `MergeConflict` | `OVERWRITE` · `KEEP` |
 | `StreamMode` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

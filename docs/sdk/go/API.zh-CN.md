@@ -5,9 +5,9 @@
 | 字段 | 值 |
 | --- | --- |
 | 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` |
-| SDK | **0.15.1** |
+| SDK | **0.16.0** |
 | 协议 | **0.7.0** Draft |
-| 安装 | `go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` · [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) |
+| 安装 | 打标签后 `go get …/xaiop-sdk/go@v0.16.0` · 上次标签 [pkg.go.dev@v0.15.1](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) |
 | 对等 | [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) |
 
 ```go
@@ -18,7 +18,7 @@ import "github.com/AboutUip/XAIOP/xaiop-sdk/go/xaiop"
 
 | API | 说明 |
 | --- | --- |
-| `ProtocolVersion` / `SDKVersion` | `"0.7.0"` / `"0.15.1"` |
+| `ProtocolVersion` / `SDKVersion` | `"0.7.0"` / `"0.16.0"` |
 | `Parse` | 仅 STRICT |
 | `ParseWithOptions` | Compat ×8（`compat.Resolve`）· `SymbolKeys` |
 | `Encode` / `EncodeOptions` | 产品默认；ES 浮点线文。对应 Node `encodeSync`。**没有** `EncodeAsync`（CPU 绑定）。Label 安全 JSON 子集，不是完整 RFC 8259 键（`symbolKeys` 只逃逸行类首字符）。`ParseJSONPath` / `FormatJSONPath`：JSON 路径（`items[0]`）；线上 `@` 用 `>`（`@items>it_1`）。 |

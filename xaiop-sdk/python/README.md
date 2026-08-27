@@ -1,6 +1,6 @@
 # XAIOP Python SDK
 
-Official product SDK (`xaiop` **0.15.1**, protocol **0.7.0** Draft).
+Official product SDK (`xaiop` **0.16.0**, protocol **0.7.0** Draft).
 
 Guide: [../../docs/sdk/python/README.md](../../docs/sdk/python/README.md)
 Parity: [../../docs/sdk/python/ALIGNMENT.md](../../docs/sdk/python/ALIGNMENT.md)

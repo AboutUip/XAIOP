@@ -4,13 +4,13 @@
 
 | Field | Value |
 | --- | --- |
-| Artifact | `io.github.aboutuip:xaiop` **0.15.1** (Maven Central JAR; Java packages `io.xaiop.*`) |
+| Artifact | `io.github.aboutuip:xaiop` **0.16.0** this tree (last Central **0.15.1**; Java packages `io.xaiop.*`) |
 | Protocol | v0.7.0 Draft (`Xaiop.PROTOCOL_VERSION`) |
-| SDK version constant | `Xaiop.SDK_VERSION` = `0.15.1` |
+| SDK version constant | `Xaiop.SDK_VERSION` = `0.16.0` |
 | Runtime | Java 17+ (zero runtime dependencies) |
 | Code | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-This package tracks the Node.js reference (`xaiop` **0.15.1** ↔ protocol **0.7.0** Draft) at the
+This package tracks the Node.js reference (`xaiop` **0.16.0** ↔ protocol **0.7.0** Draft) at the
 **observable-semantics** level. Pin the artifact version; read `Xaiop.PROTOCOL_VERSION` for the
 wire version. Java has no `xaiop/browser` subpath — listen and connect share one JDK package.
 
@@ -111,18 +111,18 @@ The port keeps observable semantics, not JavaScript shapes. See also [ALIGNMENT.
 
 ## Install
 
-Maven Central: **`io.github.aboutuip:xaiop`** **0.15.1**. Java packages remain **`io.xaiop.*`**. Older docs may still write the unpublished GAV `io.xaiop:xaiop` — consumers must use `io.github.aboutuip`.
+Maven Central last published **`io.github.aboutuip:xaiop:0.15.1`**. This tree is **0.16.0** — snippets below match the tree. Java packages remain **`io.xaiop.*`**. Older docs may still write the unpublished GAV `io.xaiop:xaiop` — consumers must use `io.github.aboutuip`.
 
 ```xml
 <dependency>
   <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
 ```kotlin
-implementation("io.github.aboutuip:xaiop:0.15.1")
+implementation("io.github.aboutuip:xaiop:0.16.0")
 ```
 
 Search: [Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop). Maintainer publish: [MAVEN-CENTRAL.md](../../../xaiop-sdk/java/MAVEN-CENTRAL.md).
@@ -406,7 +406,7 @@ All of these are unchecked, so call sites mirror the JavaScript throw-anywhere b
 ```bash
 cd xaiop-sdk/java
 mvn test                  # full suite incl. StreamAdvancedTest
-mvn -DskipTests package   # target/xaiop-0.15.1.jar
+mvn -DskipTests package   # target/xaiop-0.16.0.jar
 mvn test                  # includes StreamTest / StreamConsistencyTest / StreamHttpTest / StreamAdvancedTest
 ```
 

@@ -15,10 +15,10 @@
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="游标 IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="流式相位" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
-  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
-  <img alt="Java SDK" src="https://img.shields.io/badge/SDK-Java_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
-  <img alt="Python SDK" src="https://img.shields.io/badge/SDK-Python_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
-  <img alt="Go SDK" src="https://img.shields.io/badge/SDK-Go_0.15.1-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Node SDK" src="https://img.shields.io/badge/SDK-Node.js_0.16.0-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Java SDK" src="https://img.shields.io/badge/SDK-Java_0.16.0-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Python SDK" src="https://img.shields.io/badge/SDK-Python_0.16.0-22c55e?style=flat-square&labelColor=0b1220" />
+  <img alt="Go SDK" src="https://img.shields.io/badge/SDK-Go_0.16.0-22c55e?style=flat-square&labelColor=0b1220" />
 </p>
 
 <p align="center">
@@ -96,15 +96,15 @@ name:alice
 - **协议（仅线格式）** — [docs/protocol/](docs/protocol/) · [隔离说明](docs/SEPARATION.zh-CN.md) · [发布索引](docs/meta/releases.zh-CN.md) · [META-VER](docs/meta/status-and-versioning.zh-CN.md)
 - **实践** — [docs/practice/](docs/practice/) · [流式传输](docs/practice/streaming-transport.zh-CN.md) · [骨架 WS](docs/practice/skeleton-stream.zh-CN.md)
 - **SDK** — [docs/sdk/](docs/sdk/) · [对等契约](docs/sdk/behavioral-contract.zh-CN.md) · [代码](xaiop-sdk/) · [阶段计时](xaiop-sdk/timing/)
-  - **Node.js** `xaiop` **0.15.1** — **[API](docs/sdk/nodejs/API.zh-CN.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [演示](demos/nodejs/)
-  - **Java** `io.github.aboutuip:xaiop` **0.15.1**（[Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)）— [API](docs/sdk/java/) · [安装](docs/sdk/java/README.zh-CN.md#安装) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
-  - **Python** `xaiop` **0.15.1** — [API](docs/sdk/python/API.zh-CN.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/python/) · [演示](demos/python/)
-  - **Go** `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1**（[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)）— [API](docs/sdk/go/API.zh-CN.md) · [安装](docs/sdk/go/README.zh-CN.md#安装) · [ALIGNMENT](docs/sdk/go/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/go/) · [演示](demos/go/)
+  - **Node.js** `xaiop` **0.16.0** — **[API](docs/sdk/nodejs/API.zh-CN.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.zh-CN.md) · [代码](xaiop-sdk/nodejs/) · [演示](demos/nodejs/)
+  - **Java** `io.github.aboutuip:xaiop` **0.16.0**（[Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)）— [API](docs/sdk/java/) · [安装](docs/sdk/java/README.zh-CN.md#安装) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
+  - **Python** `xaiop` **0.16.0** — [API](docs/sdk/python/API.zh-CN.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/python/) · [演示](demos/python/)
+  - **Go** `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.16.0**（[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.16.0)）— [API](docs/sdk/go/API.zh-CN.md) · [安装](docs/sdk/go/README.zh-CN.md#安装) · [ALIGNMENT](docs/sdk/go/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/go/) · [演示](demos/go/)
 - **文档预览** — 与实验 UI 同站：`cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/)（Docsify 读 `docs/`；深色主题与 Lab 共用）
 - **实验 UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / 直播流 / API 正文渲染
 - **目标封存** — [docs/archive/](docs/archive/)（LLM 发射 / 评测口径刻意不放进现行枢纽）
 
-官方产品 SDK（**Node · Java · Python · Go** `0.15.1`，协议 **0.7.0** Draft）：parse · stream · encode · merge · history · WS · 控制根 · typeCheck · 行拦截 / Annotation Span（Java/Python/Go 无 browser 包）。Node 为参考实现；Java/Python/Go 在可观察语义层面对齐。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。对等：[java/ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [python/ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [go/ALIGNMENT](docs/sdk/go/ALIGNMENT.zh-CN.md)。
+官方产品 SDK（**Node · Java · Python · Go** `0.16.0`，协议 **0.7.0** Draft）：parse · stream · encode · merge · history · WS · 控制根 · typeCheck · 行拦截 / Annotation Span（Java/Python/Go 无 browser 包）。Node 为参考实现；Java/Python/Go 在可观察语义层面对齐。英文文档为权威文本；仓库内配有 `*.zh-CN.md` 镜像。对等：[java/ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [python/ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [go/ALIGNMENT](docs/sdk/go/ALIGNMENT.zh-CN.md)。
 
 **公告（2026-08-04）：** Skill **不再**以官方产品形态继续提供；源码仍可从 [`skills/`](skills/) 下载，作为**保留的协议摘要**（已对齐 **0.6.0**；非封存发行物）。完整说明：[docs/meta/release-notes-2026-08-04.zh-CN.md](docs/meta/release-notes-2026-08-04.zh-CN.md)。
 

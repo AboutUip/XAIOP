@@ -25,8 +25,8 @@ import {
 import { WebSocketServer } from "ws";
 
 describe("control plane — foundation", () => {
-  test("SDK_VERSION is 0.15.1", () => {
-    assert.equal(SDK_VERSION, "0.15.1");
+  test("SDK_VERSION is 0.16.0", () => {
+    assert.equal(SDK_VERSION, "0.16.0");
   });
 
   test("isSdkControlLine / parseControlHeader", () => {

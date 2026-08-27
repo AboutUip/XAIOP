@@ -5,8 +5,8 @@
 | 字段 | 值 |
 | --- | --- |
 | 文档 | 官方 Python 端口对等矩阵（持续维护） |
-| Python 包 | `xaiop` **0.15.1** |
-| Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
+| Python 包 | `xaiop` **0.16.0** |
+| Node 包 | `@bylan280/xaiop` **0.16.0** 本树（上次 npm **0.15.1**） |
 | 线文协议 | **0.7.0** Draft（`PROTOCOL_VERSION`） |
 | 是否规范正文 | **否** — 产品可观察语义清单（≠ 仅协议符合） |
 | 权威来源 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（若无则见英版） |
@@ -23,9 +23,9 @@
 
 | 栈 | 包 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | 参考 |
-| Java（官方） | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
-| Python（官方端口） | `xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
+| Node.js（主） | `@bylan280/xaiop` | **0.16.0** | **0.7.0** Draft | 参考 |
+| Java（官方） | `io.github.aboutuip:xaiop` | **0.16.0** | **0.7.0** Draft | 已对齐 |
+| Python（官方端口） | `xaiop` | **0.16.0** | **0.7.0** Draft | 已对齐 |
 
 ---
 
@@ -141,7 +141,7 @@ Python↔Go `core-wire` 仍为协议 STRICT 轨，**不能**代替 Node 产品 g
 
 ## 8. 行为契约 §8 checklist
 
-与英版相同，各项均已勾选。包版本 **0.15.1** 与 Node **0.15.1** 发行对等（无 browser）。
+与英版相同，各项均已勾选。包版本 **0.16.0** 与 Node **0.16.0** 发行对等（无 browser）。
 
 ---
 

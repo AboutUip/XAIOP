@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.7.0 Draft  
-**SDK 版本**: 0.15.1（Java）  
+**SDK 版本**: 0.16.0（Java）  
 **运行时**: **Java 17+** · 产物 **`io.github.aboutuip:xaiop`**（Maven Central；Java 包名 `io.xaiop.*`；单 JAR，零 runtime 依赖）  
 **代码**: [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/)（`src/main/java/io/xaiop/`）  
 **对等矩阵**: [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) · **产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) · **发行索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)  
@@ -30,7 +30,7 @@ Java 仅交付 **一个 JAR**。**没有** `xaiop/browser` / `xaiop/core` 子路
 | 服务端 `listen` | **是** — `XaiopWs.listen`（零依赖 RFC6455 `ServerSocket`） |
 | 客户端 `connect` | **是** — JDK `HttpClient` WebSocket（`XaiopWs.connect`） |
 | 相位 Diff（`.` / cover / 拦截 / Annotation Span / 控制根 / typeCheck） | **是** — 与 Node 可观测语义一致 |
-| 线语义 | 协议包 **0.6.0**；经 **golden CI** 对照 Node（[ALIGNMENT.zh-CN.md §7](ALIGNMENT.zh-CN.md#7-一致性如何验证)） |
+| 线语义 | 协议包 **0.7.0** Draft；经 **golden CI** 对照 Node（[ALIGNMENT.zh-CN.md §7](ALIGNMENT.zh-CN.md#7-一致性如何验证)） |
 
 ### Java 惯例（相对 Node）
 
@@ -71,7 +71,7 @@ Java 仅交付 **一个 JAR**。**没有** `xaiop/browser` / `xaiop/core` 子路
 <dependency>
   <groupId>io.xaiop</groupId>
   <artifactId>xaiop</artifactId>
-  <version>0.15.1</version>
+  <version>0.16.0</version>
 </dependency>
 ```
 
@@ -128,7 +128,7 @@ hub.close().join();
 
 ## 2. 核心概念
 
-**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。本文档描述的是 **已封存协议包 0.6.0** 的 Java 实现（SDK **0.15.1**），在可观测语义上对齐 Node 参考实现（[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
+**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。本文档描述的是 **协议包 0.7.0 Draft** 的 Java 实现（SDK **0.16.0**），在可观测语义上对齐 Node 参考实现（[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)）。
 
 - 完整文法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)
 - 封存与发行索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -169,7 +169,7 @@ name:Bob
 ### 2.2 相（Phase）
 
 `.` 将 Cursor 重置到 Root，并作为流式 **Diff 边界**（SDK 策略：按 `.` 分相，而非按 Block）。  
-含 `=` / `!` / `&` 的相必须看见**截至当前的累积树**；官方流式实现会为这些相解析累积前缀。
+含 `=` / `!` / `&` / `?` 的相必须看见**截至当前的累积树**；官方流式实现会为这些相解析累积前缀。
 
 ### 2.3 Root 形态
 
@@ -957,7 +957,7 @@ engine.setCompatFix(CompatFixId.forcedRoot, false); // 模式关闭时返回 fal
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `Xaiop.PROTOCOL_VERSION` | `"0.7.0"` |
-| `Xaiop.SDK_VERSION` | `"0.15.1"` |
+| `Xaiop.SDK_VERSION` | `"0.16.0"` |
 | `DotPolicy` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM`（字符串常量） |
 | `MergeConflict` | `OVERWRITE` · `KEEP` |
 | `StreamMode` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

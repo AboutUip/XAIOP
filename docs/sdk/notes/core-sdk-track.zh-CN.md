@@ -4,10 +4,10 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 状态 | **Go 为官方产品 SDK**（**0.15.1**）；**Python 为官方产品 SDK** |
+| 状态 | **Go 为官方产品 SDK**（**0.16.0**）；**Python 为官方产品 SDK** |
 | 线文目标 | Draft 协议 **0.7.0** |
 
-**Python** 与 **Go** 均为官方产品端口（SDK **0.15.1**）。  
+**Python** 与 **Go** 均为官方产品端口（SDK **0.16.0**）。  
 STRICT core-wire（**152** 例）仍作协议回归门禁；产品对等用 `npm run golden:go` / `golden:python`（各 **60** NDJSON）。
 
 | 项 | 值 |

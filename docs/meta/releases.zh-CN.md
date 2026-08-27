@@ -42,6 +42,7 @@
 
 | SDK | 实现的协议 | Git 标签（建议） | 说明 |
 | --- | --- | --- | --- |
+| `0.16.0` | `0.7.0` Draft | `sdk-nodejs-v0.16.0` | **本树** — `?` / 裸 `&` / Content 转义 / `LINE_KIND.SELECT`；尚未上 npm（上次发布 **0.15.1**）。[release-notes-2026-08-27-sdk-0.16.0.zh-CN.md](release-notes-2026-08-27-sdk-0.16.0.zh-CN.md) |
 | `0.15.1` | `0.6.0` | `sdk-nodejs-v0.15.1` | **npm 已上架** `@bylan280/xaiop@0.15.1` — [release-notes-2026-08-09-nodejs-npm.zh-CN.md](release-notes-2026-08-09-nodejs-npm.zh-CN.md)；tip 性能 **2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；此前 Diff/Commit 去双克隆；仍协议 **0.6.0** |
 | `0.15.0` | `0.6.0` | `sdk-nodejs-v0.15.0` | `bufferStats` / `compactCommitted`（长会话丢弃已提交线文）；仍协议 **0.6.0** |
 | `0.14.3` | `0.6.0` | `sdk-nodejs-v0.14.3` | `@` 累积 Diff（D2）；可选 `onChunk` / `emitDiff:false`；仍协议 **0.6.0** |
@@ -63,6 +64,7 @@ Maven Central：[`io.github.aboutuip:xaiop`](https://central.sonatype.com/artifa
 
 | SDK | 实现的协议 | 说明 |
 | --- | --- | --- |
+| `0.16.0` | `0.7.0` Draft | **本树** — 与 Node **0.16.0** 同一产品面；Central 在部署前仍是 **0.15.1**。[release-notes-2026-08-27-sdk-0.16.0.zh-CN.md](release-notes-2026-08-27-sdk-0.16.0.zh-CN.md) |
 | `0.15.1` | `0.6.0` | 流式消费端接通 cover/history/typeCheck/control/拦截/Annotation Span + `chunks()`；**2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；**2026-08-08** 内部 Diff/history — [release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-java-0.15.1-internal.zh-CN.md)。现行对等：[../sdk/java/ALIGNMENT.zh-CN.md](../sdk/java/ALIGNMENT.zh-CN.md) |
 | `0.15.0` | `0.6.0` | 与 Node 对齐的完整产品面：WS · 控制根 · cover · typeCheck · 行拦截 / Annotation Span · history · buffer compact |
 | `0.5.0` | `0.4.0` | `XaiopStream` 消费端（HTTP / SSE / RAW）；线格式仍为 **0.4.0** |
@@ -71,10 +73,12 @@ Maven Central：[`io.github.aboutuip:xaiop`](https://central.sonatype.com/artifa
 
 ### SDK 包（Python `xaiop` · Go module）
 
-Go：`go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · [安装](../sdk/go/README.zh-CN.md#安装)。
+Go 上次打标签：`go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)。本树为 **0.16.0**（发布后再打标签）· [安装](../sdk/go/README.zh-CN.md#安装)。
 
 | SDK | 协议 | 说明 |
 | --- | --- | --- |
+| Python **0.16.0** | `0.7.0` Draft | **本树** — 与 Node **0.16.0** 同一产品面；PyPI 在上架前仍是 **0.15.1**。[release-notes-2026-08-27-sdk-0.16.0.zh-CN.md](release-notes-2026-08-27-sdk-0.16.0.zh-CN.md) |
+| Go **0.16.0** | `0.7.0` Draft | **本树** — 上次标签 **v0.15.1**；产品黄金 **60** · core-wire **152**。[release-notes-2026-08-27-sdk-0.16.0.zh-CN.md](release-notes-2026-08-27-sdk-0.16.0.zh-CN.md) |
 | Python **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-09** 极限热路径 — [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；**2026-08-08** clone/history — [release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md](release-notes-2026-08-08-python-0.15.1-internal.zh-CN.md)；[../sdk/python/ALIGNMENT.zh-CN.md](../sdk/python/ALIGNMENT.zh-CN.md) |
 | Python **0.15.0a1** | `0.6.0` | 官方产品端口（alpha 档案）；[release-notes-2026-08-07-python-0.15.0a1.zh-CN.md](release-notes-2026-08-07-python-0.15.0a1.zh-CN.md) |
 | Go **0.15.1** | `0.6.0` | 官方产品端口（稳定）；**2026-08-09** 极限热路径（分片 ingest O(n²) 修复）— [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)；[../sdk/go/ALIGNMENT.zh-CN.md](../sdk/go/ALIGNMENT.zh-CN.md) · [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) |
@@ -89,6 +93,7 @@ Go：`go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](ht
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-27 | [release-notes-2026-08-27-sdk-0.16.0.zh-CN.md](release-notes-2026-08-27-sdk-0.16.0.zh-CN.md) — SDK **0.16.0** 本树（协议 **0.7.0** Draft）；登记处仍是 **0.15.1** |
 | 2026-08-09 | [release-notes-2026-08-09-nodejs-npm.zh-CN.md](release-notes-2026-08-09-nodejs-npm.zh-CN.md) — 首次 npm 发布 **`@bylan280/xaiop@0.15.1`** |
 | 2026-08-09 | [release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md) — Node/Java/Python/Go tip **0.15.1** 极限热路径（不升版本） |
 | 2026-08-08 | [release-notes-2026-08-08-go-0.15.1.zh-CN.md](release-notes-2026-08-08-go-0.15.1.zh-CN.md) — Go `0.15.1` 稳定官方端口（退出 alpha） |

@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Module | `github.com/AboutUip/XAIOP/xaiop-sdk/go` |
-| SDK | **0.15.1** |
+| SDK | **0.16.0** |
 | Protocol | **0.7.0** Draft |
-| Install | `go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` · [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) |
+| Install | `go get …/xaiop-sdk/go@v0.16.0` after tag · last tagged [pkg.go.dev@v0.15.1](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) |
 | Parity | [ALIGNMENT.md](ALIGNMENT.md) |
 
 Import the facade:
@@ -20,7 +20,7 @@ import "github.com/AboutUip/XAIOP/xaiop-sdk/go/xaiop"
 
 | API | Notes |
 | --- | --- |
-| `ProtocolVersion` / `SDKVersion` | `"0.7.0"` / `"0.15.1"` |
+| `ProtocolVersion` / `SDKVersion` | `"0.7.0"` / `"0.16.0"` |
 | `Parse` | STRICT ingest only |
 | `ParseWithOptions` | `Compat` from `compat.Resolve` (×8 fixes) · `SymbolKeys` U+001F decode |
 | `ParseCompat` | Convenience: `ParseWithOptions` + `compat.Resolve(arg)` |

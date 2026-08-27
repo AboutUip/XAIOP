@@ -3,13 +3,13 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.7.0 Draft  
-**SDK 版本**: **0.15.1**  
+**SDK 版本**: **0.16.0**  
 **运行时**: **Python ≥ 3.10**  
 **包名**: `xaiop`  
 **代码**: [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/)（`src/xaiop/`）  
 **对等矩阵**: [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) · **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
 
-> 稳定版，在可观察语义层面与 Node **0.15.1** 对齐（无 browser）。见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
+> 稳定版，在可观察语义层面与 Node **0.16.0** 对齐（无 browser）。见 [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)。
 
 ---
 
@@ -28,7 +28,7 @@
 | 浏览器包（`xaiop/browser`） | **无** — 不在范围内（与 Java 相同） |
 | 同步优先的公共 API | **是** — 默认阻塞；异步显式（`push_async`，`send` / `done` 返回的 `Future`） |
 | 可选 extras | `[http]` → `httpx`；`[ws]` → `websockets` |
-| 线语义 | 与 Node / Java 同一协议包 **0.6.0** |
+| 线语义 | 与 Node / Java 同一协议包 **0.7.0** Draft |
 
 ### 惯用法（Node → Python）
 
@@ -131,7 +131,7 @@ hub.close()
 
 ## 2. 核心概念
 
-**XAIOP 线文**是流式、面向行的**游标构造协议**。旧称 “eXtensible AI Output Protocol” **不是**定义本身。本 SDK 文档描述的是**已封存协议包 0.6.0**（SDK **0.15.1**）的 Python 实现。
+**XAIOP 线文**是流式、面向行的**游标构造协议**。旧称 “eXtensible AI Output Protocol” **不是**定义本身。本 SDK 文档描述的是**协议包 0.7.0 Draft**（SDK **0.16.0**）的 Python 实现。
 
 - 完整语法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)（若无则见 [syntax.md](../../protocol/syntax.md)）
 - 封存与发布索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -173,7 +173,7 @@ name:Bob
 ### 2.2 相位（Phase）
 
 `.` 将 Cursor 重置到 Root，并作为流式 **Diff 边界**（SDK 策略：相位落在 `.` 上，而非 Block）。  
-含 `=` / `!` / `&` 的相位必须看到**迄今累计树**；官方流式器对这些相位解析累计前缀。
+含 `=` / `!` / `&` / `?` 的相位必须看到**迄今累计树**；官方流式器对这些相位解析累计前缀。
 
 ### 2.3 Root 形态
 
@@ -952,8 +952,8 @@ engine.set_compat_forced_root(False)  # 模式关闭时返回 False
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.7.0"` |
-| `SDK_VERSION` | `"0.15.1"` |
-| `__version__` | `"0.15.1"` |
+| `SDK_VERSION` | `"0.16.0"` |
+| `__version__` | `"0.16.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

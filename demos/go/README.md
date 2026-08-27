@@ -1,6 +1,6 @@
 # Go demo
 
-Minimal offline demo for the official Go SDK **0.15.1**.
+Minimal offline demo for the official Go SDK **0.16.0**.
 
 ```bash
 cd demos/go

@@ -5,8 +5,8 @@
 | 字段 | 值 |
 | --- | --- |
 | 包名 | `@bylan280/xaiop`（npm） |
-| SDK | **0.15.1**（TypeScript） |
-| 协议包 | **0.6.0** Frozen（已封存） |
+| SDK | **0.16.0**（TypeScript） |
+| 协议包 | **0.7.0** Draft |
 | 运行时 | Node.js ≥ 18（默认入口）；浏览器 → `@bylan280/xaiop/browser` |
 | 代码 | [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` → `dist/`） |
 
@@ -28,6 +28,8 @@ import { parseSync, encodeSync } from "@bylan280/xaiop/core";        // 同构�
 ---
 
 ## 安装
+
+上次 npm 发布是 **0.15.1**。本树为 **0.16.0**（登记处 `npm install` 在本切上架前仍解析到 0.15.1）。
 
 ```bash
 npm install @bylan280/xaiop

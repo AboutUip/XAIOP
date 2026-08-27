@@ -7,18 +7,18 @@
 | Package | `xaiop` |
 | Track | **Official product SDK** |
 | Protocol | **0.7.0** Draft (`PROTOCOL_VERSION`) |
-| SDK | `0.15.1` (`SDK_VERSION`) |
+| SDK | `0.16.0` (`SDK_VERSION`) |
 | Code | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
 | **API reference** | **[API.md](API.md)** (authoritative surface) |
 | Parity | **[ALIGNMENT.md](ALIGNMENT.md)** |
 
-Official port of Node `xaiop` **0.15.1** product surface (no browser). Protocol wire is **0.7.0** Draft.
+Official port of Node `xaiop` **0.16.0** product surface (no browser). Protocol wire is **0.7.0** Draft.
 
 For the full Python API (parse / encode / engine / stream / WS / control / types), see **[API.md](API.md)**.
 
 ## Status
 
-**0.15.1** — stable. Full product surface aligned with Node **0.15.1** at observable-semantics level (see [ALIGNMENT.md](ALIGNMENT.md)).
+**0.16.0** — this tree (PyPI still **0.15.1** until publish). Full product surface aligned with Node **0.16.0** at observable-semantics level (see [ALIGNMENT.md](ALIGNMENT.md)).
 
 ## Public API (selected)
 

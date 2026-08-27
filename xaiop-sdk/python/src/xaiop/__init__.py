@@ -85,7 +85,7 @@ from .types import (
 )
 from .ws import XaiopWs, XaiopWsConnection, XaiopWsHub, listen as ws_listen
 
-__version__ = "0.15.1"
+__version__ = "0.16.0"
 
 __all__ = [
     "COMPAT_FIX_DEFAULTS",

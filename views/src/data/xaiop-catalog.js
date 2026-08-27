@@ -1,15 +1,15 @@
 /**
  * Shared catalog for docs alignment + Vue API / protocol preview.
- * Keep versions in sync with sealed protocol 0.6.0 and tip SDKs
- * Node/Java/Python/Go **0.15.1**. Go cross-validation: product golden 50 · core-wire 46
+ * Keep versions in sync with Draft protocol 0.7.0 and tip SDKs
+ * Node/Java/Python/Go **0.16.0**. Go cross-validation: product golden 60 · core-wire 152
  * — see docs/sdk/go/ALIGNMENT.md.
  */
 
 export const meta = {
-  protocolVersion: "0.6.0",
+  protocolVersion: "0.7.0",
   packageName: "xaiop",
-  packageVersion: "0.15.1",
-  pythonPackageVersion: "0.15.1",
+  packageVersion: "0.16.0",
+  pythonPackageVersion: "0.16.0",
   runtime: "Node.js ≥ 18 (ESM) · Java 17+ · Python ≥ 3.10",
   previewApp: "views/",
 };
@@ -122,9 +122,19 @@ export const operators = [
     kind: "Structure",
     title: "Delete",
     titleZh: "删除",
-    summary: "Delete deepest key; does not move Cursor (protocol 0.6.0)",
-    summaryZh: "删除最深键；不移动 Cursor（协议 0.6.0）",
+    summary: "Delete deepest key; does not move Cursor (`&path`, 0.6.0). Bare `&` splices the current array element (0.7.0 Draft)",
+    summaryZh: "删除最深键；不移动 Cursor（`&path`，0.6.0）。裸 `&` 删当前数组元素（0.7.0 Draft）",
     example: ">\n>a\nx:1\n.\n>b\ny:2\n&a",
+  },
+  {
+    id: "select",
+    symbol: "?sel",
+    kind: "Structure",
+    title: "Array select",
+    titleZh: "数组选择",
+    summary: "From an array Cursor: `?2` / `?id:A2` / `?*` / `?*k:v`. Zero matches → syntax error (protocol 0.7.0 Draft)",
+    summaryZh: "从数组 Cursor：`?2` / `?id:A2` / `?*` / `?*k:v`。零命中 → 语法错误（协议 0.7.0 Draft）",
+    example: ">orders-\n>id:A1\nstatus:open\n.\n@orders\n?id:A1\nstatus:shipped",
   },
   {
     id: "content",
@@ -132,8 +142,8 @@ export const operators = [
     kind: "Content",
     title: "Property",
     titleZh: "属性",
-    summary: "First-`:` split; int→float→bool→null→string; leading space forces string",
-    summaryZh: "按首个 `:` 分割；int→float→bool→null→string；`: ` 后空格强制字符串",
+    summary: "First-`:` split; unescape `\\\\` `\\n` `\\r` then int→float→bool→null→string; leading space forces string",
+    summaryZh: "按首个 `:` 分割；先解 `\\\\` `\\n` `\\r` 再 int→float→bool→null→string；`: ` 后空格强制字符串",
     example: "n:5\ns: 5\nok:true\nempty:null",
   },
   {
@@ -167,10 +177,10 @@ export const nodeSdkApis = [
       {
         name: "PROTOCOL_VERSION",
         kind: "const",
-        signature: 'PROTOCOL_VERSION: "0.6.0"',
+        signature: 'PROTOCOL_VERSION: "0.7.0"',
         returns: "string",
-        summary: "Frozen protocol version string",
-        summaryZh: "冻结协议版本字符串",
+        summary: "Protocol version string (0.7.0 Draft)",
+        summaryZh: "协议版本字符串（0.7.0 Draft）",
       },
       {
         name: "parseSync",
@@ -565,7 +575,7 @@ export const nodeSdkApis = [
       {
         name: "SDK_VERSION / PROTOCOL_VERSION",
         kind: "const",
-        signature: 'SDK_VERSION "0.15.1" · PROTOCOL_VERSION "0.6.0"',
+        signature: 'SDK_VERSION "0.16.0" · PROTOCOL_VERSION "0.7.0"',
         returns: "string",
         summary: "Package vs wire version (may diverge across tips)",
         summaryZh: "包版本 vs 线格式版本（各 tip 可分离）",
@@ -588,7 +598,7 @@ export const sdkStacks = [
     name: "Node.js",
     status: "active",
     statusZh: "官方参考",
-    sdkVersion: "0.15.1",
+    sdkVersion: "0.16.0",
     docs: "docs/sdk/nodejs/",
     api: "docs/sdk/nodejs/API.md",
     code: "xaiop-sdk/nodejs/",
@@ -598,7 +608,7 @@ export const sdkStacks = [
     name: "Java",
     status: "active",
     statusZh: "官方端口",
-    sdkVersion: "0.15.1",
+    sdkVersion: "0.16.0",
     docs: "docs/sdk/java/",
     api: "docs/sdk/java/API.md",
     code: "xaiop-sdk/java/",
@@ -608,7 +618,7 @@ export const sdkStacks = [
     name: "Python",
     status: "active",
     statusZh: "官方",
-    sdkVersion: "0.15.1",
+    sdkVersion: "0.16.0",
     docs: "docs/sdk/python/",
     api: "docs/sdk/python/API.md",
     code: "xaiop-sdk/python/",
@@ -618,7 +628,7 @@ export const sdkStacks = [
     name: "Go",
     status: "official",
     statusZh: "官方",
-    sdkVersion: "0.15.1",
+    sdkVersion: "0.16.0",
     docs: "docs/sdk/go/",
     api: "docs/sdk/go/API.md",
     code: "xaiop-sdk/go/",

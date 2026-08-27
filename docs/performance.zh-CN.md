@@ -49,7 +49,7 @@ npm run bench:go:json-gate
 
 对等矩阵 §5：[sdk/go/ALIGNMENT.zh-CN.md](sdk/go/ALIGNMENT.zh-CN.md) · [sdk/java/ALIGNMENT.zh-CN.md](sdk/java/ALIGNMENT.zh-CN.md) · [sdk/python/ALIGNMENT.zh-CN.md](sdk/python/ALIGNMENT.zh-CN.md) · [sdk/nodejs/notes/performance.zh-CN.md](sdk/nodejs/notes/performance.zh-CN.md)。
 
-### 极限性能轮（2026-08-09 · tip `0.15.1`，不升版本号）
+### 极限性能轮（2026-08-09 · tip `0.16.0`，不升版本号）
 
 纯同语言热路径；**Encode 字节一致**；golden **50/50** ×3 + core-wire **46/46**。
 

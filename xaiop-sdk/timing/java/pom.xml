@@ -15,7 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
-    <xaiop.sdk.version>0.15.1</xaiop.sdk.version>
+    <xaiop.sdk.version>0.16.0</xaiop.sdk.version>
   </properties>
 
   <dependencies>

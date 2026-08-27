@@ -3,7 +3,7 @@
 [English](API.md) · [简体中文](API.zh-CN.md)
 
 **协议版本**: v0.7.0 Draft  
-**SDK 版本**: 0.15.1（TypeScript）· npm **`@bylan280/xaiop`**  
+**SDK 版本**: 0.16.0（TypeScript）· npm **`@bylan280/xaiop`**  
 **运行时**: 默认入口 **Node.js ≥ 18（ESM）**；浏览器用子路径（见 §0）  
 **代码**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/)（`src/` TS → `dist/`）· [npm](https://www.npmjs.com/package/@bylan280/xaiop)  
 **Node 产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（可选对照；非跨语言强制） · **封存索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -23,7 +23,7 @@
 | 默认 `"@bylan280/xaiop"` 可在浏览器直接用 | **否**（会拉入 `ws` / `node:stream`） |
 | 浏览器是否提供服务端 `listen` | **否** — 用 Node `XaiopWs.listen`，浏览器只 `connect` / `XaiopStream` |
 | 浏览器是否支持 **`.` 相位 Diff** | **是** — 与 Node 共用 `DotCheckpointEngine`（`onChunk` / `onPhase`、Commit、可选 `cover` / `mergeChunkWindow` / `typeCheck` / **行拦截** / **Annotation Span** / **控制根**） |
-| 线语义 | 三入口共享同一 `core`（协议包 **0.6.0**） |
+| 线语义 | 三入口共享同一 `core`（协议包 **0.7.0** Draft） |
 
 本仓库 SDK **重心在 Node.js**；其它语言移植不必与 Node 全表面对齐。
 
@@ -106,7 +106,7 @@ await client.done;
 
 ## 2. 核心概念
 
-**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **已封存协议包 0.6.0** 的 Node.js 实现（SDK **0.15.1**）。
+**XAIOP 线格式**是面向流式的、按行组织的 **Cursor 构造协议**。历史名 “eXtensible AI Output Protocol” **不是**定义。本文档描述的是 **协议包 0.7.0 Draft** 的 Node.js 实现（SDK **0.16.0**）。
 
 - 完整文法：[../../protocol/syntax.zh-CN.md](../../protocol/syntax.zh-CN.md)
 - 封存与发行索引：[../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)
@@ -147,7 +147,7 @@ name:Bob
 ### 2.2 相位（phase）
 
 `.` 将 Cursor 重置到 Root，并作为流式 **Diff 边界**（SDK 策略：按 `.` 切相，不是按 Block）。  
-含 `=` / `!` / `&` 的相位必须看见**迄今累积树**；官方流式对这类相位做累积前缀 parse。
+含 `=` / `!` / `&` / `?` 的相位必须看见**迄今累积树**；官方流式对这类相位做累积前缀 parse。
 
 ### 2.3 根形态
 
@@ -911,7 +911,7 @@ engine.setCompatForcedRoot(false); // 模式关时返回 false
 | 导出 | 值 / 说明 |
 | --- | --- |
 | `PROTOCOL_VERSION` | `"0.7.0"` |
-| `SDK_VERSION` | `"0.15.1"` |
+| `SDK_VERSION` | `"0.16.0"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |
 | `STREAM_MODES` | `CALLBACK` · `PROMISE` · `ASYNC_ITERATOR` · `EVENTS` |

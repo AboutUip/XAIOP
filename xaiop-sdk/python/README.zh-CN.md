@@ -1,6 +1,6 @@
 # XAIOP Python SDK
 
-官方产品 SDK（`xaiop` **0.15.1**，协议 **0.7.0** Draft）。
+官方产品 SDK（`xaiop` **0.16.0**，协议 **0.7.0** Draft）。
 
 指南：[../../docs/sdk/python/README.zh-CN.md](../../docs/sdk/python/README.zh-CN.md) · English: [../../docs/sdk/python/README.md](../../docs/sdk/python/README.md)  
 对等：[../../docs/sdk/python/ALIGNMENT.zh-CN.md](../../docs/sdk/python/ALIGNMENT.zh-CN.md)  

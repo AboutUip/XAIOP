@@ -7,15 +7,17 @@
 | Module | `github.com/AboutUip/XAIOP/xaiop-sdk/go` |
 | Track | **Official product port** |
 | Protocol | **0.7.0** Draft |
-| SDK | **0.15.1** |
+| SDK | **0.16.0** |
 | Parity | [ALIGNMENT.md](ALIGNMENT.md) · [API.md](API.md) |
 
 **Implemented:** Node-aligned product surface (parse · Compat ×8 · encode · merge · engine · stream · WS · control · typeCheck · intercept / Annotation Span · `symbolKeys`). **Out of scope:** browser (same as Java / Python).
 
 ## Install
 
+Until this cut is tagged, last published module is `@v0.15.1`. This tree is **0.16.0**.
+
 ```bash
-go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1
+go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.16.0
 ```
 
 ```go
@@ -25,7 +27,7 @@ v, err := xaiop.Parse(source)
 wire, err := xaiop.Encode(v, xaiop.EncodeOptions{TrailingNewline: true})
 ```
 
-Module: [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1). Git tag: `xaiop-sdk/go/v0.15.1`.
+Module: last tagged [pkg.go.dev@v0.15.1](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1). Intended tag: `xaiop-sdk/go/v0.16.0`.
 
 ## Verify
 
