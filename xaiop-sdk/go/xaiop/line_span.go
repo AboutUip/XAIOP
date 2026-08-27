@@ -31,7 +31,7 @@ func ClassifyLine(line string) string {
 		if line == "." {
 			return "dot"
 		}
-	case '>', '<', '-', '=', '@', '!', '&':
+	case '>', '<', '-', '=', '@', '!', '&', '?':
 		return "operator"
 	}
 	if idx := indexByte(line, ':'); idx > 0 {

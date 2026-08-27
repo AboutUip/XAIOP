@@ -7,7 +7,7 @@
 | Document ID | `OV-INTRO` |
 | Status | Draft |
 | Version | 0.3.0-draft |
-| Last updated | 2026-08-05 |
+| Last updated | 2026-08-27 |
 | Normative | Mixed (scope and non-goals are normative; background is informative) |
 | Depends on | `META-CONV`, `META-VER`, `META-SEP` |
 | Informs | `OV-PRIN`, `REQ-FUNC`, `REQ-STREAM`, `CONF` |
@@ -22,7 +22,7 @@
 
 It is **not** a service-to-service JSON bus. It is a bridge from *incremental construction* to *consumable structured snapshots*.
 
-**Scope radius (informative):** XAIOP first-classes **streaming cursor construction** and **keyed / named-path state evolution** on the wire (locate, broadcast, delete, phases). It is **not** a claim to be a universal evolution layer for every JSON shape — in particular, anonymous array elements have **no** addressable label for `=` / `!` / `&` (model with keyed maps or repeated named children). See practice [keyed-state-modeling.md](../practice/keyed-state-modeling.md).
+**Scope radius (informative):** XAIOP first-classes **streaming cursor construction** and **keyed / named-path state evolution** on the wire (locate, broadcast, delete, phases, array-local `?` select). It is **not** a claim to be RFC 6902 JSON Patch. Anonymous array elements have no label; select them with `?` after the Cursor is at the array, or model mutable rows as keyed maps. See practice [keyed-state-modeling.md](../practice/keyed-state-modeling.md).
 
 The historical expansion “eXtensible AI Output Protocol” is **legacy naming only**; it does not define scope, primary use case, or conformance. Normative identity is the wire described in sealed protocol packages (see `META-VER`). LLM emit, tooling `encode`, and session push are all **optional writer scenarios** (practice layer), not the wire definition.
 
@@ -116,11 +116,11 @@ The following are **explicitly out of scope** for XAIOP as a protocol:
 | NG3 | Conforming parsers **MUST NOT** be required to repair, infer, or guess Generator intentions when input is not well-formed per the protocol. |
 | NG4 | Content encoding is defined in `PROT-CONTENT` / `PROT-SYNTAX`. Structure rules are in `PROT-BOUND` / `PROT-HIER` / `PROT-SYNTAX`. |
 | NG5 | This specification tree **MUST NOT** define SDK APIs as protocol requirements. |
-| NG6 | XAIOP **MUST NOT** be positioned as a universal patch / evolution language for arbitrary JSON documents (including anonymous array elements without named path identity). |
+| NG6 | XAIOP **MUST NOT** be positioned as a universal patch / evolution language for arbitrary JSON documents (including RFC 6902 JSON Patch). Array-element select is the XAIOP-native `?` operator, not JSON Pointer. |
 
-**Informative note on NG1:** Product stacks **MAY** push phases from programs (encode, WS sessions) into materializing consumers. That is progressive construction on the wire — not a claim to replace JSON as the service-to-service bus.
+**Informative note on NG1:** Product stacks **MAY** push phases from programs (encode, WS sessions) into materializing consumers. That is progressive construction on the wire — not a claim to replace JSON as the service-to-service bus. SDK `encode` maps a **Label-safe JSON subset** to wire (rejected keys; Content `\n`/`\r`/`\\` escapes), not full RFC 8259 object-key space.
 
-**Informative note on NG6:** Evolution operators act on **named path fragments** and Cursor position. Modeling guidance: [../practice/keyed-state-modeling.md](../practice/keyed-state-modeling.md).
+**Informative note on NG6:** Evolution operators act on **named path fragments**, Cursor position, and array-local `?` select. Prefer keyed maps for mutable rows; use `?` when the Snapshot must remain a JSON array. Modeling guidance: [keyed-state-modeling.md](../practice/keyed-state-modeling.md).
 
 ---
 

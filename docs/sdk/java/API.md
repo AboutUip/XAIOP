@@ -2,9 +2,9 @@
 
 [English](API.md) · [简体中文](API.zh-CN.md)
 
-**Protocol**: v0.6.0 Frozen (sealed)  
+**Protocol**: v0.7.0 Draft  
 **SDK**: 0.15.1 (Java)  
-**Runtime**: **Java 17+** · artifact **`io.xaiop:xaiop`** (single JAR, zero runtime deps)  
+**Runtime**: **Java 17+** · artifact **`io.github.aboutuip:xaiop`** (Maven Central; Java packages `io.xaiop.*`; single JAR, zero runtime deps)  
 **Code**: [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) (`src/main/java/io/xaiop/`)  
 **Parity matrix**: [ALIGNMENT.md](ALIGNMENT.md) · **Product-choice catalog**: [../behavioral-contract.md](../behavioral-contract.md) · **Releases**: [../../meta/releases.md](../../meta/releases.md)  
 **Node reference API**: [../nodejs/API.md](../nodejs/API.md)
@@ -144,9 +144,11 @@ Primary methods are **sync**; async mirrors return `CompletableFuture` where Nod
 | `=path` | Fuzzy locate (no create; zero hits → syntax error) |
 | `@path` | Exact path from Root; **create** missing object segments and enter |
 | `!path` | Broadcast: match all full path fragments; later lines run on each Cursor |
+| `?selector` | Array-local select (`?2` · `?id:A2` · `?*` · `?*k:v`); does not create |
 | `&path` | Delete deepest key; does **not** move Cursor |
+| `&` | Delete current direct array element; land on the parent array |
 
-Path segments use `>` (e.g. `@a>b`, `&a>b`). Bare Labels, bare `&`, bare `<` at Root, and newlines inside values are forbidden.
+Path segments use `>` (e.g. `@a>b`, `&a>b`). Bare Labels, bare `&` except on a direct array element, bare `<` at Root, and newlines inside values are forbidden.
 
 **Example:**
 
@@ -189,8 +191,8 @@ Empty source → empty `LinkedHashMap` (`{}`). Compat `forcedRoot` injects an ob
 | Document root | **Object only**; array root / fragment root → syntax error |
 | Cursor chain | Deleting current Cursor or an ancestor → **syntax error** |
 | Broadcast | `&path` is **relative** to each Cursor; missing on that Cursor → no-op for it; any chain conflict → whole line fails |
-| Arrays | May delete an entire named array value; **no** element-index delete |
-| Cursor | **Unchanged** by `&`; later Content still writes at the prior Cursor |
+| Arrays | May delete an entire named array value. Element delete is bare `&` after `?` / `>`; `&path` has no index segment |
+| Cursor | **Unchanged** by `&path`; later Content still writes at the prior Cursor. Bare `&` (element delete) **does** move to the parent array |
 
 ### 2.5 `#` custom annotation transmission (protocol)
 
@@ -280,10 +282,12 @@ docKind(): String            // "object" / "array" / "fragment" / null
 
 | Method | Notes |
 | --- | --- |
-| `feedLine` | Complete logical line (no trailing LF/CRLF) |
+| `feedLine` | Complete logical line (no trailing LF/CRLF). `""` → `empty line is a Content syntax error` |
 | `feedText` | Split like `Parse.parse` — **no half-line buffer across calls**; a trailing segment without LF is a full line. For arbitrary network chunks use `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | Current document (further feeds mutate in place) |
 | `cursorRestoreLines` | Unavailable while broadcast is active; anonymous / array-element frames on stack → syntax error |
+
+**Trailing `\n`:** encode ends with one `\n`. `Parse.parse` / `feedText` drop a final empty segment. Do **not** split encode output on `"\n"` into `feedLine` — the last `""` is the terminator, not a Content line. `feedLine` stays the per-line primitive; skip that empty, or pass whole wire to `feedText`.
 
 ```java
 Parse.LiveXaiopParser live = new Parse.LiveXaiopParser();
@@ -320,12 +324,13 @@ Encode.encodeAsync(value[, options]): CompletableFuture<String>
 ```
 
 Encodes **plain JSON trees** to **strict** XAIOP (compatibility mode **never** changes encode output).  
+Java `Encode.encode()` / `Xaiop.encode()` return **`String`** (Node `encodeSync`). Node `encode` is the **async short name** (`=== encodeAsync`). The Java async mirror is `Encode.encodeAsync` only (the `Xaiop` facade stays sync-first, like `parse`).  
 Free functions / `XaiopEngine` static / instance produce the same wire for the same `(value, options)`.
 
-**Guarantees:** for accepted values, `Parse.parse(Encode.encode(value, opt))` deep-equals `value`; wire ends with exactly one `\n`.  
+**Guarantees:** for accepted values, `Parse.parse(Encode.encode(value, opt))` deep-equals `value`; wire ends with exactly one `\n` (terminator, not a Content line — see §3.2).  
 **Not guaranteed:** byte-identical `encode(parse(handwritten wire))`.
 
-**Rejected string values (throw `XaiopEncodeError`):** containing CR/LF; **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable.
+**Rejected string values (throw `XaiopEncodeError`):** **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable. Semantic CR/LF in the value are encoded as `\n` / `\r` (protocol **0.7.0**); a physical line break is never placed inside a Content payload.
 
 ```java
 import io.xaiop.*;
@@ -357,7 +362,7 @@ Encode.encode(obj, EncodeOptions.builder()
 | `shouldPhase` | — | Required when `dotPolicy: CUSTOM`; `Predicate<PhaseContext>` |
 | `symbolKeys` | `false` | Opt-in U+001F label-escape dialect so keys may begin with `#` `@` `>` `<` `=` `!` `&` or U+001F; **both encode and parse must enable**; see [label-escape](../../protocol/notes/label-escape.md) |
 
-Path-array overload (`dotPolicyPaths`) is **mutually exclusive** with `phaseEvery` / `maxPhases` / `shouldPhase`; requires `style: RESET`; array index must be the **final** path segment. Helpers: `Encode.parseJsonPath` / `Encode.formatJsonPath`.
+Path-array overload (`dotPolicyPaths`) is **mutually exclusive** with `phaseEvery` / `maxPhases` / `shouldPhase`; requires `style: RESET`; array index must be the **final** path segment. Helpers: `Encode.parseJsonPath` / `Encode.formatJsonPath` (JSON-path `items[0]`; wire locate uses `>` — `@items>it_1`).
 
 `PhaseContext` record: `key`, `index`, `total`, `keysInPhase`, `phaseIndex`.
 
@@ -371,6 +376,8 @@ These keys throw `XaiopEncodeError` (no silent reshape):
 | Ends with `-` | Conflicts with `>name-` array enter |
 | Contains `>` `<` `=` `!` **`&`** (in the key body) | Cursor / locate / delete operator ambiguity |
 | **Begins with** `#` `@` `>` `<` `=` `!` `&` or **U+001F** | Line-class / reserved escape introducer — unless `symbolKeys: true` |
+
+**Not a general JSON serializer.** RFC 8259 keys such as `a:b`, `""`, `"a b"`, `"tags-"`, `"a>b"` are legal JSON and still throw here. `symbolKeys` only escapes a **leading** line-class character; it does **not** admit `:` / whitespace / operators in the body. String values containing CR/LF are legal JSON and encoded via `\n` / `\r`. Unicode labels are fine when they are legal Labels. Host-only values (`undefined`, Symbol keys) are outside JSON — a separate encode policy, not this gap. Constrain keys at the **JSON → encode** boundary (`uploadJsonSync`); parse / materialize the other way is ordinary JSON. See [label-escape](../../protocol/notes/label-escape.md).
 
 Constants: `DotPolicy.*` · `LabelEscape.INTRODUCER` (`"\u001f"`, package `io.xaiop.internal`).
 
@@ -439,7 +446,7 @@ XaiopEngine engineCompat = new XaiopEngine(true);
 | `encodeTypeSchemaFrame()` | Encode control frame (prefer `pushTypeConsistency` on the connection) |
 | `onTypeViolation(BiConsumer\|null)` | Violation hook (called **before** throwing `XaiopTypeError`) |
 
-**Path house style:** `data.fork`, `items[0]` (same as encode `parseJsonPath`; **not** wire `data>fork`).
+**Path house style:** `data.fork`, `items[0]` (encode `parseJsonPath`). Wire `@` / `=` / `!` / `&` use `>` (`@items>it_1`) — do not mix.
 
 **Optional surface sugar:** `string`, `array<int>`, `object<name:string,old:int>` → compared as **canonical** types.
 
@@ -876,6 +883,8 @@ Constants / codecs: `ControlFrames.CONTROL_NS` / `CONTROL_NAME` / `CONTROL_CAPAB
 
 **Not a Diff applicator:** `Merge.mergeJson` / `mergeToJson` **do not delete** keys that are absent from the overlay. Example: `mergeJson({ cart: { a: 1, b: 2 } }, { cart: { a: 1 } })` keeps `b`. Phase Diffs from `onChunk` / `onPhase` are **subtree replacement** (or cumulative commit) surfaces — to apply a Diff locally, replace by path (or take `getCommittedSnapshot()`); **do not** pipe Diffs into `mergeJson`.
 
+**Live parser vs inject:** overlay XAIOP is parsed as a **new document** (empty tree), then JSON-merged — `@` / `:value` do **not** run on the stored tree. `@items>it_1>history` + `:7` **appends** on `LiveXaiopParser` (same session) or `parse(encode(stored) + patch)`. The same patch to `injectXaiopSync` / `mergeToJson` throws `:value scalar Content is only valid at array level` (`@` creates `{}` when the overlay has no array). Overlay `>history-` + `:7` **replaces** the array with `[7]` (arrays are atomic). Store + cursor patches → live parser / concat parse, **not** inject.
+
 | API | Returns |
 | --- | --- |
 | `Merge.mergeJson(base, overlay[, conflict])` | JSON ← JSON+JSON |
@@ -947,7 +956,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 
 | Export | Value / notes |
 | --- | --- |
-| `Xaiop.PROTOCOL_VERSION` | `"0.6.0"` |
+| `Xaiop.PROTOCOL_VERSION` | `"0.7.0"` |
 | `Xaiop.SDK_VERSION` | `"0.15.1"` |
 | `DotPolicy` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` (string constants) |
 | `MergeConflict` | `OVERWRITE` · `KEEP` |

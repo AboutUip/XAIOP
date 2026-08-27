@@ -1,6 +1,6 @@
 # @bylan280/xaiop
 
-Official Node.js SDK for XAIOP protocol **0.6.0** (Frozen). Package **0.15.1** — TypeScript; entries `@bylan280/xaiop` · `@bylan280/xaiop/browser` · `@bylan280/xaiop/core`.
+Official Node.js SDK for XAIOP protocol **0.7.0** (Draft). Package **0.15.1** — TypeScript; entries `@bylan280/xaiop` · `@bylan280/xaiop/browser` · `@bylan280/xaiop/core`.
 
 **Docs (repo):** [API](https://github.com/AboutUip/XAIOP/blob/main/docs/sdk/nodejs/API.md) · [Notes](https://github.com/AboutUip/XAIOP/tree/main/docs/sdk/nodejs/notes) · [Behavioral contract](https://github.com/AboutUip/XAIOP/blob/main/docs/sdk/behavioral-contract.md) · [Protocol](https://github.com/AboutUip/XAIOP/tree/main/docs/protocol)
 

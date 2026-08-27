@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.6.0_Frozen-14b8a6?style=flat-square&labelColor=0b1220" /></a>
+  <a href="https://github.com/AboutUip/XAIOP"><img alt="Protocol" src="https://img.shields.io/badge/protocol-v0.7.0_Draft-14b8a6?style=flat-square&labelColor=0b1220" /></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
   <img alt="Cursor IR" src="https://img.shields.io/badge/wire-cursor--IR-f59e0b?style=flat-square&labelColor=0b1220" />
   <img alt="Streaming" src="https://img.shields.io/badge/stream-phase--native-0ea5e9?style=flat-square&labelColor=0b1220" />
@@ -97,14 +97,14 @@ Materializes as:
 - **Practice** — [docs/practice/](docs/practice/) · [streaming](docs/practice/streaming-transport.md) · [skeleton WS](docs/practice/skeleton-stream.md)
 - **SDKs** — [docs/sdk/](docs/sdk/) · [parity contract](docs/sdk/behavioral-contract.md) · [code](xaiop-sdk/) · [stage timing](xaiop-sdk/timing/)
   - **Node.js** `xaiop` **0.15.1** — **[API](docs/sdk/nodejs/API.md)** · [notes](docs/sdk/nodejs/notes/) · [`XaiopWs`](docs/sdk/nodejs/notes/ws-session.md) · [code](xaiop-sdk/nodejs/) · [demo](demos/nodejs/)
-  - **Java** `io.xaiop:xaiop` **0.15.1** — [API](docs/sdk/java/) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
+  - **Java** `io.github.aboutuip:xaiop` **0.15.1** ([Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)) — [API](docs/sdk/java/) · [install](docs/sdk/java/README.md#install) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
   - **Python** `xaiop` **0.15.1** — [API](docs/sdk/python/API.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.md) · [code](xaiop-sdk/python/) · [demo](demos/python/)
-  - **Go** `xaiop-sdk/go` **0.15.1** — [API](docs/sdk/go/API.md) · [ALIGNMENT](docs/sdk/go/ALIGNMENT.md) · [code](xaiop-sdk/go/) · [demo](demos/go/)
+  - **Go** `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1** ([pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)) — [API](docs/sdk/go/API.md) · [install](docs/sdk/go/README.md#install) · [ALIGNMENT](docs/sdk/go/ALIGNMENT.md) · [code](xaiop-sdk/go/) · [demo](demos/go/)
 - **Preview docs** — same origin as lab: `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) (Docsify over `docs/`; shared dark theme)
 - **Lab UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / live stream / API markdown render
 - **Sealed archives** — [docs/archive/](docs/archive/) (LLM emit / metrics recipes deliberately out of live hubs)
 
-Official product SDKs (**Node · Java · Python · Go** `0.15.1`, protocol **0.6.0**): parse · stream · encode · merge · history · WS · Control Root · typeCheck · intercept / Annotation Span (no browser package on Java/Python/Go). Node remains the primary reference; Java/Python/Go are aligned at observable-semantics level. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout. Parity: [java/ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [python/ALIGNMENT](docs/sdk/python/ALIGNMENT.md) · [go/ALIGNMENT](docs/sdk/go/ALIGNMENT.md).
+Official product SDKs (**Node · Java · Python · Go** `0.15.1`, protocol **0.7.0** Draft): parse · stream · encode · merge · history · WS · Control Root · typeCheck · intercept / Annotation Span (no browser package on Java/Python/Go). Node remains the primary reference; Java/Python/Go are aligned at observable-semantics level. English docs are authoritative; `*.zh-CN.md` mirrors ship throughout. Parity: [java/ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [python/ALIGNMENT](docs/sdk/python/ALIGNMENT.md) · [go/ALIGNMENT](docs/sdk/go/ALIGNMENT.md).
 
 **Announcement (2026-08-04):** Skills are **no longer provided** as an official product; source remains downloadable from [`skills/`](skills/) as a **retained protocol digest** (aligned to **0.6.0**; not a sealed deliverable). Full notes: [docs/meta/release-notes-2026-08-04.md](docs/meta/release-notes-2026-08-04.md).
 
@@ -112,7 +112,7 @@ Official product SDKs (**Node · Java · Python · Go** `0.15.1`, protocol **0.6
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-38bdf8?style=flat-square&labelColor=0b1220" /></a>
-  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Frozen_v0.6.0-14b8a6?style=flat-square&labelColor=0b1220" />
+  <img alt="Frozen" src="https://img.shields.io/badge/protocol-Draft_v0.7.0-14b8a6?style=flat-square&labelColor=0b1220" />
   <a href="docs/meta/releases.md"><img alt="Releases" src="https://img.shields.io/badge/docs-releases-64748b?style=flat-square&labelColor=0b1220" /></a>
   <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-index-64748b?style=flat-square&labelColor=0b1220" /></a>
 </p>

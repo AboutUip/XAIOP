@@ -7,7 +7,7 @@
 | Document | Living parity matrix (Go official port) |
 | Go module | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.15.1** |
 | Node package | `@bylan280/xaiop` **0.15.1** (npm) |
-| Protocol wire | **0.6.0** Frozen (`xaiop.ProtocolVersion`) |
+| Protocol wire | **0.7.0** Draft (`xaiop.ProtocolVersion`) |
 | Normative | **No** — product parity inventory |
 | Authority | Node reference + [../behavioral-contract.md](../behavioral-contract.md) |
 
@@ -20,10 +20,10 @@
 
 | Stack | Package / module | SDK | Protocol | Status |
 | --- | --- | --- | --- | --- |
-| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | Reference |
-| Java (official) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
-| Python (official) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
-| Go (official port) | `…/xaiop-sdk/go` | **0.15.1** | **0.6.0** | Aligned |
+| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | Reference |
+| Java (official) | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
+| Python (official) | `xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
+| Go (official port) | `github.com/AboutUip/XAIOP/xaiop-sdk/go` | **0.15.1** | **0.7.0** Draft | Aligned |
 
 ---
 
@@ -59,6 +59,7 @@
 | Node.js | Go |
 | --- | --- |
 | `parseSync` / `encodeSync` | `Parse` / `Encode` |
+| `encode` / `encodeAsync` | **none** (use `Encode`; CPU-bound, no goroutine wrapper) |
 | `parseSync(src, true)` / CompatPolicy | `ParseWithOptions` · `compat.Resolve` |
 | `LiveXaiopParser` | `LiveParser` |
 | `materializeSnapshot` | `Materialize` / `MaterializeSnapshot` |
@@ -95,16 +96,16 @@ cd xaiop-sdk/go && go run ./cmd/fuzz-go -max=100 -seed=1
 | Gate | What it proves | Count / scope |
 | --- | --- | --- |
 | `go test ./...` | Unit + package parity vs Node/Python suites | `xaiop` · `stream` · `control` · `types` · `ws` (Compat ×8 · `&`/`!`/`@`/`#` · encode/merge · D1/D2 · cover · framing · demux · WS) |
-| `npm run golden:go` | Node ↔ Go **product** NDJSON | **50** cases — encode corpus **30** + parse **10** + stream **10** |
-| `npm run core-wire` | Python ↔ Go **STRICT** protocol wire | **46** cases |
+| `npm run golden:go` | Node ↔ Go **product** NDJSON | **60** cases — encode corpus **40** + parse **10** + stream **10** |
+| `npm run core-wire` | Python ↔ Go **STRICT** protocol wire | **152** cases |
 | `cmd/fuzz-go` | Mutation crash budget | CI / local seed runs |
 
 **Product golden fixtures** (`xaiop-sdk/conformance/fixtures/`):
 
-- Encode: `encode-corpus.json` (indices `encode:0` … `encode:29`)
+- Encode: `encode-corpus.json` (indices `encode:0` … `encode:39`)
 - Parse + stream (`mergeChunkWindow: false`): `complex` · `stream-phases` → `stream:phases` · `overwrite-id` · `delete-phases` · `at-array-d2` · `bang-broadcast` · `d1-named-enter` · `locate-equals` · `hash-ignore` · `at-exact`
 
-**Claim strength:** Go package tests + Node↔Go product golden (**50**) + Python↔Go STRICT core-wire (**46**) + fuzz. CI job: `golden-go` in `.github/workflows/ci.yml`.
+**Claim strength:** Go package tests + Node↔Go product golden (**60**) + Python↔Go STRICT core-wire (**152**) + fuzz. CI job: `golden-go` in `.github/workflows/ci.yml`.
 
 **Timing:** same stage names as Node / Python / Java — [`xaiop-sdk/timing/go`](../../../xaiop-sdk/timing/go/) (`npm run bench:go` / `bench:go:quick`).
 

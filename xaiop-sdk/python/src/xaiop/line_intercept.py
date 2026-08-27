@@ -14,6 +14,7 @@ LINE_KIND = {
     "EXACT": "exact",
     "BROADCAST": "broadcast",
     "DELETE": "delete",
+    "SELECT": "select",
     "OBJECT_ANON": "object_anon",
     "ARRAY_ANON": "array_anon",
     "ARRAY_NAMED": "array_named",
@@ -69,6 +70,10 @@ def classify_line(line: str) -> LineView:
         return view
     if raw.startswith("&"):
         view = empty_line_view(raw, LINE_KIND["DELETE"])
+        view.path = raw[1:]
+        return view
+    if raw.startswith("?"):
+        view = empty_line_view(raw, LINE_KIND["SELECT"])
         view.path = raw[1:]
         return view
     if raw == ">":

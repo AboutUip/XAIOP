@@ -1,4 +1,4 @@
-"""JSON → XAIOP encoder (protocol v0.6.0 wire)."""
+"""JSON → XAIOP encoder (protocol v0.7.0 Draft wire)."""
 
 from __future__ import annotations
 
@@ -388,9 +388,10 @@ def _format_scalar_element(value: Any, path: str) -> str:
         return f":{_format_number_token(value, path)}"
     if isinstance(value, str):
         _assert_encodable_string(value, path)
+        wire = _escape_content(value)
         if _needs_forced_string(value):
-            return f": {value}"
-        return f":{value}"
+            return f": {wire}"
+        return f":{wire}"
     raise XaiopEncodeError(
         f"unsupported array element type: {type(value).__name__}", path=path
     )
@@ -405,9 +406,10 @@ def _format_content(key: str, value: Any, path: str) -> str:
         return f"{key}:{_format_number_token(value, path)}"
     if isinstance(value, str):
         _assert_encodable_string(value, path)
+        wire = _escape_content(value)
         if _needs_forced_string(value):
-            return f"{key}: {value}"
-        return f"{key}:{value}"
+            return f"{key}: {wire}"
+        return f"{key}:{wire}"
     raise XaiopEncodeError(
         f"unsupported value type: {type(value).__name__}", path=path
     )
@@ -583,14 +585,29 @@ def _assert_key(key: str, path: str, symbol_keys: bool = False) -> None:
 
 
 def _assert_encodable_string(s: str, path: str) -> None:
-    if "\n" in s or "\r" in s:
-        raise XaiopEncodeError("string values must not contain CR/LF", path=path)
     if s and ord(s[0]) == 0x20:
         raise XaiopEncodeError(
             "string values must not begin with U+0020 SPACE "
             "(wire forced-string marker would strip leading spaces)",
             path=path,
         )
+
+
+def _escape_content(s: str) -> str:
+    """PROT-CONTENT §4.1 — always-on Content escape (`\\` `\\n` `\\r`)."""
+    if "\\" not in s and "\n" not in s and "\r" not in s:
+        return s
+    out: list[str] = []
+    for c in s:
+        if c == "\\":
+            out.append("\\\\")
+        elif c == "\n":
+            out.append("\\n")
+        elif c == "\r":
+            out.append("\\r")
+        else:
+            out.append(c)
+    return "".join(out)
 
 
 def _is_plain_object(v: Any) -> bool:

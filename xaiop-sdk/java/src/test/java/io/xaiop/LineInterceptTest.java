@@ -58,6 +58,9 @@ class LineInterceptTest {
     assertEquals(LineKind.EXACT, LineIntercept.classifyLine("@p").kind());
     assertEquals("p", LineIntercept.classifyLine("!p").path());
     assertEquals(LineKind.BROADCAST, LineIntercept.classifyLine("!p").kind());
+    assertEquals("id:A2", LineIntercept.classifyLine("?id:A2").path());
+    assertEquals(LineKind.SELECT, LineIntercept.classifyLine("?id:A2").kind());
+    assertEquals(LineKind.SELECT, LineIntercept.classifyLine("?*").kind());
     assertEquals(LineKind.OBJECT_ANON, LineIntercept.classifyLine(">").kind());
     assertEquals(LineKind.ARRAY_ANON, LineIntercept.classifyLine("-").kind());
     assertEquals("items", LineIntercept.classifyLine(">items-").name());

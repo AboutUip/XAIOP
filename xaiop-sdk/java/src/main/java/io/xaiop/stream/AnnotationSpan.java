@@ -226,7 +226,7 @@ public final class AnnotationSpan {
         if (depthBefore <= baseDepth) break;
       }
 
-      if (line.startsWith("=") || line.startsWith("@") || line.startsWith("!")) {
+      if (line.startsWith("=") || line.startsWith("@") || line.startsWith("!") || line.startsWith("?")) {
         break;
       }
 
@@ -313,6 +313,10 @@ public final class AnnotationSpan {
       for (String s : path.split(">")) {
         if (!s.isEmpty()) stack.add(new SimFrame("object", s));
       }
+      return;
+    }
+    if (line.startsWith("?")) {
+      stack.add(new SimFrame("object", null));
       return;
     }
     if (line.startsWith("&")) return;

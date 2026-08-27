@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseSync, PROTOCOL_VERSION, XaiopSyntaxError } from "../dist/index.js";
 
-test("protocol version 0.6.0", () => {
-  assert.equal(PROTOCOL_VERSION, "0.6.0");
+test("protocol version 0.7.0", () => {
+  assert.equal(PROTOCOL_VERSION, "0.7.0");
 });
 
 test("@path exact from Root; sibling branch untouched", () => {

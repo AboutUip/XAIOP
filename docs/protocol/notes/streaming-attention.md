@@ -61,7 +61,7 @@ Concrete API names are implementation details.
 | Later-wins | Snapshot after a later Block may drop earlier same-key **object Content** |
 | `>name-` reopen | Array is **re-entered**; elements **append** — Diff/Snapshot accumulate |
 | `&path` delete | Key removed from the **cumulative** tree; later write to same address creates again |
-| Phases with `=` / `!` / `&` | Per-`.` Diff **MUST** parse a **cumulative prefix** so operators see prior phases |
+| Phases with `=` / `!` / `&` / `?` | Per-`.` Diff **MUST** parse a **cumulative prefix** so operators see prior phases |
 
 **SDK-only cover mode (not wire grammar):** default **off**. When enabled for streaming Diff, consecutive `&` runs may inject `.`, emit a deepest-key `null` tombstone Diff, then restore with a `>` chain. Canonical Commit still applies `&` on the live tree. Protocol parsers need not implement cover.
 
@@ -72,7 +72,7 @@ Wire details: [wire-attention.md](wire-attention.md).
 ## 6. Generator checklist (streaming, protocol)
 
 - [ ] Emit complete Label lines (including terminating newline) as the unit of Block completion.  
-- [ ] Do not put line endings inside Content values.  
+- [ ] Do not put **physical** line endings inside Content values (`\n` / `\r` / `\\` for semantic newlines).  
 - [ ] If Consumers need mid-stream JSON, ensure Blocks (and any agreed checkpoint) actually complete.
 - [ ] After `.`, re-address from Root; reopen `>name-` when append across phases is intended.
 - [ ] Prefer `&path` only on object-root documents; remember missing targets are silent no-ops.

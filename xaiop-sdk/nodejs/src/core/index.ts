@@ -12,6 +12,7 @@ export {
 export {
   DOT_POLICY,
   encode,
+  encodeAsync,
   encodeSync,
   formatJsonPath,
   parseJsonPath,

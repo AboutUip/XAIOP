@@ -7,7 +7,7 @@
 | 文档 | 官方 Python 端口对等矩阵（持续维护） |
 | Python 包 | `xaiop` **0.15.1** |
 | Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
-| 线文协议 | **0.6.0** Frozen（`PROTOCOL_VERSION`） |
+| 线文协议 | **0.7.0** Draft（`PROTOCOL_VERSION`） |
 | 是否规范正文 | **否** — 产品可观察语义清单（≠ 仅协议符合） |
 | 权威来源 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md)（若无则见英版） |
 
@@ -23,9 +23,9 @@
 
 | 栈 | 包 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | 参考 |
-| Java（官方） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
-| Python（官方端口） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
+| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | 参考 |
+| Java（官方） | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
+| Python（官方端口） | `xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
 
 ---
 
@@ -63,6 +63,7 @@
 | Node.js | Python |
 | --- | --- |
 | `parseSync` / `encodeSync` | `parse_sync` / `encode_sync` |
+| `encode` / `encodeAsync` | **无**（同步优先；与没有 `parse_async` 相同） |
 | `LiveXaiopParser` | `LiveParser` |
 | Annotation Span keep（`undefined`） | `AnnotationSpan.KEEP` |
 | `for await (chunks())` | 同步迭代 `chunks()` |
@@ -133,7 +134,7 @@ cd xaiop-sdk/conformance && npm run core-wire
 python xaiop-sdk/conformance/fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
-产品 golden：**50** 例（encode 语料 30 + parse/stream 各 10 套 fixture）。
+产品 golden：**60** 例（encode 语料 40 + parse/stream 各 10 套 fixture）。
 Python↔Go `core-wire` 仍为协议 STRICT 轨，**不能**代替 Node 产品 golden。
 
 ---

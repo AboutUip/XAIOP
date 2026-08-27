@@ -14,6 +14,7 @@ export const LINE_KIND = Object.freeze({
   EXACT: "exact",
   BROADCAST: "broadcast",
   DELETE: "delete",
+  SELECT: "select",
   OBJECT_ANON: "object_anon",
   ARRAY_ANON: "array_anon",
   ARRAY_NAMED: "array_named",
@@ -95,6 +96,11 @@ export function classifyLine(line) {
   }
   if (raw.startsWith("&")) {
     const view = emptyLineView(raw, LINE_KIND.DELETE);
+    view.path = raw.slice(1);
+    return view;
+  }
+  if (raw.startsWith("?")) {
+    const view = emptyLineView(raw, LINE_KIND.SELECT);
     view.path = raw.slice(1);
     return view;
   }

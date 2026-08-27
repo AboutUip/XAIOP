@@ -17,6 +17,9 @@ def test_classify_line_kinds() -> None:
     assert classify_line("key:value").kind == LINE_KIND["CONTENT"]
     assert classify_line("&a>b").kind == LINE_KIND["DELETE"]
     assert classify_line("&a>b").path == "a>b"
+    assert classify_line("?id:A2").kind == LINE_KIND["SELECT"]
+    assert classify_line("?id:A2").path == "id:A2"
+    assert classify_line("?*").kind == LINE_KIND["SELECT"]
 
 
 def test_classify_line_matrix() -> None:

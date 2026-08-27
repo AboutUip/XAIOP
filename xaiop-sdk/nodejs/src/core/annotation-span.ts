@@ -176,7 +176,8 @@ function collectForwardSiblings(lines, from, baseDepth) {
     if (
       line.startsWith("=") ||
       line.startsWith("@") ||
-      line.startsWith("!")
+      line.startsWith("!") ||
+      line.startsWith("?")
     ) {
       break;
     }
@@ -293,6 +294,10 @@ function applySimLine(stack, line) {
     const segs = path.split(">").filter(Boolean);
     stack.length = 0;
     for (const s of segs) stack.push({ kind: "object", key: s });
+    return;
+  }
+  if (line.startsWith("?")) {
+    stack.push({ kind: "object", key: null });
     return;
   }
   if (line.startsWith("&")) return;

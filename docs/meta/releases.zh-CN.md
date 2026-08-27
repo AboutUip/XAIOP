@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `META-REL` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-09 |
+| 最近更新 | 2026-08-27 |
 | 规范性 | **否** — 发行索引；封存规则见 `META-VER` |
 | 依赖 | `META-VER`, `META-REV` |
 
@@ -26,6 +26,7 @@
 
 | 协议 | 状态 | 线要点 | Git 标签（建议） |
 | --- | --- | --- | --- |
+| `0.7.0` | **Draft** | Content `\n`/`\r`/`\\`（一律生效）；Label U+001F 方言 | —（未封存） |
 | `0.6.0` | Frozen | `#` 自定义注解传递；既有 `&` / `@` / `!` / `=` | `protocol-v0.6.0` |
 | `0.5.0` | Frozen | `&path` 删除；既有 `@` / `!` / `=` | `protocol-v0.5.0` |
 | `0.4.0` | Frozen | `@` 创建或进入；`!` 广播 | `protocol-v0.4.0` |
@@ -56,7 +57,9 @@
 | `0.7.0` | 发布时声明的 `0.4.0` | `sdk-nodejs-v0.7.0` | 解析历史 |
 | `0.6.0` | `0.4.0` | `sdk-nodejs-v0.6.0` | `@` / `!` 对齐 |
 
-### SDK 包（Java `io.xaiop:xaiop`）
+### SDK 包（Java `io.github.aboutuip:xaiop`）
+
+Maven Central：[`io.github.aboutuip:xaiop`](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)。Java 包名仍是 `io.xaiop.*`。旧说明若仍写未上架的 GAV `io.xaiop:xaiop`，以本坐标为准。安装：[../sdk/java/README.zh-CN.md#安装](../sdk/java/README.zh-CN.md#安装)。
 
 | SDK | 实现的协议 | 说明 |
 | --- | --- | --- |
@@ -67,6 +70,8 @@
 
 
 ### SDK 包（Python `xaiop` · Go module）
+
+Go：`go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · [安装](../sdk/go/README.zh-CN.md#安装)。
 
 | SDK | 协议 | 说明 |
 | --- | --- | --- |

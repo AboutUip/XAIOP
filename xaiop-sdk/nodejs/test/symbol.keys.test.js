@@ -1,5 +1,5 @@
 /**
- * symbolKeys / U+001F label-escape dialect ‚Ä?expanded coverage.
+ * symbolKeys / U+001F label-escape dialect ù?expanded coverage.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -51,7 +51,7 @@ test("helpers: keyNeedsSymbolEscape / encodeWireLabel / decodeWireLabel", () => 
 });
 
 test("symbolKeys off: all operator heads + U+001F throw", () => {
-  for (const key of ["#k", "@k", ">test", "<x", "=y", "!z", "&a", `${ESC}h`]) {
+  for (const key of ["#k", "@k", ">test", "<x", "=y", "!z", "&a", "?k", `${ESC}h`]) {
     assert.throws(
       () => encodeSync({ [key]: 1 }, { dotPolicy: "none" }),
       (err) => {
@@ -73,6 +73,7 @@ test("symbolKeys on: each operator-head key roundtrips alone", () => {
     "=eq": null,
     "!bang": 0,
     "&amp": "x",
+    "?q": 4,
     [`${ESC}hello`]: 3,
   };
   for (const [key, val] of Object.entries(cases)) {
@@ -244,7 +245,7 @@ test("WS connect symbolKeys roundtrip", async () => {
 });
 
 test("double-escape only one layer on each decode", () => {
-  // Logical key is U+001F + "#k" ‚Ü?wire U+001F U+001F # k
+  // Logical key is U+001F + "#k" ù?wire U+001F U+001F # k
   const key = `${ESC}#k`;
   const wire = encodeSync({ [key]: 1 }, OPT);
   assert.ok(wire.includes(`${ESC}${ESC}#k:1`));

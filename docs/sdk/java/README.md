@@ -4,13 +4,13 @@
 
 | Field | Value |
 | --- | --- |
-| Artifact | `io.xaiop:xaiop` **0.15.1** (JAR) |
-| Protocol | v0.6.0 Frozen (`Xaiop.PROTOCOL_VERSION`) |
+| Artifact | `io.github.aboutuip:xaiop` **0.15.1** (Maven Central JAR; Java packages `io.xaiop.*`) |
+| Protocol | v0.7.0 Draft (`Xaiop.PROTOCOL_VERSION`) |
 | SDK version constant | `Xaiop.SDK_VERSION` = `0.15.1` |
 | Runtime | Java 17+ (zero runtime dependencies) |
 | Code | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-This package tracks the Node.js reference (`xaiop` **0.15.1** ↔ protocol **0.6.0**) at the
+This package tracks the Node.js reference (`xaiop` **0.15.1** ↔ protocol **0.7.0** Draft) at the
 **observable-semantics** level. Pin the artifact version; read `Xaiop.PROTOCOL_VERSION` for the
 wire version. Java has no `xaiop/browser` subpath — listen and connect share one JDK package.
 
@@ -24,7 +24,7 @@ wire version. Java has no `xaiop/browser` subpath — listen and connect share o
 
 ## Status
 
-**Active** — Node-aligned full product surface (protocol **0.6.0**).
+**Active** — Node-aligned full product surface (protocol **0.7.0** Draft).
 
 | Area | State |
 | --- | --- |
@@ -93,6 +93,7 @@ The port keeps observable semantics, not JavaScript shapes. See also [ALIGNMENT.
 | Node.js | Java |
 | --- | --- |
 | `async` first, `*Sync` mirrors | **Sync first**; `Parse.parseAsync` / `Encode.encodeAsync` return `CompletableFuture`, and `DotCheckpointEngine` adds real (coalescing) `pushAsync` / `finishAsync` |
+| `encode` ≡ `encodeAsync` (`Promise`); `encodeSync` → string | Java `Encode.encode()` / `Xaiop.encode()` **are the string** |
 | Plain objects / arrays | `LinkedHashMap<String,Object>` / `ArrayList<Object>` trees; scalars are `String`, `Integer` / `Long` / `Double`, `Boolean`, `null` |
 | `undefined` vs `null` | Java has **no `undefined`** — only `null` exists, so `undefinedPolicy` is inert (kept for option-table parity) |
 | Annotation Span keep (`return undefined`) | Return **`AnnotationSpan.KEEP`** (sentinel); `null` means drop / replace with null JSON |
@@ -108,15 +109,25 @@ The port keeps observable semantics, not JavaScript shapes. See also [ALIGNMENT.
 
 ---
 
-## Quick start
+## Install
+
+Maven Central: **`io.github.aboutuip:xaiop`** **0.15.1**. Java packages remain **`io.xaiop.*`**. Older docs may still write the unpublished GAV `io.xaiop:xaiop` — consumers must use `io.github.aboutuip`.
 
 ```xml
 <dependency>
-  <groupId>io.xaiop</groupId>
+  <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
   <version>0.15.1</version>
 </dependency>
 ```
+
+```kotlin
+implementation("io.github.aboutuip:xaiop:0.15.1")
+```
+
+Search: [Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop). Maintainer publish: [MAVEN-CENTRAL.md](../../../xaiop-sdk/java/MAVEN-CENTRAL.md).
+
+## Quick start
 
 ```java
 import io.xaiop.*;
@@ -306,8 +317,8 @@ Canonical leaf kinds follow PROT-CONTENT (`int` · `float` · `bool` · `null` �
 duplicates and paths that do not exist in the value, and refuses to cut inside an array element
 object (an index must be the final segment).
 
-Rejected keys (empty, whitespace, `:`, trailing `-`, `>` `<` `=` `!`), CR/LF in strings,
-**strings beginning with U+0020 SPACE** (forced-string markers after `:` are not payload),
+Rejected keys (empty, whitespace, `:`, trailing `-`, `>` `<` `=` `!`),
+**strings beginning with U+0020 SPACE** (forced-string markers after `:` are not payload; CR/LF in values are escaped as `\n`/`\r`),
 non-finite numbers and unsupported value types throw `XaiopEncodeError`. `getPath()` returns the JSON path of
 the offending node (e.g. `$.ok.bad`) for those **value- and key-level** failures; it is `null` for
 **option-level** failures such as a bad `phaseEvery`, which are not tied to a node.
@@ -366,6 +377,8 @@ live.feedLine(">");              // one complete logical line, no trailing newli
 live.feedText(">a\nx:1\n");      // or a block, split exactly like Parse.parse
 Object tree = Materialize.materializeSnapshot(live.value());
 ```
+
+Encode wire ends with `\n`; `feedText` / `Parse.parse` drop the trailing empty. Do not split encode output on `"\n"` into `feedLine` — the last `""` errors. `feedLine` stays the per-line primitive.
 
 `value()` returns the **live** tree: further feeds mutate it. `Materialize.materializeSnapshot`
 deep-clones it into a JSON-facing snapshot and unwraps a root `XaiopFragment` to its entries — use

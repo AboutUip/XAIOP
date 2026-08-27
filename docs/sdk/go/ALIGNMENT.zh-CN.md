@@ -7,7 +7,7 @@
 | 文档 | 现行对等矩阵（Go 官方端口） |
 | Go 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` · SDK **0.15.1** |
 | Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
-| 协议线文 | **0.6.0** Frozen（`xaiop.ProtocolVersion`） |
+| 协议线文 | **0.7.0** Draft（`xaiop.ProtocolVersion`） |
 | 规范性 | **否** — 产品对等清单 |
 | 权威 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |
 
@@ -20,10 +20,10 @@
 
 | 栈 | 包 / 模块 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | 参考 |
-| Java（官方） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
-| Python（官方） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
-| Go（官方端口） | `…/xaiop-sdk/go` | **0.15.1** | **0.6.0** | 已对齐 |
+| Node.js（主） | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | 参考 |
+| Java（官方） | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
+| Python（官方） | `xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
+| Go（官方端口） | `github.com/AboutUip/XAIOP/xaiop-sdk/go` | **0.15.1** | **0.7.0** Draft | 已对齐 |
 
 ---
 
@@ -52,7 +52,7 @@
 | `XaiopWs` listen / connect | ✅ | ✅ | 标准库 RFC6455 子集 · `xaiop/ws` |
 | Browser 入口 | ✅ | ❌ | 范围外 |
 
-完整 Node→Go 惯用法与包映射见英文 [ALIGNMENT.md](ALIGNMENT.md) §3–4。
+完整 Node→Go 惯用法与包映射见英文 [ALIGNMENT.md](ALIGNMENT.md) §3–4。`Encode` 对应 Node `encodeSync`；**没有** `EncodeAsync`（与 Python 无 `encode_async` 相同）。
 
 ---
 
@@ -68,11 +68,11 @@ cd xaiop-sdk/go && go run ./cmd/fuzz-go -max=100 -seed=1
 | 门禁 | 证明内容 | 规模 |
 | --- | --- | --- |
 | `go test ./...` | 包级行为对齐 | Compat ×8 · `&`/`!`/`@`/`#` · encode/merge · D1/D2 · cover · stream framing · control · WS |
-| `npm run golden:go` | Node ↔ Go **产品** NDJSON | **50** 例（encode **30** + parse **10** + stream **10**） |
-| `npm run core-wire` | Python ↔ Go **STRICT** 线文 | **46** 例 |
+| `npm run golden:go` | Node ↔ Go **产品** NDJSON | **60** 例（encode **40** + parse **10** + stream **10**） |
+| `npm run core-wire` | Python ↔ Go **STRICT** 线文 | **152** 例 |
 | `cmd/fuzz-go` | 变异崩溃预算 | CI / 本地 |
 
-**声明强度：** Go 包测 + Node↔Go 产品黄金（**50**）+ Python↔Go STRICT core-wire（**46**）+ fuzz。CI：`golden-go`。
+**声明强度：** Go 包测 + Node↔Go 产品黄金（**60**）+ Python↔Go STRICT core-wire（**152**）+ fuzz。CI：`golden-go`。
 
 **计时：** 与 Node / Python / Java 同阶段名 — [`xaiop-sdk/timing/go`](../../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
 

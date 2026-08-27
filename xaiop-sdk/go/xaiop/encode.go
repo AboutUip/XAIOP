@@ -564,10 +564,11 @@ func formatScalarElement(value any, path string) (string, error) {
 		if err := assertEncodableString(s, path); err != nil {
 			return "", err
 		}
+		wire := escapeContent(s)
 		if needsForcedString(s) {
-			return ": " + s, nil
+			return ": " + wire, nil
 		}
-		return ":" + s, nil
+		return ":" + wire, nil
 	}
 	return "", &EncodeError{
 		Message: "unsupported array element type: " + typeName(value),
@@ -607,10 +608,11 @@ func formatContent(key string, value any, path string) (string, error) {
 		if err := assertEncodableString(s, path); err != nil {
 			return "", err
 		}
+		wire := escapeContent(s)
 		if needsForcedString(s) {
-			return key + ": " + s, nil
+			return key + ": " + wire, nil
 		}
-		return key + ":" + s, nil
+		return key + ":" + wire, nil
 	}
 	return "", &EncodeError{
 		Message: "unsupported value type: " + typeName(value),
@@ -755,9 +757,6 @@ func assertKey(key string, path string, symbolKeys bool) error {
 }
 
 func assertEncodableString(s string, path string) error {
-	if strings.ContainsAny(s, "\n\r") {
-		return &EncodeError{Message: "string values must not contain CR/LF", Path: path}
-	}
 	if len(s) > 0 && s[0] == ' ' {
 		return &EncodeError{
 			Message: "string values must not begin with U+0020 SPACE (wire forced-string marker would strip leading spaces)",
@@ -765,6 +764,29 @@ func assertEncodableString(s string, path string) error {
 		}
 	}
 	return nil
+}
+
+// escapeContent implements PROT-CONTENT §4.1 (always-on `\\` `\n` `\r`).
+func escapeContent(s string) string {
+	if strings.IndexByte(s, '\\') < 0 && strings.IndexByte(s, '\n') < 0 && strings.IndexByte(s, '\r') < 0 {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 8)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch c {
+		case '\\':
+			b.WriteString("\\\\")
+		case '\n':
+			b.WriteString("\\n")
+		case '\r':
+			b.WriteString("\\r")
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 func finalizeWire(lines []string, finalDot bool, trailingNewline bool) string {

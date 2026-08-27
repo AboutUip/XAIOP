@@ -1,6 +1,6 @@
-# Core-wire fixtures (Python ↔ Go)
+# Core-wire fixtures (Python ↔ Go dump + four-SDK unit load)
 
-Shared **Frozen 0.6.0 STRICT** fixtures for the core-protocol track.  
+Shared **Draft 0.7.0 STRICT** fixtures for the core-protocol track.  
 Authority: [docs/protocol/](../../../docs/protocol/).  
 **Not** a Node/Java product golden gate.
 
@@ -8,7 +8,7 @@ Authority: [docs/protocol/](../../../docs/protocol/).
 
 | Path | Role |
 | --- | --- |
-| `cases.json` | Corpus (parse / parse_error / live / encode / encode_error / roundtrip / parse_file) |
+| `cases.json` | Corpus (parse / parse_error / live / encode / encode_error / roundtrip / parse_file) — **152** cases including Content `\n`/`\r`/`\\` and array `?` select |
 | `complex.xaiop` / `complex.expected.json` | Large fixture (also referenced from `cases.json`) |
 | `dump-python.py` | Python NDJSON dump |
 | `compare-core.mjs` | Python ↔ Go compare (trees + wire; numeric int/float equivalence) |
@@ -25,7 +25,7 @@ go run ../go/cmd/dump-core-wire --cases core-wire/cases.json --out out/go.ndjson
 node core-wire/compare-core.mjs out/python.ndjson out/go.ndjson
 ```
 
-Unit tests in each SDK also load `cases.json` directly.
+**Four-SDK joint load:** Node (`test/core.wire.corpus.test.js`), Java (`CoreWireCorpusTest`), Python (`test_core_wire_corpus.py`), and Go (`TestCoreWireCorpus`) each execute `cases.json`. Node and Java skip `encode` + `root: fragment` (no fragment encode root). CI `core-wire` still dumps Python ↔ Go for byte-identical encode wire.
 
 ## Clarifications (no ambiguity)
 
@@ -41,4 +41,5 @@ Unit tests in each SDK also load `cases.json` directly.
 | `#` lines | Standalone `#…` ignored for tree; not a “comment” in protocol terms |
 | Live feed | Complete logical lines (same split as sync); trailing segment without LF counts as a line |
 | Error messages | Text need not match across languages; both sides must fail/succeed the same cases |
-| Out of scope | Diff checkpoint, merge, WS, Control Root, typeCheck, label-escape 0.7.0 |
+| Content escape | Always-on `\\` `\n` `\r` (protocol **0.7.0**); unknown `\x` / trailing `\` are parse errors |
+| Out of scope | Diff checkpoint, merge, WS, Control Root, typeCheck, label-escape dialect |

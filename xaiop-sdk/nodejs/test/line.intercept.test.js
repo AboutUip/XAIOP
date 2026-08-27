@@ -22,7 +22,7 @@ import {
 
 describe("line intercept ?versions + classify", () => {
   test("SDK / protocol versions", () => {
-    assert.equal(PROTOCOL_VERSION, "0.6.0");
+    assert.equal(PROTOCOL_VERSION, "0.7.0");
     assert.equal(SDK_VERSION, "0.15.1");
   });
 
@@ -50,6 +50,9 @@ describe("line intercept ?versions + classify", () => {
     assert.equal(classifyLine("#note").annotationText, "note");
     assert.equal(classifyLine("k:null").valueText, "null");
     assert.equal(classifyLine("&a>b").path, "a>b");
+    assert.equal(classifyLine("?id:A2").kind, LINE_KIND.SELECT);
+    assert.equal(classifyLine("?id:A2").path, "id:A2");
+    assert.equal(classifyLine("?*").kind, LINE_KIND.SELECT);
   });
 });
 

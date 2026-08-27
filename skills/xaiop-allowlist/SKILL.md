@@ -106,7 +106,9 @@ Only these lines exist in legal output.
 | A8 | `=seg` or `=seg>seg>…` | Fuzzy **locate** existing node; segments join with `>` only; **no spaces**; **no values** | `=meta` · `=a>b` |
 | A9 | `@seg` or `@seg>seg>…` | **Exact** from Root; **create** missing object segments (本相) | `@a>b` |
 | A10 | `!seg` or `!seg>seg>…` | Broadcast all matches on **tree so far** (向前跨相; outer prune) until `.` | `!note` · `!a>b` |
-| A11 | `&seg` or `&seg>seg>…` | **Delete** deepest key; path absolute from Root (single Cursor); **no Cursor move**; segments join with `>`; **no bare `&`** | `&a` · `&a>b` |
+| A11 | `&seg` or `&seg>seg>…` | **Delete** deepest key; path absolute from Root (single Cursor); **no Cursor move**; segments join with `>` | `&a` · `&a>b` |
+| A13 | `?selector` | Array-local select from an **array** Cursor (`?2` · `?id:A2` · `?*` · `?*k:v`); does not create | `?1` · `?id:A2` · `?*` |
+| A14 | `&` (exactly) | Delete the **current array element**; Cursor must be that element; land on the parent array | `&` |
 | A12 | `#…` | **Custom annotation transmission** — entire line starts with `#`; protocol does not interpret text after `#`; **no Cursor / tree effect** | `#run-id:demo` · `#` |
 
 **Name token (`name` / `seg`):** non-empty; **no whitespace**; no `:`; no `=`.  
@@ -633,7 +635,9 @@ Do **not** write trailing `# …` on the same line as Structure or Content.
 | Jump to existing node (fuzzy) | A8 `=path` then C1/C2/A1… |
 | Jump exact from Root | A9 `@path` then C1/C2/A1… |
 | Broadcast update all matches | A10 `!path` … then A7 `.` |
-| Delete a key (absolute from Root; no Cursor move) | A11 `&path` (never bare `&`) |
+| Delete a key (absolute from Root; no Cursor move) | A11 `&path` |
+| Select an array element | A13 `?selector` after entering the array |
+| Delete the current array element | A14 bare `&` (only when Cursor is that element) |
 | Emit side-channel annotation | A12 `#…` as its own line |
 | Ascend one level | A5 `<` (entire line) |
 | Ascend and open sibling/new name | A6 `<name` (no space; name has no `:`) |
@@ -666,7 +670,7 @@ Before sending, verify privately:
 6. After a finished array, next `>other` / `>other-` is preceded by `.` (or an Allowed leave).  
 7. Every field line uses **`key:value`** (colon).  
 8. Every `=` line is path-only (`=meta`, `=a>b`) with no spaces and no value.  
-9. Every `&` line is path-only (`&a`, `&a>b`) — never bare `&`.  
+9. Every `&` line is either path-only (`&a`, `&a>b`) or a bare `&` that deletes the current array element (A14).  
 10. Every annotation is a whole `#…` line (A12) — never trailing `#` on Structure/Content.  
 11. After `>cast-` / `>tags-`, every member is `:name` — never bare `江辞`, never `<…`.  
 12. A5 lines are exactly `<`; never `<id:…` / `<value:…`.  

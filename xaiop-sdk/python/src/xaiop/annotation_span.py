@@ -178,7 +178,7 @@ def _collect_forward_siblings(
         elif line.startswith("<") and len(line) > 1:
             if depth_before <= base_depth:
                 break
-        if line.startswith(("=", "@", "!")):
+        if line.startswith(("=", "@", "!", "?")):
             break
         capture.append(line)
         _apply_sim_line(stack, line)
@@ -256,6 +256,9 @@ def _apply_sim_line(stack: list[dict[str, Any]], line: str) -> None:
         stack.clear()
         for s in segs:
             stack.append({"kind": "object", "key": s})
+        return
+    if line.startswith("?"):
+        stack.append({"kind": "object", "key": None})
         return
     if line.startswith("&"):
         return

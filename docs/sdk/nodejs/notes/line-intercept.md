@@ -53,7 +53,7 @@ Hook point: `DotCheckpointEngine` (forwarded by `XaiopStream` / `XaiopWsConnecti
 | `phase` | `.` | — |
 | `annotation` | `#…` | `annotationText` |
 | `pop` / `pop_enter` | `<` / `<name` | `name` |
-| `locate` / `exact` / `broadcast` / `delete` | `=` / `@` / `!` / `&` + path | `path` |
+| `locate` / `exact` / `broadcast` / `delete` / `select` | `=` / `@` / `!` / `&` / `?` + path or selector | `path` |
 | `object_anon` / `array_anon` | `>` / `-` | — |
 | `array_named` / `object_named` | `>name-` / `>name` | `name` |
 | `content` | `k:v` / `:v` | `key` · `valueText` |

@@ -4,21 +4,37 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.xaiop</groupId>
+  <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
   <version>0.15.1</version>
   <packaging>jar</packaging>
 
   <name>XAIOP</name>
-  <description>XAIOP protocol SDK for Java (artifact 0.15.1 · protocol 0.6.0 Frozen)</description>
-  <url>https://github.com/AboutUip/XAIOP</url>
+  <description>XAIOP protocol SDK for Java (artifact 0.15.1 · protocol 0.7.0 Draft)</description>
+  <url>https://github.com/AboutUip/XAIOP/tree/main/xaiop-sdk/java</url>
 
   <licenses>
     <license>
       <name>MIT License</name>
       <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>小萱baibai</name>
+      <organization>bylan280</organization>
+      <organizationUrl>https://github.com/AboutUip</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/AboutUip/XAIOP.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/AboutUip/XAIOP.git</developerConnection>
+    <url>https://github.com/AboutUip/XAIOP/tree/main/xaiop-sdk/java</url>
+    <tag>sdk-java-v0.15.1</tag>
+  </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -56,11 +72,89 @@
             <manifestEntries>
               <Implementation-Title>XAIOP</Implementation-Title>
               <Implementation-Version>${project.version}</Implementation-Version>
-              <XAIOP-Protocol-Version>0.6.0</XAIOP-Protocol-Version>
+              <XAIOP-Protocol-Version>0.7.0</XAIOP-Protocol-Version>
             </manifestEntries>
           </archive>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <!--
+    Maven Central publish profile.
+    Usage (after GPG + ~/.m2/settings.xml server id "central"):
+      mvn -Pcentral -DskipTests clean deploy
+  -->
+  <profiles>
+    <profile>
+      <id>central</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.11.2</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <doclint>none</doclint>
+                  <failOnError>false</failOnError>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.7</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <!-- Prefer env GPG_PASSPHRASE or gpg-agent; pinentry-mode loopback for CI/local scripts -->
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.9.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <!-- First publish: validate in Portal, then click Publish. Set true for CI later. -->
+              <autoPublish>false</autoPublish>
+              <waitUntil>validated</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

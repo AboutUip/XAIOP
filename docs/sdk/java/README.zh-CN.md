@@ -4,13 +4,13 @@
 
 | 字段 | 值 |
 | --- | --- |
-| 产物 | `io.xaiop:xaiop` **0.15.1**（JAR） |
-| 协议 | v0.6.0 Frozen（`Xaiop.PROTOCOL_VERSION`） |
+| 产物 | `io.github.aboutuip:xaiop` **0.15.1**（Maven Central JAR；Java 包名 `io.xaiop.*`） |
+| 协议 | v0.7.0 Draft（`Xaiop.PROTOCOL_VERSION`） |
 | SDK 版本常量 | `Xaiop.SDK_VERSION` = `0.15.1` |
 | 运行时 | Java 17+（零 runtime 依赖） |
 | 代码 | [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/) |
 
-本包在**可观测语义**上对齐 Node.js 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1** ↔ 协议 **0.6.0**）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `@bylan280/xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
+本包在**可观测语义**上对齐 Node.js 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1** ↔ 协议 **0.7.0** Draft）。请锁定产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `@bylan280/xaiop/browser` 分包 — listen 与 connect 同属一个 JDK 包。
 
 **API 参考（权威）：** **[API.zh-CN.md](API.zh-CN.md)** — 完整表面（§0–§11）：Parse · Encode · Engine · Stream · WS · Control · Compat · 类型 · 错误。  
 **对等矩阵（Java ↔ Node）：** **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** — 功能表 · 惯用法 · 包映射 · 测试映射 · 可接受差异 · §8 清单。  
@@ -22,7 +22,7 @@
 
 ## 状态
 
-**已启用** — 与 Node 对齐的完整产品面（协议 **0.6.0**）。
+**已启用** — 与 Node 对齐的完整产品面（协议 **0.7.0** Draft）。
 
 | 能力 | 状态 |
 | --- | --- |
@@ -87,6 +87,7 @@ io.xaiop/                 门面 · Parse · Encode · Merge · Engine · 选项
 | Node.js | Java |
 | --- | --- |
 | 以 `async` 为主，附 `*Sync` | **以同步为主**；`Parse.parseAsync` / `Encode.encodeAsync` 返回 `CompletableFuture`，`DotCheckpointEngine` 另提供真正合并调度的 `pushAsync` / `finishAsync` |
+| `encode` ≡ `encodeAsync`（`Promise`）；`encodeSync` → 字符串 | Java 的 `Encode.encode()` / `Xaiop.encode()` **就是字符串** |
 | 普通对象 / 数组 | `LinkedHashMap<String,Object>` / `ArrayList<Object>` 树；标量为 `String`、`Integer` / `Long` / `Double`、`Boolean`、`null` |
 | `undefined` 与 `null` 之分 | Java **没有 `undefined`**，只有 `null`，因此 `undefinedPolicy` 不会触发（仅为选项表对齐而保留） |
 | Annotation Span 保留（`return undefined`） | 返回 **`AnnotationSpan.KEEP`**（哨兵）；`null` 表示丢弃 / 替换为 JSON null |
@@ -102,15 +103,25 @@ io.xaiop/                 门面 · Parse · Encode · Merge · Engine · 选项
 
 ---
 
-## 快速开始
+## 安装
+
+Maven Central：**`io.github.aboutuip:xaiop`** **0.15.1**。Java 包名仍是 **`io.xaiop.*`**。旧文档若仍写未上架的 GAV `io.xaiop:xaiop`，消费方必须用 `io.github.aboutuip`。
 
 ```xml
 <dependency>
-  <groupId>io.xaiop</groupId>
+  <groupId>io.github.aboutuip</groupId>
   <artifactId>xaiop</artifactId>
   <version>0.15.1</version>
 </dependency>
 ```
+
+```kotlin
+implementation("io.github.aboutuip:xaiop:0.15.1")
+```
+
+检索：[Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)。维护者发布：[MAVEN-CENTRAL.zh-CN.md](../../../xaiop-sdk/java/MAVEN-CENTRAL.zh-CN.md)。
+
+## 快速开始
 
 ```java
 import io.xaiop.*;
@@ -272,8 +283,8 @@ session.observeTree(Map.of("id", 1, "name", "a"), true, List.of());
 `dotPolicyPaths` 与 `phaseEvery`、`maxPhases`、`shouldPhase` 互斥，会拒绝重复路径与值中不存在的
 路径，也不允许切在数组元素对象内部（下标必须是路径的最后一段）。
 
-被拒绝的键（空、含空白、含 `:`、末尾 `-`、含 `>` `<` `=` `!`）、字符串中的 CR/LF、
-**以 U+0020 SPACE 开头的字符串**（`:` 后空格是强制 string 标记而非载荷）、非有限数值以及
+被拒绝的键（空、含空白、含 `:`、末尾 `-`、含 `>` `<` `=` `!`）、
+**以 U+0020 SPACE 开头的字符串**（`:` 后空格是强制 string 标记而非载荷；值里的 CR/LF 经 `\n`/`\r` 转义）、非有限数值以及
 不支持的值类型都会抛出 `XaiopEncodeError`。对这些**值级与键级**失败，`getPath()` 返回出错节点的
 JSON 路径（如 `$.ok.bad`）；对**选项级**失败（如非法的 `phaseEvery`）则为 `null`，因为它们并不
 对应某个节点。
@@ -329,6 +340,8 @@ live.feedLine(">");              // 一条完整逻辑行，不带结尾换行
 live.feedText(">a\nx:1\n");      // 或整块文本，切分方式与 Parse.parse 完全一致
 Object tree = Materialize.materializeSnapshot(live.value());
 ```
+
+encode 线文以 `\n` 结尾；`feedText` / `Parse.parse` 会丢掉末尾空段。不要把 encode 结果按 `"\n"` 拆进 `feedLine` — 最后的 `""` 会报错。`feedLine` 仍是逐行原语。
 
 `value()` 返回的是**活树**：后续投喂会就地修改它。`Materialize.materializeSnapshot` 会深拷贝成
 面向 JSON 的快照，并把根部的 `XaiopFragment` 展开为其 entries —— 凡是需要留存的值都应经过它。

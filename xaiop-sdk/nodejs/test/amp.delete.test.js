@@ -17,7 +17,7 @@ function wire(...lines) {
 
 describe("amp.delete ??versions", () => {
   test("protocol 0.6.0 / SDK 0.15.1", () => {
-    assert.equal(PROTOCOL_VERSION, "0.6.0");
+    assert.equal(PROTOCOL_VERSION, "0.7.0");
     assert.equal(SDK_VERSION, "0.15.1");
   });
 });
@@ -135,7 +135,9 @@ describe("amp.delete ??document root constraints", () => {
   test("bare & is syntax error", () => {
     assert.throws(
       () => parseSync(wire(">", "&")),
-      (e) => e instanceof XaiopSyntaxError && /empty & path/.test(e.message),
+      (e) =>
+        e instanceof XaiopSyntaxError &&
+        /empty & path|not an array element/.test(e.message),
     );
   });
 

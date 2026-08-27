@@ -38,7 +38,7 @@ def test_label_escape_helpers() -> None:
 
 
 def test_symbol_keys_off_rejects_operator_heads() -> None:
-    for key in ["#k", "@k", ">test", "<x", "=y", "!z", "&a", f"{ESC}h"]:
+    for key in ["#k", "@k", ">test", "<x", "=y", "!z", "&a", "?k", f"{ESC}h"]:
         with pytest.raises(XaiopEncodeError):
             encode_sync({key: 1}, dot_policy="none")
 
@@ -52,6 +52,7 @@ def test_symbol_keys_on_roundtrip() -> None:
         "=eq": None,
         "!bang": 0,
         "&amp": "x",
+        "?q": 4,
         f"{ESC}hello": 3,
     }
     for key, val in cases.items():

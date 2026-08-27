@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `META-REL` |
 | Status | Informative |
-| Last updated | 2026-08-09 |
+| Last updated | 2026-08-27 |
 | Normative | **No** — release index; seal rules live in `META-VER` |
 | Depends on | `META-VER`, `META-REV` |
 
@@ -26,6 +26,7 @@ Index of **immutable** protocol and SDK releases (GitHub Releases style).
 
 | Protocol | Status | Wire highlights | Git tag (recommended) |
 | --- | --- | --- | --- |
+| `0.7.0` | **Draft** | Content `\n`/`\r`/`\\` (always on); Label U+001F dialect | — (unsealed) |
 | `0.6.0` | Frozen | `#` custom annotation transmission; prior `&` / `@` / `!` / `=` | `protocol-v0.6.0` |
 | `0.5.0` | Frozen | `&path` delete; prior `@` / `!` / `=` | `protocol-v0.5.0` |
 | `0.4.0` | Frozen | `@` create-or-enter; `!` broadcast | `protocol-v0.4.0` |
@@ -56,7 +57,9 @@ Published on npm: [`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xa
 | `0.7.0` | `0.4.0` (as declared at publish) | `sdk-nodejs-v0.7.0` | Parse history |
 | `0.6.0` | `0.4.0` | `sdk-nodejs-v0.6.0` | `@` / `!` alignment |
 
-### SDK packages (Java `io.xaiop:xaiop`)
+### SDK packages (Java `io.github.aboutuip:xaiop`)
+
+Maven Central: [`io.github.aboutuip:xaiop`](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop). Java packages remain `io.xaiop.*`. Older notes may still write the unpublished GAV `io.xaiop:xaiop`. Install: [../sdk/java/README.md#install](../sdk/java/README.md#install).
 
 | SDK | Protocol implemented | Notes |
 | --- | --- | --- |
@@ -67,6 +70,8 @@ Published on npm: [`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xa
 
 
 ### SDK packages (Python `xaiop` · Go module)
+
+Go: `go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` — [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · [install](../sdk/go/README.md#install).
 
 | SDK | Protocol | Notes |
 | --- | --- | --- |

@@ -5,13 +5,13 @@
 | Field | Value |
 | --- | --- |
 | Document | Track policy |
-| Wire target | Frozen protocol **0.6.0** |
+| Wire target | Draft protocol **0.7.0** |
 | Status | **Go is an official product SDK** (SDK **0.15.1**); **Python is an official product SDK** |
 
 ## Purpose
 
-**Python** and **Go** are official product ports (SDK **0.15.1**, protocol **0.6.0**).  
-STRICT core-wire fixtures still gate Python ↔ Go wire dumps in CI as a protocol regression (**46** cases — not a substitute for product golden).
+**Python** and **Go** are official product ports (SDK **0.15.1**, protocol **0.7.0** Draft).  
+STRICT core-wire fixtures still gate Python ↔ Go wire dumps in CI as a protocol regression (**152** cases — not a substitute for product golden). Node / Java / Python / Go unit tests also load `cases.json`.
 
 ## Go (official)
 
@@ -20,10 +20,10 @@ STRICT core-wire fixtures still gate Python ↔ Go wire dumps in CI as a protoco
 | Code | [../../../xaiop-sdk/go/](../../../xaiop-sdk/go/) |
 | SDK | **0.15.1** |
 | Scope map | [../go/ALIGNMENT.md](../go/ALIGNMENT.md) |
-| Product golden | `npm run golden:go` — Node ↔ Go **50** NDJSON |
-| STRICT gate | `npm run core-wire` — Python ↔ Go **46** |
+| Product golden | `npm run golden:go` — Node ↔ Go **60** NDJSON |
+| STRICT gate | `npm run core-wire` — Python ↔ Go **152** |
 | Verify | `go test ./...` · `golden:go` · `core-wire` · fuzz |
 
 ## Python (official)
 
-See [../python/](../python/) and [../python/ALIGNMENT.md](../python/ALIGNMENT.md). Product golden: `npm run golden:python` (**50**).
+See [../python/](../python/) and [../python/ALIGNMENT.md](../python/ALIGNMENT.md). Product golden: `npm run golden:python` (**60**).

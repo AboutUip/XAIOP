@@ -6,12 +6,12 @@
 | --- | --- |
 | Document ID | `SDK-BEHAVE` |
 | Status | Informative |
-| Last updated | 2026-08-08 |
+| Last updated | 2026-08-27 |
 | Normative | **No** — SDK product catalog (not protocol conformance) |
 | Reference implementation (primary) | Node.js `xaiop` **0.15.1** (`xaiop-sdk/nodejs/`) |
-| Official Java port | `io.xaiop:xaiop` **0.15.1** — aligned ([java/ALIGNMENT.md](java/ALIGNMENT.md)) |
+| Official Java port | `io.github.aboutuip:xaiop` **0.15.1** (Maven Central; packages `io.xaiop.*`) — aligned ([java/ALIGNMENT.md](java/ALIGNMENT.md) · [install](java/README.md#install)) |
 | Official Python port | `xaiop` **0.15.1** — aligned ([python/ALIGNMENT.md](python/ALIGNMENT.md)) |
-| Official Go port | `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1** — aligned ([go/ALIGNMENT.md](go/ALIGNMENT.md)) |
+| Official Go port | `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1** ([pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)) — aligned ([go/ALIGNMENT.md](go/ALIGNMENT.md) · [install](go/README.md#install)) |
 | Protocol wire | Frozen **v0.6.0** |
 
 **Isolation:** Protocol = **cursor IR** wire only · Practice = writers & transport · This page = **what an SDK must match for official parity** — [../SEPARATION.md](../SEPARATION.md).  
@@ -72,7 +72,7 @@ Stack detail: [nodejs/README.md](nodejs/README.md) (Compatibility mode · Compat
 | Leading `>` / `-` | Complete object / array document |
 | Leading `>name` / Root Content (no anonymous root) | **Fragment** type (not `{ "a": … }` wrapper) |
 | Empty source | `{}` |
-| Mid-document empty line | Syntax error |
+| Empty line | Syntax error (`feedLine("")` included). Encode wire ends with `\n`; `parseSync` / `feedText` drop the trailing empty segment. Do not `split("\n")` encode output into `feedLine` |
 | Per-line BOM (`U+FEFF`) | Stripped |
 
 **JSON-facing stream surfaces** materialize fragments to plain objects (`entries` clone). One-shot engine/static parse **may** preserve the fragment type. Ports that only expose JSON **MUST** document which path they use.
@@ -105,13 +105,15 @@ For values the encoder accepts:
 Additional locked rules:
 
 1. `parse(encode(value))` deep-equals `value` (with `-0` → `0`).
-2. Same `(value, options)` → identical wire; wire ends with exactly one trailing `\n`.
+2. Same `(value, options)` → identical wire; wire ends with exactly one trailing `\n` (terminator, not a Content line).
 3. Named arrays **MAY** span `.` phases (`>name-` re-enter appends). Encode default still keeps each named array in one phase for Diff clarity.
 4. **Array document root** starts with `-` and **does not** insert object-style top-level `.` phases (`dotPolicy` is ignored for phasing on array roots).
 5. Trailing `<` immediately before `.` or EOF may be omitted (redundant with reset / end).
 6. Reject keys: empty / whitespace / `:`, trailing `-`, characters `>` `<` = `!`.
-7. Reject string values containing CR/LF, or **beginning with U+0020 SPACE** (forced-string marker is not payload — refuse rather than silent strip).
+7. Reject string values **beginning with U+0020 SPACE** (forced-string marker is not payload — refuse rather than silent strip). Semantic CR/LF in the value are encoded as `\n` / `\r` (protocol **0.7.0**).
 8. Sparse array `undefined` holes → error; object `null` under `omit` drops keys; **array null still encodes** unless `nullPolicy: "error"`.
+
+Encode is a **Label-safe JSON subset**, not full RFC 8259 key space. `symbolKeys` (protocol **0.7.0** draft dialect; SDK may ship ahead) escapes a **leading** line-class character only — `a:b` still fails. Constrain keys at **JSON → encode**; parse the other way is ordinary JSON. JS-only values are a separate policy, not this gap.
 
 Full guide: [nodejs/API.md](nodejs/API.md) §4 · [nodejs/notes/encode-attention.md](nodejs/notes/encode-attention.md).
 
@@ -127,6 +129,8 @@ Full guide: [nodejs/API.md](nodejs/API.md) §4 · [nodejs/notes/encode-attention
 | Returns | `mergeToJson` → JSON; `mergeToXaiop` → wire (default encode `dotPolicy: "none"`) |
 | Engine inject | `injectXaiop` / `injectJson` mutate store by `dataId`; `as: "json"\|"xaiop"` selects return shape |
 | Fragments | Stored `XaiopFragment` is materialized before merge |
+| Overlay tree | Overlay is parsed **standalone** (empty tree). Stored JSON is **not** the `@` Cursor tree |
+| Cursor patch | `@path` + `:value` append → `LiveXaiopParser` / `parse(encode(base)+patch)`; **not** inject. Same patch on inject throws `:value scalar Content is only valid at array level`. Overlay `>name-` + `:n` **replaces** the array |
 | vs stream Diff | **Do not** apply `onChunk` Diffs via `mergeJson` — Diff is subtree replace / commit surface; merge is offline deep-merge |
 
 Guide: [nodejs/API.md](nodejs/API.md) §8.
@@ -181,9 +185,9 @@ Parity-minded ports **SHOULD** expose equivalents of:
 
 API: [nodejs/API.md](nodejs/API.md) §6 · [nodejs/notes/streaming-parse.md](nodejs/notes/streaming-parse.md).
 
-**Java (`io.xaiop:xaiop` 0.15.1):** official port aligned with the Node **0.15.1** product surface (protocol **0.6.0**). `XaiopStream` wires consumer options (cover · history · typeCheck · line intercept · Annotation Span · Control Root session/autoAck · `chunks()`) across **HTTP / SSE / RAW / WebSocket**, plus `XaiopWs` listen/connect, phase encode, and `symbolKeys`. Parity: [java/ALIGNMENT.md](java/ALIGNMENT.md).
+**Java (`io.github.aboutuip:xaiop` 0.15.1):** official port aligned with the Node **0.15.1** product surface (protocol **0.7.0** Draft). `XaiopStream` wires consumer options (cover · history · typeCheck · line intercept · Annotation Span · Control Root session/autoAck · `chunks()`) across **HTTP / SSE / RAW / WebSocket**, plus `XaiopWs` listen/connect, phase encode, and `symbolKeys`. Parity: [java/ALIGNMENT.md](java/ALIGNMENT.md).
 
-**Python (`xaiop` 0.15.1):** official port aligned with the same Node **0.15.1** product surface (protocol **0.6.0**; no browser). Stream / WS / control / typeCheck / intercept / Annotation Span / history as in [python/ALIGNMENT.md](python/ALIGNMENT.md).
+**Python (`xaiop` 0.15.1):** official port aligned with the same Node **0.15.1** product surface (protocol **0.7.0** Draft; no browser). Stream / WS / control / typeCheck / intercept / Annotation Span / history as in [python/ALIGNMENT.md](python/ALIGNMENT.md).
 
 ---
 
@@ -217,11 +221,11 @@ Detail: [nodejs/notes/ws-session.md](nodejs/notes/ws-session.md) · Practice: [.
 - [ ] Final Snapshot ≡ one-shot parse of full buffer (under same compat)  
 - [ ] WS phase `.\n` / `final` / close codes if offering skeleton sessions  
 
-**Official Java port (`io.xaiop:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port). Stage timing: [`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/) (`StageTimingMain` / `npm run bench:java`). Parse↔JSON gate: [java/ALIGNMENT.md §5](java/ALIGNMENT.md#5-test-map-node--java).
+**Official Java port (`io.github.aboutuip:xaiop` 0.15.1):** satisfies this checklist — see [java/ALIGNMENT.md §8](java/ALIGNMENT.md#8-behavioral-contract-8-checklist-java-official-port). Stage timing: [`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/) (`StageTimingMain` / `npm run bench:java`). Parse↔JSON gate: [java/ALIGNMENT.md §5](java/ALIGNMENT.md#5-test-map-node--java).
 
-**Official Python port (`xaiop` 0.15.1):** satisfies this checklist — see [python/ALIGNMENT.md §8](python/ALIGNMENT.md). Verification: pytest (~**487**) + `golden-python` (**50** NDJSON cases) + `core-wire` (**46**) + Python fuzz. Stage timing: [`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/) (`bench.py`).
+**Official Python port (`xaiop` 0.15.1):** satisfies this checklist — see [python/ALIGNMENT.md §8](python/ALIGNMENT.md). Verification: pytest + `golden-python` (**60** NDJSON cases) + `core-wire` (**152**) + Python fuzz. Stage timing: [`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/) (`bench.py`).
 
-**Official Go port (`…/xaiop-sdk/go` 0.15.1):** satisfies this checklist — see [go/ALIGNMENT.md §8](go/ALIGNMENT.md). Verification: `go test ./...` + `golden-go` (**50** NDJSON) + `core-wire` (**46**) + Go fuzz. Cross-validation detail: [go/ALIGNMENT.md §5](go/ALIGNMENT.md#5-verification--cross-validation). Stage timing: [`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/) (`npm run bench:go`).
+**Official Go port (`github.com/AboutUip/XAIOP/xaiop-sdk/go` 0.15.1):** satisfies this checklist — see [go/ALIGNMENT.md §8](go/ALIGNMENT.md). Verification: `go test ./...` + `golden-go` (**60** NDJSON) + `core-wire` (**152**) + Go fuzz. Cross-validation detail: [go/ALIGNMENT.md §5](go/ALIGNMENT.md#5-verification--cross-validation). Stage timing: [`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/) (`npm run bench:go`).
 
 **Node reference (`@bylan280/xaiop` 0.15.1 on [npm](https://www.npmjs.com/package/@bylan280/xaiop)):** suite **688**; stage timing + Parse↔JSON gate: [nodejs/notes/performance.md](nodejs/notes/performance.md) · hub [../performance.md](../performance.md). Extreme-perf tip (2026-08-09, no version bump): [../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md). npm publish: [../meta/release-notes-2026-08-09-nodejs-npm.md](../meta/release-notes-2026-08-09-nodejs-npm.md).
 

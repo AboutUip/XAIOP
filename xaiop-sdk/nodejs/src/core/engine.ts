@@ -4,7 +4,7 @@
  */
 import { CompatPolicy } from "./compat.js";
 import {
-  encode as encodeAsync,
+  encodeAsync,
   encodeSync as encodeValueSync,
 } from "./encode.js";
 import {
@@ -25,7 +25,7 @@ import {
   encodeTypeSchemaFrame,
 } from "./types.js";
 
-export const PROTOCOL_VERSION = "0.6.0";
+export const PROTOCOL_VERSION = "0.7.0";
 export const SDK_VERSION = "0.15.1";
 
 export class XaiopEngine {
@@ -321,6 +321,11 @@ export class XaiopEngine {
     return encodeValueSync(value, options);
   }
 
+  /** Identical to {@link encode}; named to match free `encodeAsync`. */
+  async encodeAsync(value, options = {}) {
+    return this.encode(value, options);
+  }
+
   /**
    * @param {unknown} value
    * @param {import("./encode.js").EncodeOptions} [options]
@@ -497,6 +502,11 @@ export class XaiopEngine {
    * @returns {Promise<string>}
    */
   static async encode(value, options = {}) {
+    return encodeAsync(value, options);
+  }
+
+  /** Identical to {@link encode}; named to match free `encodeAsync`. */
+  static async encodeAsync(value, options = {}) {
     return encodeAsync(value, options);
   }
 

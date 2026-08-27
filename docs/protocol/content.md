@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Document ID | `PROT-CONTENT` |
-| Status | **Frozen** |
-| Version | 0.4.0 |
-| Last updated | 2026-08-03 |
+| Status | **Draft** |
+| Version | 0.7.0 |
+| Last updated | 2026-08-27 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `PROT-BOUND`, `PROT-HIER` |
 | Informs | `CONF` |
@@ -52,16 +52,41 @@ Anonymous / scalar value (typical array element): `:a` → `"a"` under an array 
 
 ---
 
-## 4. Newline ban in value
+## 4. Physical newline ban; semantic newlines
 
-A value **MUST NOT** contain `LF` / `CRLF`.  
-The next line is a new parse attempt, never a value continuation.
+A Content **line** **MUST NOT** contain physical `LF` / `CRLF` in the value. The next physical line is a new parse attempt, never a value continuation. Empty Content lines remain syntax errors (Section 7).
+
+String values **MAY** contain `U+000A` and `U+000D`. Those code points **MUST** appear on the wire as the two-character escapes in Section 4.1. This alphabet is **always on** (not an option).
+
+### 4.1 Content escape alphabet
+
+After the first `:` split and after stripping forced-string leading spaces (Section 6), unescape the remaining payload **before** typing (Section 5).
+
+If the payload contains no `U+005C REVERSE SOLIDUS` (`\`), unescape is a no-op.
+
+Otherwise scan left to right. `\` **MUST** be followed by one of:
+
+| Sequence | Payload |
+| --- | --- |
+| `\\` | `\` |
+| `\n` | `U+000A` |
+| `\r` | `U+000D` |
+
+- Trailing `\` with no follower → syntax error.  
+- Any other `\x` → syntax error.  
+- Tab (`U+0009`) is written literally (not `\t`).
+
+Encode **MUST** apply this alphabet to every `\` / `U+000A` / `U+000D` in a string value (after the leading-space refusal in Section 6).
+
+### 4.2 Relation to package 0.6.0
+
+Protocol package **0.6.0** treated `\n` / `\r` / `\\` in a payload as literal characters. Package **0.7.0** unescapes them. Cite the package version.
 
 ---
 
 ## 5. Minimal typing
 
-After forced-string mark (Section 6), apply the first matching rule:
+After forced-string mark (Section 6) and unescape (Section 4.1), apply the first matching rule:
 
 1. int-parsable → **int**  
 2. float-parsable → **float** (JSON number; IEEE 754 **binary64**)  
@@ -141,7 +166,8 @@ empty:null
 **Encoder implication:** a JSON string whose first character is U+0020 SPACE cannot be placed
 losslessly after `:` (those spaces are this marker). Conforming encode APIs **MUST** refuse such
 values rather than emit wire that parses to a different string. Leading tab (`U+0009`) is not this
-marker and may round-trip.
+marker and may round-trip. JSON strings containing `U+000A` / `U+000D` **MUST** use Section 4.1
+escapes rather than physical line breaks.
 
 ---
 

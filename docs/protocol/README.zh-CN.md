@@ -1,22 +1,22 @@
-﻿# 协议文档 — XAIOP 协议包 v0.6.0（已封存）
+﻿# 协议文档 — XAIOP 协议包 v0.7.0（Draft）
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 | 字段 | 值 |
 | --- | --- |
 | 文档 ID | `PROT-INDEX` |
-| 状态 | **Frozen（已封存）** |
-| 版本 | 0.6.0 |
-| 最近更新 | 2026-08-04 |
+| 状态 | **Draft** |
+| 版本 | 0.7.0 |
+| 最近更新 | 2026-08-27 |
 | 规范性 | 信息性（索引） |
 
 ---
 
-## 封存声明
+## 工作包
 
-本目录描述 **已封存的 XAIOP 协议包 v0.6.0**：流式、按行、游标构造的线文法与语义。
+本目录描述 **工作中的 XAIOP 协议包 v0.7.0（Draft）**：流式、按行、游标构造的线文法与语义。已封存 **0.6.0** 仍可引用。
 
-**「已封存」** 表示该版本号下的规范性文本不可变；不等于「永远等于仓库尖端」。见 [../meta/status-and-versioning.zh-CN.md](../meta/status-and-versioning.zh-CN.md) · [../meta/releases.zh-CN.md](../meta/releases.zh-CN.md)。
+**Draft** 表示该版本号下的规范性文本在封存前仍可能改。已封存 **0.6.0** 文本不可变。见 [../meta/status-and-versioning.zh-CN.md](../meta/status-and-versioning.zh-CN.md) · [../meta/releases.zh-CN.md](../meta/releases.zh-CN.md)。
 
 **样例：** [../examples/complex.xaiop](../examples/complex.xaiop) → [../examples/complex.expected.json](../examples/complex.expected.json)
 
@@ -31,7 +31,7 @@
 | **1** | **[syntax.zh-CN.md](syntax.zh-CN.md)** | **全部语法 / 行形式** |
 | 2 | [boundary.zh-CN.md](boundary.zh-CN.md) | Label / Block 行结束 |
 | 3 | [hierarchy.zh-CN.md](hierarchy.zh-CN.md) | 光标算子详解 |
-| 4 | [content.zh-CN.md](content.zh-CN.md) | `:` 类型与强制字符串 |
+| 4 | [content.zh-CN.md](content.zh-CN.md) | `:` 类型、Content `\n`/`\r`/`\\`、强制字符串 |
 | 5 | [streaming.zh-CN.md](streaming.zh-CN.md) | 流式线何时有效；协议面 Snapshot/Diff |
 
 **核心对：** `>` 创建/再进入匿名对象 · `<` 仅上浮一层（Root 非法）· 禁止裸 Label。  

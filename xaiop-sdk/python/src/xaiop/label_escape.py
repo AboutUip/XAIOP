@@ -9,7 +9,7 @@ def key_needs_symbol_escape(key: str) -> bool:
     if not isinstance(key, str) or not key:
         return False
     c = ord(key[0])
-    return c in (0x1F, 0x23, 0x40, 0x3E, 0x3C, 0x3D, 0x21, 0x26)
+    return c in (0x1F, 0x23, 0x40, 0x3E, 0x3C, 0x3D, 0x21, 0x26, 0x3F)
 
 
 def encode_wire_label(key: str, symbol_keys: bool) -> str:

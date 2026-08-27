@@ -31,7 +31,8 @@ export function keyNeedsSymbolEscape(key) {
     c === 0x3c || // <
     c === 0x3d || // =
     c === 0x21 || // !
-    c === 0x26 // &
+    c === 0x26 || // &
+    c === 0x3f // ?
   );
 }
 

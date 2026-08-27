@@ -15,6 +15,7 @@ public final class LineKind {
   public static final String EXACT = "exact";
   public static final String BROADCAST = "broadcast";
   public static final String DELETE = "delete";
+  public static final String SELECT = "select";
   public static final String OBJECT_ANON = "object_anon";
   public static final String ARRAY_ANON = "array_anon";
   public static final String ARRAY_NAMED = "array_named";

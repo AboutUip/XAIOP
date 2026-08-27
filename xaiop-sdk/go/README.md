@@ -1,17 +1,29 @@
 # XAIOP Go SDK
 
-Official product Go port (`xaiop` module **0.15.1**, protocol **0.6.0** Frozen).
+Official product Go port (`xaiop` module **0.15.1**, protocol **0.7.0** Draft).
 
 Guide: [../../docs/sdk/go/README.md](../../docs/sdk/go/README.md) · [ALIGNMENT](../../docs/sdk/go/ALIGNMENT.md) · [API](../../docs/sdk/go/API.md)
+
+## Install
+
+```bash
+go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1
+```
+
+```go
+import "github.com/AboutUip/XAIOP/xaiop-sdk/go/xaiop"
+```
+
+[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) · tag `xaiop-sdk/go/v0.15.1`.
 
 ## Status
 
 | Item | State |
 | --- | --- |
-| `ProtocolVersion` | **0.6.0** |
+| `ProtocolVersion` | **0.7.0** |
 | `SDKVersion` | **0.15.1** |
 | Product surface | **Aligned** with Node tip (no browser) |
-| Verify | `go test ./...` · `npm run golden:go` (**50**) · `npm run core-wire` (**46**) · fuzz · `npm run bench:go` · `npm run bench:go:json-gate` |
+| Verify | `go test ./...` · `npm run golden:go` (**60**) · `npm run core-wire` (**152**) · fuzz · `npm run bench:go` · `npm run bench:go:json-gate` |
 
 Timing hub: [../../docs/performance.md](../../docs/performance.md). Extreme-perf tip (**2026-08-09**): [../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md](../../docs/meta/release-notes-2026-08-09-sdk-extreme-perf-internal.md).
 

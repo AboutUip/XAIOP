@@ -28,5 +28,15 @@
   { "forcedMore": { "a": "1e3", "b": "false", "c": "-2.5E-2", "d": ".5" } },
   { "arrRootish": { "items": [], "meta": { "count": 0 } } },
   { "overwrite": { "id": 2, "name": "v2" } },
-  { "deepArr": [{ "a": [{ "b": 1 }] }, { "c": true }] }
+  { "deepArr": [{ "a": [{ "b": 1 }] }, { "c": true }] },
+  { "nl": "hello\nworld" },
+  { "crlf": "a\r\nb", "bs": "a\\b" },
+  { "zhNl": "你好\n世界" },
+  { "nestedNl": { "t": "p1\np2" } },
+  { "arrNl": ["line1\nline2"] },
+  { "leadNl": "\nhello" },
+  { "trailNl": "hello\n" },
+  { "tabNl": "a\tb\nc" },
+  { "emojiNl": "😀\n🎉" },
+  { "onlyBs": "\\" }
 ]

@@ -3,8 +3,8 @@ package xaiop
 import "testing"
 
 func TestProtocolVersion(t *testing.T) {
-	if ProtocolVersion != "0.6.0" {
-		t.Fatalf("ProtocolVersion = %q, want 0.6.0", ProtocolVersion)
+	if ProtocolVersion != "0.7.0" {
+		t.Fatalf("ProtocolVersion = %q, want 0.7.0", ProtocolVersion)
 	}
 }
 

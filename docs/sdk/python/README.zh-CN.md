@@ -6,13 +6,13 @@
 | --- | --- |
 | 包名 | `xaiop` |
 | 轨道 | **官方产品 SDK** |
-| 协议 | **0.6.0** Frozen（`PROTOCOL_VERSION`） |
+| 协议 | **0.7.0** Draft（`PROTOCOL_VERSION`） |
 | SDK | `0.15.1`（`SDK_VERSION`） |
 | 代码 | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
 | **API 参考** | **[API.zh-CN.md](API.zh-CN.md)**（权威表面） |
 | 对等 | **[ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md)** |
 
-官方端口对齐 Node `xaiop` **0.15.1** 产品面（无 browser）。线文协议仍为 **0.6.0**。
+官方端口对齐 Node `xaiop` **0.15.1** 产品面（无 browser）。线文协议为 **0.7.0** Draft。
 
 完整 Python API（parse / encode / engine / stream / WS / control / types）见 **[API.zh-CN.md](API.zh-CN.md)**。
 
@@ -48,7 +48,7 @@ pytest
 cd xaiop-sdk/conformance && npm run golden:python
 ```
 
-Node↔Python 黄金 **50** 例。CI 任务：`.github/workflows/ci.yml` 中的 `python`、`golden-python`。
+Node↔Python 黄金 **60** 例。CI 任务：`.github/workflows/ci.yml` 中的 `python`、`golden-python`。
 
 ## 计时
 

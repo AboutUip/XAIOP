@@ -1,4 +1,4 @@
-"""XAIOP wire parser (protocol v0.6.0 Frozen)."""
+"""XAIOP wire parser (protocol v0.7.0 Draft)."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from .errors import XaiopSyntaxError
 from .fragment import XaiopFragment
 from .label_escape import decode_wire_label
 
-NodeKind = Literal["object", "array", "fragment"]
+NodeKind = Literal["object", "array", "fragment", "scalar"]
 DocKind = Literal["none", "object", "array", "fragment"]
 
-_OPERATOR_HEADS = frozenset("><=!&#.-")
+_OPERATOR_HEADS = frozenset("><=!&#.-?")
 # Content keys never start with these in STRICT Encode wires (includes @).
-_OPERATOR_LINE_HEADS = frozenset("><=!&#.-@")
+_OPERATOR_LINE_HEADS = frozenset("><=!&#.-@?")
 
 
 @dataclass
@@ -24,6 +24,7 @@ class Frame:
     kind: NodeKind
     value: Any
     via_key: str | None = None
+    via_index: int | None = None
 
 
 def resolve_parse_options(
@@ -369,7 +370,14 @@ class Parser:
             self.broadcast_enter(line[1:])
             return
 
+        if head == "?":
+            self.select_array_element(line[1:])
+            return
+
         if head == "&":
+            if len(line) == 1:
+                self.delete_current_array_element()
+                return
             self.delete_at_path(line[1:])
             return
 
@@ -434,7 +442,7 @@ class Parser:
                 f"Bare Label or unknown line form: {line!r}", line=self.line_no
             )
         key = self._logical_name(line[:colon])
-        value = parse_value(line[colon + 1 :])
+        value = parse_value(line[colon + 1 :], line_no=self.line_no)
         if self.broadcast_stacks is None:
             # Hot path: STRICT one-shot Encode wires never broadcast.
             self.write_content(key, value)
@@ -528,7 +536,7 @@ class Parser:
         if cur.kind == "array":
             obj: dict[str, Any] = {}
             cur.value.append(obj)
-            self.stack.append(Frame("object", obj))
+            self.stack.append(Frame("object", obj, via_index=len(cur.value) - 1))
             return
         if cur.kind == "object":
             return
@@ -555,7 +563,7 @@ class Parser:
         arr: list[Any] = []
         if cur.kind == "array":
             cur.value.append(arr)
-            self.stack.append(Frame("array", arr))
+            self.stack.append(Frame("array", arr, via_index=len(cur.value) - 1))
             return
         raise XaiopSyntaxError(
             "bare - opens a nested array element or root array; "
@@ -572,6 +580,11 @@ class Parser:
         if cur.kind == "array":
             raise XaiopSyntaxError(
                 f">name while Cursor is inside an array (use < to leave array first): >{name}",
+                line=self.line_no,
+            )
+        if cur.kind == "scalar":
+            raise XaiopSyntaxError(
+                f">name is not valid on a scalar array element: >{name}",
                 line=self.line_no,
             )
         obj: dict[str, Any] = cur.value
@@ -596,6 +609,11 @@ class Parser:
                 f">name- while Cursor is inside an array (use < to leave first): >{name}-",
                 line=self.line_no,
             )
+        if cur.kind == "scalar":
+            raise XaiopSyntaxError(
+                f">name- is not valid on a scalar array element: >{name}-",
+                line=self.line_no,
+            )
         obj: dict[str, Any] = cur.value
         existing = obj.get(name)
         if isinstance(existing, list):
@@ -609,6 +627,11 @@ class Parser:
         if self.phase == "init" or self.doc_kind == "none":
             self.ensure_fragment_root()
         cur = self.current()
+        if cur.kind == "scalar":
+            raise XaiopSyntaxError(
+                "Content is not valid on a scalar array element (use & to delete or . to reset)",
+                line=self.line_no,
+            )
         if cur.kind == "array":
             if key == "":
                 cur.value.append(value)
@@ -730,6 +753,101 @@ class Parser:
         self.broadcast_stacks = [list(s) for s in matches]
         self.stack = list(self.broadcast_stacks[0])
         self.phase = "active"
+
+    def select_array_element(self, raw: str) -> None:
+        self.require_not_broadcast("?")
+        if self.phase == "init" or self.doc_kind == "none" or not self.stack:
+            raise XaiopSyntaxError("? requires an array Cursor", line=self.line_no)
+        cur = self.current()
+        if cur.kind != "array":
+            raise XaiopSyntaxError("? requires an array Cursor", line=self.line_no)
+        arr: list[Any] = cur.value
+        if not raw:
+            raise XaiopSyntaxError("empty ? selector", line=self.line_no)
+        all_match = False
+        rest = raw
+        if rest[0] == "*":
+            all_match = True
+            rest = rest[1:]
+        indices: list[int]
+        if rest == "":
+            if not all_match:
+                raise XaiopSyntaxError("empty ? selector", line=self.line_no)
+            if not arr:
+                raise XaiopSyntaxError("? matched no array elements", line=self.line_no)
+            indices = list(range(len(arr)))
+        elif not all_match and _is_index_selector(rest):
+            i = int(rest)
+            if i >= len(arr):
+                raise XaiopSyntaxError(f"? index out of range: {rest}", line=self.line_no)
+            indices = [i]
+        else:
+            colon = rest.find(":")
+            if colon == -1:
+                raise XaiopSyntaxError(f"invalid ? selector: {raw!r}", line=self.line_no)
+            key = self._logical_name(rest[:colon])
+            if not key:
+                raise XaiopSyntaxError("empty ? predicate key", line=self.line_no)
+            assert_name(key, self.line_no, self.symbol_keys)
+            want = parse_value(rest[colon + 1 :], line_no=self.line_no)
+            indices = []
+            for i, el in enumerate(arr):
+                if (
+                    isinstance(el, dict)
+                    and key in el
+                    and _values_match(el[key], want)
+                ):
+                    indices.append(i)
+                    if not all_match:
+                        break
+            if not indices:
+                raise XaiopSyntaxError(
+                    f"? matched no array elements: {raw}", line=self.line_no
+                )
+        broadcast = all_match or len(indices) > 1
+        if broadcast:
+            self.broadcast_stacks = []
+            for i in indices:
+                st = list(self.stack)
+                _push_array_element_frame(st, arr, i)
+                self.broadcast_stacks.append(st)
+            self.stack = list(self.broadcast_stacks[0])
+        else:
+            _push_array_element_frame(self.stack, arr, indices[0])
+        self.phase = "active"
+
+    def delete_current_array_element(self) -> None:
+        stacks = self.broadcast_stacks if self.broadcast_stacks else [self.stack]
+        parent_arr: list[Any] | None = None
+        indices: list[int] = []
+        for st in stacks:
+            if len(st) < 2:
+                raise XaiopSyntaxError(
+                    "bare & deletes the current array element (Cursor is not an array element)",
+                    line=self.line_no,
+                )
+            el = st[-1]
+            par = st[-2]
+            if par.kind != "array":
+                raise XaiopSyntaxError(
+                    "bare & deletes the current array element (Cursor is not an array element)",
+                    line=self.line_no,
+                )
+            arr = par.value
+            if parent_arr is None:
+                parent_arr = arr
+            elif parent_arr is not arr:
+                raise XaiopSyntaxError(
+                    "bare & broadcast requires every Cursor to be an element of the same array",
+                    line=self.line_no,
+                )
+            indices.append(_array_element_index(arr, el, self.line_no))
+        assert parent_arr is not None
+        for i in sorted(set(indices), reverse=True):
+            del parent_arr[i]
+        landed = list(stacks[0][:-1])
+        self.broadcast_stacks = None
+        self.stack = landed
 
     def delete_at_path(self, path: str) -> None:
         segments = split_path_segments(path, self.line_no, "&", self.symbol_keys)
@@ -908,6 +1026,48 @@ def syntax_error_key(err: XaiopSyntaxError) -> str:
     return re.sub(r"^line \d+:\s*", "", msg)
 
 
+def _is_index_selector(s: str) -> bool:
+    if not s or not s.isdigit():
+        return False
+    if len(s) > 1 and s[0] == "0":
+        return False
+    return True
+
+
+def _values_match(a: Any, b: Any) -> bool:
+    if type(a) is bool or type(b) is bool:
+        return a is b if type(a) is bool and type(b) is bool else False
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return float(a) == float(b)
+    return a == b
+
+
+def _push_array_element_frame(stack: list[Frame], arr: list[Any], index: int) -> None:
+    el = arr[index]
+    if isinstance(el, list):
+        stack.append(Frame("array", el, via_index=index))
+    elif isinstance(el, dict):
+        stack.append(Frame("object", el, via_index=index))
+    else:
+        stack.append(Frame("scalar", el, via_index=index))
+
+
+def _array_element_index(arr: list[Any], el: Frame, line_no: int) -> int:
+    vi = el.via_index
+    if vi is not None and 0 <= vi < len(arr) and arr[vi] is el.value:
+        return vi
+    if el.kind != "scalar":
+        for i, x in enumerate(arr):
+            if x is el.value:
+                return i
+    elif vi is not None and 0 <= vi < len(arr):
+        return vi
+    raise XaiopSyntaxError(
+        "bare & deletes the current array element (element is no longer in the parent array)",
+        line=line_no,
+    )
+
+
 def assert_name(name: str, line_no: int, symbol_keys: bool = False) -> None:
     if not name:
         raise XaiopSyntaxError(f"invalid label name: {name!r}", line=line_no)
@@ -955,28 +1115,70 @@ def split_path_segments(
     return segments
 
 
-def parse_value(raw_value: str) -> Any:
+def unescape_content(payload: str, *, line_no: int | None = None) -> str:
+    if "\\" not in payload:
+        return payload
+    out: list[str] = []
+    i = 0
+    n = len(payload)
+    while i < n:
+        c = payload[i]
+        if c != "\\":
+            out.append(c)
+            i += 1
+            continue
+        if i + 1 >= n:
+            raise XaiopSyntaxError(
+                "incomplete Content escape (trailing backslash)", line=line_no
+            )
+        nxt = payload[i + 1]
+        if nxt == "n":
+            out.append("\n")
+            i += 2
+        elif nxt == "r":
+            out.append("\r")
+            i += 2
+        elif nxt == "\\":
+            out.append("\\")
+            i += 2
+        else:
+            raise XaiopSyntaxError(f"unknown Content escape \\{nxt}", line=line_no)
+    return "".join(out)
+
+
+def parse_value(raw_value: str, *, line_no: int | None = None) -> Any:
     if not raw_value:
         return raw_value
+    forced = False
+    payload = raw_value
     c0 = raw_value[0]
     if c0 == " ":
         i = 1
         while i < len(raw_value) and raw_value[i] == " ":
             i += 1
-        return raw_value[i:]
-    if raw_value == "true":
+        payload = raw_value[i:]
+        forced = True
+    payload = unescape_content(payload, line_no=line_no)
+    if forced:
+        return payload
+    if payload == "true":
         return True
-    if raw_value == "false":
+    if payload == "false":
         return False
-    if raw_value == "null":
+    if payload == "null":
         return None
     # Fast reject: non-numeric heads cannot be int/float tokens.
-    if c0 == "+" or c0 == "-" or c0 == "." or ("0" <= c0 <= "9"):
-        if is_int_token(raw_value):
-            return int(raw_value)
-        if is_float_token(raw_value):
-            return float(raw_value)
-    return raw_value
+    if payload and (
+        payload[0] == "+"
+        or payload[0] == "-"
+        or payload[0] == "."
+        or ("0" <= payload[0] <= "9")
+    ):
+        if is_int_token(payload):
+            return int(payload)
+        if is_float_token(payload):
+            return float(payload)
+    return payload
 
 
 def is_int_token(s: str) -> bool:

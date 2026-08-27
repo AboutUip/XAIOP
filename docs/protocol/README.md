@@ -1,22 +1,22 @@
-﻿# Protocol Documents — XAIOP Protocol Package v0.6.0 (Sealed)
+﻿# Protocol Documents — XAIOP Protocol Package v0.7.0 (Draft)
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 | Field | Value |
 | --- | --- |
 | Document ID | `PROT-INDEX` |
-| Status | **Frozen (sealed)** |
-| Version | 0.6.0 |
-| Last updated | 2026-08-04 |
+| Status | **Draft** |
+| Version | 0.7.0 |
+| Last updated | 2026-08-27 |
 | Normative | Informative (index) |
 
 ---
 
-## Seal notice
+## Working package
 
-This directory describes the **sealed XAIOP protocol package v0.6.0**: streaming, line-oriented, cursor-construction wire grammar and semantics.
+This directory describes the **working XAIOP protocol package v0.7.0 (Draft)**: streaming, line-oriented, cursor-construction wire grammar and semantics. Package **0.6.0** remains Frozen and citable.
 
-**“Sealed” / Frozen** means the normative text under this version number is immutable; it does **not** mean “always equal to repository tip.” See [../meta/status-and-versioning.md](../meta/status-and-versioning.md) · [../meta/releases.md](../meta/releases.md).
+**Draft** means the normative text under this version number may still change until seal. Frozen **0.6.0** text is immutable. See [../meta/status-and-versioning.md](../meta/status-and-versioning.md) · [../meta/releases.md](../meta/releases.md).
 
 **Fixture:** [../examples/complex.xaiop](../examples/complex.xaiop) → [../examples/complex.expected.json](../examples/complex.expected.json)
 
@@ -31,7 +31,7 @@ This directory describes the **sealed XAIOP protocol package v0.6.0**: streaming
 | **1** | **[syntax.md](syntax.md)** | **All grammar / line forms** |
 | 2 | [boundary.md](boundary.md) | Label/Block line endings |
 | 3 | [hierarchy.md](hierarchy.md) | Cursor operators in depth |
-| 4 | [content.md](content.md) | `:` typing and forced string |
+| 4 | [content.md](content.md) | `:` typing, Content `\n`/`\r`/`\\`, forced string |
 | 5 | [streaming.md](streaming.md) | When streamed wire is valid; protocol-face Snapshot/Diff |
 
 **Core pair:** `>` create/re-enter anonymous object · `<` pop one level only (illegal at Root) · never Bare Labels.  

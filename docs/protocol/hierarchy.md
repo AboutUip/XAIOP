@@ -5,11 +5,11 @@
 | Field | Value |
 | --- | --- |
 | Document ID | `PROT-HIER` |
-| Status | **Frozen** |
-| Version | 0.6.0 |
+| Status | **Draft** |
+| Version | 0.7.0 |
 | Spec title | Boundary & Hierarchy Specification |
 | Spec version | v0.1 |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-27 |
 | Normative | **Normative** |
 | Depends on | `PROT-SYNTAX`, `PROT-BOUND`, `TERM-GLOSS` |
 | Informs | `PROT-STREAM`, `PROT-CONTENT`, `CONF` |
@@ -29,7 +29,7 @@ Cursor operators and hierarchy.
 
 ## 2. Cursor address type
 
-Any address located by the Cursor **MUST** have value type **`object`**, unless fixed as **`array`** by postfix `-` (Section 11).
+Any address located by the Cursor **MUST** have value type **`object`**, unless fixed as **`array`** by postfix `-` (Section 11), or as a **scalar array-element** after `?` (Section 12.5). A scalar-element Cursor accepts only `<` / `.` / bare `&` (and Content/Structure that would be legal if the value were an object or array — which it is not; those lines are syntax errors).
 
 A Label that creates/enters a named or anonymous object denotes an **object** node (unless postfix `-` applies).
 
@@ -215,12 +215,12 @@ Semantics: Locate every complete path-fragment match; enter broadcast multi-Curs
 1. On success, Cursor becomes a **set** of clones (one per match).  
 2. Subsequent Structure and Content lines apply to **every** Cursor.  
 3. If **any** Cursor fails the line → the whole line **fails** (document error).  
-4. `!` / `@` / `=` while broadcast is active → **syntax error** (emit `.` first).  
+4. `!` / `@` / `=` / `?` while broadcast is active → **syntax error** (emit `.` first).  
 5. **`&path` is allowed** while broadcast is active (Section 9) — path is relative to each Cursor.  
 6. `.` resets Cursor to Root and **exits** broadcast mode.  
 7. After `!`, writes use ordinary XAIOP (type conflict → overwrite; compatible re-enter → update / append). `@` alone may create; `!` / `=` only move.
 
-Streaming: implementations that emit per-`.` Diff **MUST** parse a **cumulative prefix** for phases that contain `=` / `!` / `&` so locate and delete see prior phases. `@` create-or-enter **MAY** stay phase-local.
+Streaming: implementations that emit per-`.` Diff **MUST** parse a **cumulative prefix** for phases that contain `=` / `!` / `&` / `?` so locate, select, and delete see prior phases. `@` create-or-enter **MAY** stay phase-local.
 
 ---
 
@@ -231,15 +231,16 @@ Syntax: &<path>
 Semantics: Delete the deepest key along <path>; do not move Cursor
 ```
 
-1. Path segments separated by `>` (same path form as `@`, e.g. `&a`, `&a>b`). Bare `&` (empty path) is **forbidden** (syntax error).  
+1. Path segments separated by `>` (same path form as `@`, e.g. `&a`, `&a>b`). Empty path (bare `&`) is **forbidden** except as **array-element delete** (item 10).  
 2. **Single Cursor:** path is **absolute from Root**; delete the deepest key; **do not** move Cursor.  
 3. **Missing target:** silent **no-op**.  
 4. Requires an **object** document root. Forbidden on **array root** and **fragment root**. Cannot delete the document root itself.  
-5. **MAY** delete a whole named array value (the key whose value is the array). There is **no** array-element index delete.  
+5. **MAY** delete a whole named array value (the key whose value is the array). `&path` has **no** array-element index segment.  
 6. If the delete would remove a node on the **Cursor chain** (the current Cursor value or any ancestor on the stack) → **syntax error**.  
-7. **Broadcast** (`!` active): **allowed**. Path is **relative to each Cursor**. Per-Cursor missing target = no-op. Cursor-chain conflict on **any** Cursor fails the whole line (same as other broadcast failures).  
+7. **Broadcast** (`!` or `?*` active): **`&path` is allowed** — path is **relative to each Cursor**. Per-Cursor missing target = no-op. Cursor-chain conflict on **any** Cursor fails the whole line.  
 8. `.` still only resets Cursor / exits broadcast; it does not specially interact with `&`.  
-9. A later write to the same address **creates** again (ordinary create-or-update).
+9. A later write to the same address **creates** again (ordinary create-or-update).  
+10. **Bare `&` (array-element delete):** when every Cursor is a **direct array element** (entered by `>` / `-` / `?` so the parent frame is that array), splice that element out and **land on the parent array**. Indices after the hole shift. Broadcast (`?*`) deletes all selected elements of the **same** array (highest index first) and **exits** broadcast. Otherwise bare `&` is a syntax error. This is not `&path`; it **does** move Cursor (to the array).
 
 Streaming: phases that contain `&` **MUST** use cumulative-prefix parse for per-`.` Diff (same rule as `=` / `!`). Cover-mode Diff shaping for `&` is an **SDK-only** option (default off): inject `.` after consecutive `&`, emit a deepest-key `null` tombstone Diff, then restore with a `>` chain — not part of the wire grammar.
 
@@ -374,6 +375,57 @@ a:b
 ```
 
 → `[ {}, {}, "a", "b" ]`
+
+### 12.5 Operator `?` (array element select)
+
+```text
+Syntax: ?<selector>
+Semantics: From an array Cursor, enter one or more existing elements; do not create
+```
+
+The Cursor **MUST** already be **at array level** (`@orders` when `orders` is an array, `>name-`, standalone `-`, or `<` back to the array). Otherwise syntax error. `?` does **not** create missing arrays or elements. Zero matches → syntax error (same class as `=` / `!`).
+
+`?` while broadcast is active → syntax error (emit `.` first). `?*` **starts** array-local broadcast.
+
+| Selector | Meaning |
+| --- | --- |
+| `?2` | Enter element at **0-based** index `2`. Digits only; no leading zeros (`?0` is index 0; `?01` is illegal). Out of range → syntax error. |
+| `?id:A2` | Enter the **first** object element (document order) whose Content key `id` **equals** the typed payload `A2` (same typing / unescape as Content). Non-object elements are skipped. |
+| `?*` | Enter **every** element (broadcast; one Cursor per element, including scalars and nested arrays). Empty array → syntax error. |
+| `?*status:pending` | Enter **every** matching object element (broadcast). |
+
+Predicate payload uses Content typing (`true` / `1` / forced-string space / `\n` unescape). Boolean does **not** match `1`. Nested object/array values are not queryable as the predicate payload (first `:` split, same as Content).
+
+After a successful `?` / `?2` / `?id:…` (single Cursor): the Cursor is **inside** that element (object / nested array / scalar). `<` returns to the array without deleting. Bare `&` deletes that element (Section 9.10). `.` resets to Root.
+
+After `?*` / `?*key:value`: broadcast mode (even if exactly one match). Subsequent Structure and Content fan out. Bare `&` deletes every selected element of that array and exits broadcast, landing on the array. `=` / `@` / `!` / `?` remain illegal until `.`.
+
+`@` mid-path still **replaces** an array with `{}` when the next segment is an ordinary label (0.7 unchanged). Slot addressing is **`?` after entering the array**, not a path dialect on `@` / `=` / `!` / `&`.
+
+Append remains `>name-` / `>` / `:v` / one-line `key:value`. There is **no** insert-at-index, `move`, `copy`, or JSON Patch op list.
+
+```text
+>
+>orders-
+>
+id:A1
+status:pending
+<
+>
+id:A2
+status:pending
+<
+.
+@orders
+?id:A2
+status:shipped
+.
+@orders
+?id:A1
+&
+```
+
+→ `{ "orders": [ { "id": "A2", "status": "shipped" } ] }`
 
 ---
 

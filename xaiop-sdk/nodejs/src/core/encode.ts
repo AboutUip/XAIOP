@@ -139,9 +139,18 @@ export function encodeSync(value, options = {}) {
  * @param {EncodeOptions} [options]
  * @returns {Promise<string>}
  */
-export async function encode(value, options = {}) {
+export async function encodeAsync(value, options = {}) {
   return encodeSync(value, options);
 }
+
+/**
+ * Async short name — **identical** to {@link encodeAsync} (`Promise<string>`).
+ * For a string, use {@link encodeSync}.
+ * @param {unknown} value
+ * @param {EncodeOptions} [options]
+ * @returns {Promise<string>}
+ */
+export const encode = encodeAsync;
 
 /**
  * @param {EncodeOptions} options
@@ -977,8 +986,9 @@ function formatScalarElement(value, path) {
   if (typeof value === "number") return `:${formatNumberToken(value, path)}`;
   if (typeof value === "string") {
     assertEncodableString(value, path);
-    if (needsForcedString(value)) return `: ${value}`;
-    return `:${value}`;
+    const wire = escapeContent(value);
+    if (needsForcedString(value)) return `: ${wire}`;
+    return `:${wire}`;
   }
   throw new XaiopEncodeError(
     `unsupported array element type: ${typeName(value)}`,
@@ -999,8 +1009,9 @@ function formatContent(key, value, path) {
   }
   if (typeof value === "string") {
     assertEncodableString(value, path);
-    if (needsForcedString(value)) return `${key}: ${value}`;
-    return `${key}:${value}`;
+    const wire = escapeContent(value);
+    if (needsForcedString(value)) return `${key}: ${wire}`;
+    return `${key}:${wire}`;
   }
   throw new XaiopEncodeError(
     `unsupported value type: ${typeName(value)}`,
@@ -1180,11 +1191,6 @@ function assertKey(key, path, symbolKeys = false) {
  * @param {string} path
  */
 function assertEncodableString(s, path) {
-  if (s.includes("\n") || s.includes("\r")) {
-    throw new XaiopEncodeError("string values must not contain CR/LF", {
-      path,
-    });
-  }
   // PROT-CONTENT forced-string: spaces after `:` are markers, not payload.
   // Emitting `key:` + value that begins with U+0020 would silently drop those
   // spaces on parse — refuse instead of corrupting data.
@@ -1194,6 +1200,25 @@ function assertEncodableString(s, path) {
       { path },
     );
   }
+}
+
+/**
+ * PROT-CONTENT §4.1 — always-on Content escape (`\\` `\n` `\r`).
+ * @param {string} s
+ */
+function escapeContent(s) {
+  if (s.indexOf("\\") === -1 && s.indexOf("\n") === -1 && s.indexOf("\r") === -1) {
+    return s;
+  }
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 92) out += "\\\\";
+    else if (c === 10) out += "\\n";
+    else if (c === 13) out += "\\r";
+    else out += s[i];
+  }
+  return out;
 }
 
 /** @param {unknown} v */

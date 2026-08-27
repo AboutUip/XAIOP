@@ -19,7 +19,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * JSON &rarr; XAIOP encoder engine (protocol v0.6.0 wire), faithful port of the Node.js SDK's
+ * JSON &rarr; XAIOP encoder engine (protocol v0.7.0 Draft wire), faithful port of the Node.js SDK's
  * {@code encode.js}. Internal: use {@link io.xaiop.Encode} instead.
  *
  * <p>Emits strict wire only (no compatibility-mode shapes). {@code .} frequency comes from
@@ -663,7 +663,8 @@ public final class Encoder {
     if (value instanceof CharSequence cs) {
       String s = cs.toString();
       assertEncodableString(s, path);
-      return needsForcedString(s) ? ": " + s : ":" + s;
+      String wire = escapeContent(s);
+      return needsForcedString(s) ? ": " + wire : ":" + wire;
     }
     throw new XaiopEncodeError("unsupported array element type: " + typeName(value), path);
   }
@@ -675,7 +676,8 @@ public final class Encoder {
     if (value instanceof CharSequence cs) {
       String s = cs.toString();
       assertEncodableString(s, path);
-      return needsForcedString(s) ? key + ": " + s : key + ":" + s;
+      String wire = escapeContent(s);
+      return needsForcedString(s) ? key + ": " + wire : key + ":" + wire;
     }
     throw new XaiopEncodeError("unsupported value type: " + typeName(value), path);
   }
@@ -941,9 +943,6 @@ public final class Encoder {
   }
 
   private static void assertEncodableString(String s, String path) {
-    if (s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0) {
-      throw new XaiopEncodeError("string values must not contain CR/LF", path);
-    }
     // PROT-CONTENT forced-string: spaces after ':' are markers, not payload.
     // Emitting key: + value that begins with U+0020 would silently drop those
     // spaces on parse — refuse instead of corrupting data.
@@ -952,6 +951,22 @@ public final class Encoder {
           "string values must not begin with U+0020 SPACE (wire forced-string marker would strip leading spaces)",
           path);
     }
+  }
+
+  /** PROT-CONTENT §4.1 — always-on Content escape ({@code \\} {@code \n} {@code \r}). */
+  static String escapeContent(String s) {
+    if (s.indexOf('\\') < 0 && s.indexOf('\n') < 0 && s.indexOf('\r') < 0) {
+      return s;
+    }
+    StringBuilder out = new StringBuilder(s.length() + 8);
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '\\') out.append("\\\\");
+      else if (c == '\n') out.append("\\n");
+      else if (c == '\r') out.append("\\r");
+      else out.append(c);
+    }
+    return out.toString();
   }
 
   private static String typeName(Object v) {

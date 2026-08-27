@@ -213,7 +213,7 @@ func TestSymbolKeysRoundTrip(t *testing.T) {
 	esc := LabelEscapeIntroducer
 	cases := map[string]any{
 		"#k": int64(1), "@m": int64(2), ">test": "test",
-		"<pop": true, "=eq": nil, "!bang": int64(0), "&amp": "x",
+		"<pop": true, "=eq": nil, "!bang": int64(0), "&amp": "x", "?q": int64(4),
 		esc + "hello": int64(3),
 	}
 	for key, val := range cases {

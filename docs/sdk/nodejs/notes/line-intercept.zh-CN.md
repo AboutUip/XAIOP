@@ -53,7 +53,7 @@
 | `phase` | `.` | — |
 | `annotation` | `#…` | `annotationText` |
 | `pop` / `pop_enter` | `<` / `<name` | `name` |
-| `locate` / `exact` / `broadcast` / `delete` | `=` / `@` / `!` / `&` + path | `path` |
+| `locate` / `exact` / `broadcast` / `delete` / `select` | `=` / `@` / `!` / `&` / `?` + 路径或选择子 | `path` |
 | `object_anon` / `array_anon` | `>` / `-` | — |
 | `array_named` / `object_named` | `>name-` / `>name` | `name` |
 | `content` | `k:v` / `:v` | `key` · `valueText` |

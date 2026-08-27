@@ -1,10 +1,25 @@
 # XAIOP Java SDK
 
-Maven project producing a publishable **JAR** (`io.xaiop:xaiop` **0.15.1**) for XAIOP protocol **v0.6.0 Frozen**, aligned with the Node.js reference ([`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1**).
+Maven project producing a publishable **JAR** (`io.github.aboutuip:xaiop` **0.15.1**, Java packages `io.xaiop.*`) for XAIOP protocol **v0.7.0 Draft**, aligned with the Node.js reference ([`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) **0.15.1**).
 
 Guide: [../../docs/sdk/java/README.md](../../docs/sdk/java/README.md) · 简体中文: [../../docs/sdk/java/README.zh-CN.md](../../docs/sdk/java/README.zh-CN.md)  
 **Parity matrix:** [../../docs/sdk/java/ALIGNMENT.md](../../docs/sdk/java/ALIGNMENT.md) · [中文](../../docs/sdk/java/ALIGNMENT.zh-CN.md)  
-Behavioral contract: [../../docs/sdk/behavioral-contract.md](../../docs/sdk/behavioral-contract.md)
+Behavioral contract: [../../docs/sdk/behavioral-contract.md](../../docs/sdk/behavioral-contract.md)  
+**Maven Central:** [MAVEN-CENTRAL.md](MAVEN-CENTRAL.md) · [中文](MAVEN-CENTRAL.zh-CN.md) — consumers: `io.github.aboutuip:xaiop:0.15.1`
+
+```xml
+<dependency>
+  <groupId>io.github.aboutuip</groupId>
+  <artifactId>xaiop</artifactId>
+  <version>0.15.1</version>
+</dependency>
+```
+
+```kotlin
+implementation("io.github.aboutuip:xaiop:0.15.1")
+```
+
+Java packages remain `io.xaiop.*`. Guide: [../../docs/sdk/java/README.md](../../docs/sdk/java/README.md#install).
 
 ## Status
 

@@ -12,6 +12,7 @@ import {
   XaiopStream,
   TRANSPORT_KIND,
   encode,
+  encodeAsync,
   encodeSync,
   parseSync,
 } from "../dist/index.js";
@@ -33,19 +34,24 @@ function countDotLines(wire) {
   return wire.split(/\r?\n/).filter((l) => l === ".").length;
 }
 
-test("protocol version unchanged by encode feature", () => {
-  assert.equal(PROTOCOL_VERSION, "0.6.0");
+test("protocol version 0.7.0 Content escape", () => {
+  assert.equal(PROTOCOL_VERSION, "0.7.0");
 });
 
-test("static + free encodeSync / encode agree", async () => {
+test("static + free encodeSync / encode / encodeAsync agree", async () => {
   const value = { a: 1, b: "x" };
   const a = encodeSync(value, { dotPolicy: DOT_POLICY.NONE });
   const b = XaiopEngine.encodeSync(value, { dotPolicy: DOT_POLICY.NONE });
   const c = await encode(value, { dotPolicy: DOT_POLICY.NONE });
   const d = await XaiopEngine.encode(value, { dotPolicy: DOT_POLICY.NONE });
+  const e = await encodeAsync(value, { dotPolicy: DOT_POLICY.NONE });
+  const f = await XaiopEngine.encodeAsync(value, { dotPolicy: DOT_POLICY.NONE });
+  assert.equal(encodeAsync, encode);
   assert.equal(a, b);
   assert.equal(a, c);
   assert.equal(a, d);
+  assert.equal(a, e);
+  assert.equal(a, f);
 });
 
 test("instance encode mirrors static", async () => {
@@ -54,6 +60,7 @@ test("instance encode mirrors static", async () => {
   const opt = { dotPolicy: "none" };
   assert.equal(engine.encodeSync(value, opt), XaiopEngine.encodeSync(value, opt));
   assert.equal(await engine.encode(value, opt), await XaiopEngine.encode(value, opt));
+  assert.equal(await engine.encodeAsync(value, opt), await engine.encode(value, opt));
 });
 
 test("uploadJson stores round-trippable JSON", async () => {
@@ -117,9 +124,9 @@ test("non-finite numbers rejected", () => {
   assert.throws(() => encodeSync({ a: -Infinity }), XaiopEncodeError);
 });
 
-test("CR/LF in strings rejected", () => {
-  assert.throws(() => encodeSync({ a: "x\ny" }), /CR\/LF/);
-  assert.throws(() => encodeSync({ a: "x\ry" }), /CR\/LF/);
+test("CR/LF in strings round-trip via Content escape", () => {
+  assert.deepEqual(roundTrip({ a: "x\ny" }), { a: "x\ny" });
+  assert.deepEqual(roundTrip({ a: "x\ry" }), { a: "x\ry" });
 });
 
 test("leading U+0020 SPACE in strings rejected (no silent strip)", () => {
@@ -147,6 +154,7 @@ test("invalid keys rejected", () => {
   assert.throws(() => encodeSync({ "a>b": 1 }), /operator/);
   assert.throws(() => encodeSync({ "#k": 1 }), /symbolKeys|U\+001F|line-operator/);
   assert.throws(() => encodeSync({ "@k": 1 }), /symbolKeys|U\+001F|line-operator/);
+  assert.throws(() => encodeSync({ "?k": 1 }), /symbolKeys|U\+001F|line-operator/);
 });
 
 test("unsupported types rejected", () => {
@@ -250,7 +258,7 @@ test("sibling after named array stays on parent object", () => {
   assert.deepEqual(roundTrip(value, { dotPolicy: "none" }), value);
 });
 
-test("complex fixture round-trip (encode JSON â†?parse)", () => {
+test("complex fixture round-trip (encode JSON ??parse)", () => {
   const expected = JSON.parse(fs.readFileSync(fixtureJson, "utf8"));
   for (const policy of ["none", "perTopLevelKey", "perNKeys"]) {
     const opt =
@@ -280,7 +288,7 @@ test("perNKeys groups keys", () => {
     { a: 1, b: 2, c: 3, d: 4, e: 5 },
     { dotPolicy: "perNKeys", phaseEvery: 2 },
   );
-  // phases: [a,b] [c,d] [e] â†?2 dots
+  // phases: [a,b] [c,d] [e] ??2 dots
   assert.equal(countDotLines(wire), 2);
   assert.deepEqual(parseSync(wire), { a: 1, b: 2, c: 3, d: 4, e: 5 });
 });
@@ -290,7 +298,7 @@ test("maxPhases merges tail", () => {
     { a: 1, b: 2, c: 3, d: 4 },
     { dotPolicy: "perTopLevelKey", maxPhases: 2 },
   );
-  // would be 3 dots without max; with maxPhases=2 â†?1 dot
+  // would be 3 dots without max; with maxPhases=2 ??1 dot
   assert.equal(countDotLines(wire), 1);
   assert.deepEqual(parseSync(wire), { a: 1, b: 2, c: 3, d: 4 });
 });
@@ -303,7 +311,7 @@ test("custom shouldPhase", () => {
       shouldPhase: (ctx) => ctx.key === "b" || ctx.key === "c",
     },
   );
-  // cut after b and c â†?phases [a,b] [c] [d] â†?2 dots
+  // cut after b and c ??phases [a,b] [c] [d] ??2 dots
   assert.equal(countDotLines(wire), 2);
   assert.deepEqual(parseSync(wire), { a: 1, b: 2, c: 3, d: 4 });
 });

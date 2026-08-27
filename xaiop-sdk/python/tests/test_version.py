@@ -2,7 +2,7 @@ from xaiop import PROTOCOL_VERSION, SDK_VERSION, __version__
 
 
 def test_protocol_version() -> None:
-    assert PROTOCOL_VERSION == "0.6.0"
+    assert PROTOCOL_VERSION == "0.7.0"
 
 
 def test_sdk_version() -> None:

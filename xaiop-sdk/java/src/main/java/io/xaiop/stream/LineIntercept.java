@@ -83,6 +83,9 @@ public final class LineIntercept {
     if (raw.startsWith("&")) {
       return new LineView(LineKind.DELETE, raw, null, raw.substring(1), null, null, null);
     }
+    if (raw.startsWith("?")) {
+      return new LineView(LineKind.SELECT, raw, null, raw.substring(1), null, null, null);
+    }
     if (">".equals(raw)) {
       return emptyLineView(raw, LineKind.OBJECT_ANON);
     }

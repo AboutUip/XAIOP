@@ -1,4 +1,4 @@
-"""XAIOP Python SDK — official product SDK (wire v0.6.0)."""
+"""XAIOP Python SDK — official product SDK (wire v0.7.0 Draft)."""
 
 from __future__ import annotations
 

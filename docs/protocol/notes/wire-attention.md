@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `PROT-NOTE-WIRE` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-08-27 |
 | Normative | **No** — checklist over Frozen text |
 | Depends on | `PROT-SYNTAX`, `PROT-HIER`, `PROT-BOUND`, `PROT-CONTENT` |
 
@@ -76,7 +76,7 @@ Normative: [../syntax.md](../syntax.md) §6.
 1. **No Bare Labels** (name-only line).  
 2. One Label per line; Label ends at `LF` / `CRLF`.  
 3. Content splits on the **first** `:` only.  
-4. Values **MUST NOT** contain line endings.  
+4. Values **MUST NOT** contain **physical** line endings. Semantic newlines in strings use `\n` / `\r` / `\\` (`PROT-CONTENT` §4, package **0.7.0**).  
 5. Typing: int → float (binary64) → bool → null → string; space(s) after `:` force string (`PROT-CONTENT`).
 
 Normative: [../syntax.md](../syntax.md), [../content.md](../content.md), [../boundary.md](../boundary.md).
@@ -90,13 +90,15 @@ Normative: [../syntax.md](../syntax.md), [../content.md](../content.md), [../bou
 | `=path` | Fuzzy search over **tree so far** (向前跨相); first match; no create |
 | `@path` | Exact from Root; **create** missing objects (本相); single Cursor |
 | `!path` | All path-fragment matches over **tree so far** (向前跨相, outer prune); broadcast until `.` |
+| `?selector` | Array-local select (`?2` · `?id:A2` · `?*` · `?*k:v`); does not create |
 | `&path` | Delete deepest key; single Cursor = absolute from Root (no Cursor move); missing = no-op |
+| `&` | Delete current direct array element; land on the parent array |
 
-1. Path segments use `>` (same form as `@`). Bare `&` is illegal. Partial labels do not match.  
-2. While broadcast is active, `!` / `@` / `=` are illegal until `.`; **`&path` is allowed** (relative to each Cursor).  
+1. Path segments use `>` (same form as `@`). Bare `&` is illegal **except** on a direct array element. Partial labels do not match.  
+2. While broadcast is active, `!` / `@` / `=` / `?` are illegal until `.`; **`&path` is allowed** (relative to each Cursor). `?*` **starts** array-local broadcast.  
 3. Broadcast writes fan out; any Cursor failure fails the line (including `&` Cursor-chain conflicts).  
-4. `&` requires object document root (not array / fragment root); may delete a whole named array value; no element-index delete; Cursor-chain delete → syntax error.  
-5. Streaming Diff: phases with `=` / `!` / `&` **MUST** use cumulative prefix parse. (`@` **MAY** stay phase-local per Hierarchy; Node.js SDK **0.14.3+** uses cumulative Diff for `@` too — see [../../sdk/nodejs/notes/streaming-parse.md](../../sdk/nodejs/notes/streaming-parse.md).)
+4. `&path` requires object document root (not array / fragment root); may delete a whole named array value; no index **segment** on `&path`. Element delete is bare `&` after `?` / `>`. Cursor-chain delete on `&path` → syntax error.  
+5. Streaming Diff: phases with `=` / `!` / `&` / `?` **MUST** use cumulative prefix parse. (`@` **MAY** stay phase-local per Hierarchy; Node.js SDK **0.14.3+** uses cumulative Diff for `@` too — see [../../sdk/nodejs/notes/streaming-parse.md](../../sdk/nodejs/notes/streaming-parse.md).)
 
 Normative: [../hierarchy.md](../hierarchy.md) §6–§9.
 
@@ -119,9 +121,9 @@ Normative: [../hierarchy.md](../hierarchy.md) §11 · [../syntax.md](../syntax.m
 - [ ] After `.`, re-address from Root (`=` / `@` / `>`).  
 - [ ] Reopen `>name-` across resets when append is intended (create-or-reenter).  
 - [ ] Use `!` only when multi-Cursor broadcast is intended; emit `.` to exit.  
-- [ ] Prefer `@` for exact Root paths; `=` for fuzzy relocate; `&path` to delete a key (absolute from Root).  
+- [ ] Prefer `@` for exact Root paths; `=` for fuzzy relocate; `?` after entering an array; `&path` to delete a key; bare `&` to splice the current array element.  
 - [ ] Use standalone `#…` lines for custom annotation transmission when needed.  
-- [ ] No CR/LF inside values; no Bare Labels.  
+- [ ] No **physical** CR/LF inside values (`\n` / `\r` / `\\` escapes are 0.7.0); no Bare Labels.  
 - [ ] Forced string when a numeric/bool-looking token must stay text.
 
 ---
@@ -130,9 +132,9 @@ Normative: [../hierarchy.md](../hierarchy.md) §11 · [../syntax.md](../syntax.m
 
 - [ ] Treat later same-key writes as overwrite.  
 - [ ] Treat `>name-` reopen as re-enter / append (not replace).  
-- [ ] Implement `@` exact-from-Root **create-or-enter**, `!` broadcast + outer prune (tree so far), and `&` delete (absolute / broadcast-relative).  
+- [ ] Implement `@` exact-from-Root **create-or-enter**, `!` broadcast + outer prune (tree so far), `?` array-local select, and `&` delete (`&path` absolute / broadcast-relative; bare `&` on a direct array element).  
 - [ ] Recognize and ignore standalone `#…` lines (custom annotation transmission).  
-- [ ] Reject bare `<` at Root; reject locate ops while broadcast is active (`&` remains legal).  
+- [ ] Reject bare `<` at Root; reject locate ops (`!` / `@` / `=` / `?`) while broadcast is active (`&path` remains legal; `?*` starts array-local broadcast).  
 - [ ] Do not invent missing leaves or braces.  
 - [ ] Line-buffer until a full line before interpreting a Label (`PROT-BOUND` / streaming requirements).
 

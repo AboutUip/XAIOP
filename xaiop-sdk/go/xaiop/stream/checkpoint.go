@@ -838,7 +838,7 @@ func (e *DotCheckpointEngine) emitChunk(diff any) {
 
 func (e *DotCheckpointEngine) ensureLive() {
 	if e.live == nil {
-		e.live = xaiop.NewLiveParser()
+		e.live = xaiop.NewLiveParserWithOptions(e.parseOpts())
 	}
 }
 
@@ -963,9 +963,24 @@ func (e *DotCheckpointEngine) rebuildFromHistoryJump(result *JumpResult) {
 	} else {
 		e.buf = e.buf[:minInt(end, len(e.buf))]
 	}
-	e.live = xaiop.NewLiveParser()
+	e.live = xaiop.NewLiveParserWithOptions(e.parseOpts())
 	if len(e.buf) > 0 {
-		e.live.FeedText(string(e.buf))
+		if len(e.lineInterceptors) > 0 {
+			at := 0
+			for at < len(e.buf) {
+				line, end, _, ok := readLineAtBytes(e.buf, at, true)
+				if !ok {
+					break
+				}
+				at = end
+				accepted, kept := e.acceptLine(line)
+				if kept {
+					e.live.FeedLine(accepted)
+				}
+			}
+		} else {
+			e.live.FeedText(string(e.buf))
+		}
 	}
 	e.sawDot = true
 	e.segmentStart = len(e.buf)

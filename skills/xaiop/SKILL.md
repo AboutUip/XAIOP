@@ -48,7 +48,7 @@ XAIOP is a **Cursor** walking a tree while you emit lines:
 | Concept | Meaning |
 | --- | --- |
 | **Cursor** | Current write address (always an **object**, or an **array** if opened with `-` / `>name-`) |
-| **Structure Label** | Moves / creates addresses, or deletes keys (`>`, `>name`, `>name-`, `-`, `<`, `<name`, `.`, `=path`, `@path`, `!path`, `&path`). `&path` does **not** move Cursor. |
+| **Structure Label** | Moves / creates addresses, or deletes keys (`>`, `>name`, `>name-`, `-`, `<`, `<name`, `.`, `=path`, `@path`, `!path`, `?selector`, `&path`, bare `&` on an array element). `&path` does **not** move Cursor. |
 | **Content** | Writes data at Cursor (`key:value` or `:value`) |
 | **`#…`** | **Custom annotation transmission** — standalone line; **not** Structure that moves Cursor; protocol does not interpret text after `#` |
 | **Block** | Content after a Label until the next Label or EOF — **no** end marker |
@@ -88,10 +88,12 @@ You do **not** close braces. You **leave** with `<` / `<name` / `.` / `=`.
 | `=path` | Structure | Fuzzy locate (first match); path segments joined by `>` |
 | `@path` | Structure | Exact from Root; **create** missing object segments |
 | `!path` | Structure | Broadcast to all path-fragment matches until `.` |
+| `?selector` | Structure | Array-local select (`?2` / `?id:A2` / `?*` / `?*k:v`); does not create |
 | `&path` | Structure | Delete deepest key (absolute from Root; no Cursor move) |
+| `&` | Structure | Delete current **array element** (only when Cursor is that element); land on the parent array |
 | `#…` | Custom annotation transmission | Standalone line; protocol does not interpret text after `#`; no Cursor / tree effect |
 
-**Forbidden line forms:** Bare Label · bare `&` · `>>x` / same-symbol stacking · `<` at Root · multiline values · blank lines · `>  name` (spaces after `>`) · gluing Structure onto Content (`>key:value`).
+**Forbidden line forms:** Bare Label · bare `&` except on a direct array element · `>>x` / same-symbol stacking · `<` at Root · multiline values · blank lines · `>  name` (spaces after `>`) · gluing Structure onto Content (`>key:value`).
 
 **Label names:** no whitespace, no `:` inside the name token.
 
@@ -385,15 +387,17 @@ Rules:
 
 After `=siblings` (array), write the next element with `>` / `:v` / one-line `k:v`.
 
-### 8.3 `=` / `@` / `!` / `&` — locate and delete
+### 8.3 `=` / `@` / `!` / `?` / `&` — locate, select, and delete
 
 - `@path` — exact path from Root; **create** missing object segments (本相); single Cursor.
 - `!path` — all complete path-fragment matches on **tree so far** (向前跨相, outer prune); **broadcast** until `.`.
 - `=path` — fuzzy locate on **tree so far** (向前跨相); first match; no create.
+- `?selector` — from an **array** Cursor: enter existing elements (`?2` / `?id:A2` / `?*` / `?*k:v`). Does not create. See §8.6.
 - `&path` — **delete** deepest key (path form like `@`, segments via `>`). See §8.5.
+- bare `&` — delete the **current array element** (Cursor must be that element). See §8.5.
 
-While broadcasting, do not emit another `!` / `@` / `=` — emit `.` first. **`&path` is allowed** during broadcast.  
-Prefer `@` to open/create a Root path; `=` to return to an existing node; `!` for multi-site updates; `&` to remove a key.
+While broadcasting, do not emit another `!` / `@` / `=` / `?` — emit `.` first. **`&path` is allowed** during broadcast. `?*` **starts** array-local broadcast.  
+Prefer `@` to open/create a Root path; `=` to return to an existing node; `?` after entering an array; `!` for named-path multi-site updates; `&path` to remove a key.
 
 Streaming Diff phases that use `=` / `!` / `&` need a **cumulative** tree — see [streaming.md](../../docs/protocol/streaming.md).
 
@@ -420,11 +424,11 @@ If you are about to type `=` and then a **field name + a value**, stop — you w
 | Rule | Detail |
 | --- | --- |
 | Path | Segments joined by `>` (same form as `@`), e.g. `&a`, `&a>b` |
-| Bare `&` | **Illegal** (syntax error) |
+| Bare `&` | **Illegal** except when the Cursor is a **direct array element** (then splice that element and land on the parent array) |
 | Single Cursor | Path is **absolute from Root**; delete deepest key; **do not** move Cursor |
 | Missing target | Silent **no-op** |
 | Document root | **Object** document root only — forbidden on array root / fragment root; cannot delete the document root itself |
-| Arrays | **MAY** delete a whole named array value; **no** element-index delete |
+| Arrays | **MAY** delete a whole named array value; `&path` has **no** index segment. Element delete is bare `&` after `?` / `>` |
 | Cursor chain | Deleting the current Cursor value or any ancestor on the stack → **syntax error** |
 | Broadcast (`!` active) | **Allowed**; path is **relative to each Cursor**; any Cursor-chain conflict fails the whole line |
 | After delete | Later write to the same address **creates** again |
@@ -451,6 +455,37 @@ y:2
 ```
 
 → deletes the whole `tags` array value.
+
+### 8.6 `?` — array element select
+
+From an **array** Cursor (`@orders` when `orders` is an array, `>name-`, `-`, or `<` back to the array):
+
+| Selector | Meaning |
+| --- | --- |
+| `?2` | Enter 0-based index `2` (`?0` ok; `?01` illegal) |
+| `?id:A2` | First object element whose Content key `id` equals typed `A2` |
+| `?*` | Every element (broadcast, even if one match) |
+| `?*status:pending` | Every matching object element (broadcast) |
+
+Zero matches → syntax error. Not JSON Pointer: `@orders>0` is a **key** named `"0"`, not index 0. Multi-key rows need `>`…`<` before you can `?id:…`. Bare `&` after `?` deletes that element.
+
+```text
+>
+>orders-
+>
+id:A1
+<
+>
+id:A2
+.
+@orders
+?id:A2
+status:shipped
+.
+@orders
+?id:A1
+&
+```
 
 ---
 
@@ -486,7 +521,8 @@ Use this table when two habits collide:
 | Glue Content onto `<` / `>` | `<id:1` · `>key:value` | separate lines: `<` or `>` · then `key:value` |
 | Trailing junk after long array | `>tagger…` / tool prose / JSON dump | stop on last real element; then `.` or EOF |
 | Quoted names as lines | `"江辞"` alone | `:江辞` (array scalar) or `name:江辞` |
-| Want to remove a key | `delete a` / omit / bare `&` | `&a` (object root; Cursor stays) |
+| Want to remove a key | `delete a` / omit / bare `&` on an object | `&a` (object root; Cursor stays). Bare `&` only after `?` / `>` on an array element |
+| Want to patch array index | `@orders>0` / JSON Pointer | `@orders` then `?0` or `?id:A2` |
 | Side-channel metadata | trailing `# comment` on a Content line | standalone `#…` line (custom annotation transmission) |
 | `#` inside a field value | treat as annotation | `note:#x` is Content |
 | Emit this Skill’s checklist | `Leading \`>\` present? Yes.` | **payload only** — never self-audit text |
@@ -522,7 +558,7 @@ Use this table when two habits collide:
 | `>  ` / `>  meta` | `>` / `>meta` | No spaces after `>` in Labels |
 | `.` then `<` | `.` then next section | `<` at Root illegal |
 | Blank lines | omit | Empty line is Content error |
-| bare `&` | `&path` with at least one segment | Empty delete path illegal |
+| bare `&` on an object / at Root | `&path` with at least one segment, **or** bare `&` only on a direct array element | Empty delete path illegal except element splice |
 | `{…}` / `[…]` / `"key":` | XAIOP lines | Not JSON |
 | markdown \`\`\` fences | raw XAIOP only | Contaminates parse |
 | Checklist / “Yes.” / bullet self-check | start with `>` or `-` payload | Output is data, not protocol Q&A |
@@ -751,7 +787,7 @@ Run mentally. **Never** write these bullets into the output.
 - [ ] **Every field uses `key:value`** — zero `=field value`, zero `field=value`
 - [ ] `=` lines (if any) are **paths only** (`=a>b` / `=meta`) with **no** value payload
 - [ ] Paths: `=a>b` not `=a.b`; arrays locate as `=name` not `=name-`
-- [ ] Deletes use `&path` (never bare `&`); object document root only
+- [ ] Deletes use `&path` (object root) or bare `&` on a direct array element after `?` / `>`
 - [ ] Annotation uses a whole `#…` line — never trailing `#` on Structure/Content
 - [ ] No Bare Labels, blank lines, indent nesting, `{}`/`[]`, fences, quotes-as-syntax, or `<` at Root
 - [ ] No HTML-like `< attrs…>`; no `<id:…>` / `<value:…>` glue; no checklist / “Yes.” / prose headers

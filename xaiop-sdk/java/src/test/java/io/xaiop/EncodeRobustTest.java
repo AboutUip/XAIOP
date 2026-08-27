@@ -109,12 +109,10 @@ class EncodeRobustTest {
   }
 
   @Test
-  void crlfInStringValuesIsRejected() {
-    assertTrue(encodeError(() -> Encode.encode(map("a", "x\ny"))).getMessage().contains("CR/LF"));
-    assertTrue(encodeError(() -> Encode.encode(map("a", "x\ry"))).getMessage().contains("CR/LF"));
-    assertTrue(
-        encodeError(() -> Encode.encode(map("a", list("x\ny")))).getMessage().contains("CR/LF"),
-        "array elements are checked too");
+  void crlfInStringValuesRoundTripViaContentEscape() {
+    assertEquals(map("a", "x\ny"), roundTrip(map("a", "x\ny"), NONE));
+    assertEquals(map("a", "x\ry"), roundTrip(map("a", "x\ry"), NONE));
+    assertEquals(map("a", list("x\ny")), roundTrip(map("a", list("x\ny")), NONE));
   }
 
   @Test

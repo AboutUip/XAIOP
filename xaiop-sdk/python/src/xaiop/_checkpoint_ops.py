@@ -124,7 +124,7 @@ def phase_needs_prior_tree(raw: str) -> bool:
             i += 1
             continue
         c = ord(raw[i])
-        if c in (61, 33, 38, 64):  # = ! & @
+        if c in (61, 33, 38, 64, 63):  # = ! & @ ?
             return True
         while i < n:
             ch = raw[i]

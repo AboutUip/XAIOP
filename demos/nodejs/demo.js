@@ -2,6 +2,8 @@
 /**
  * XAIOP Node.js demo — type (or pipe) XAIOP text, get pretty JSON.
  *
+ * Prerequisite (once per clone): cd xaiop-sdk/nodejs && npm install && npm run build:ts
+ *
  * Usage:
  *   node demo.js
  *   node demo.js path/to/file.xaiop
@@ -20,7 +22,7 @@ import {
   XaiopEngine,
   XaiopFragment,
   XaiopSyntaxError,
-} from "../../xaiop-sdk/nodejs/src/index.js";
+} from "../../xaiop-sdk/nodejs/dist/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

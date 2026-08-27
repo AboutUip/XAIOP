@@ -24,14 +24,21 @@ English text is authoritative; Chinese mirrors track the same entries.
 
 ### 0.7.0 — Draft (in progress)
 
-**Kind:** Additive normative dialect (Label escape / symbol-key mode).
+**Kind:** Additive / breaking normative (Content string escapes) plus additive dialect (Label escape / symbol-key mode).
 
-**Summary:** Reserve **U+001F** as Label escape introducer. Default: keys MUST NOT begin with line-class heads `#` `@` `>` `<` `=` `!` `&` or U+001F. Opt-in symbol-key mode prefixes one U+001F on encode and strips one layer on parse (double-escape when the logical key already begins with U+001F). Does not alter standalone `#…` custom annotation transmission.
+**Summary:**
+
+- **Content (always on):** Reserve `\\` `\n` `\r` as the Content escape alphabet. Physical `LF`/`CRLF` still ends a line. String values MAY contain `U+000A`/`U+000D` only as those two-character sequences. Unknown `\x` and trailing `\` are syntax errors. Unescape after forced-string strip, before typing. Breaking vs **0.6.0** payloads that used literal `\n`.
+- **Label escape (opt-in):** Reserve **U+001F** as Label escape introducer. Default: keys MUST NOT begin with line-class heads `#` `@` `>` `<` `=` `!` `&` `?` or U+001F. Opt-in symbol-key mode prefixes one U+001F on encode and strips one layer on parse. Does not alter standalone `#…` custom annotation transmission.
+- **Array element select:** Operator `?` from an array Cursor (`?2` / `?id:A2` / `?*` / `?*k:v`). Bare `&` deletes the current direct array element. Not JSON Patch / RFC 6902.
 
 | Area | Change |
 | --- | --- |
+| `PROT-CONTENT` §4 | Semantic newlines; escape alphabet |
+| `PROT-SYNTAX` §1.8 / §3 | Physical vs semantic multiline |
 | `PROT-NOTE-LABEL-ESC` | Draft note [protocol/notes/label-escape.md](../protocol/notes/label-escape.md) |
-| Node.js / Java SDK | `symbolKeys` on encode + parse (+ stream / WS / checkpoint) |
+| `PROT-HIER` §9 / §12.5 | `?` element select; bare `&` deletes the current array element |
+| Node.js / Java / Python / Go SDK | Parse unescape + encode escape; `symbolKeys` on encode + parse; `?` / bare `&` |
 
 ---
 

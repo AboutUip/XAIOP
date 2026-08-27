@@ -10,7 +10,7 @@ func KeyNeedsSymbolEscape(key string) bool {
 		return false
 	}
 	c := key[0]
-	return c == 0x1F || c == '#' || c == '@' || c == '>' || c == '<' || c == '=' || c == '!' || c == '&'
+	return c == 0x1F || c == '#' || c == '@' || c == '>' || c == '<' || c == '=' || c == '!' || c == '&' || c == '?'
 }
 
 // EncodeWireLabel escapes a key for the wire when symbolKeys is on.

@@ -1,7 +1,7 @@
 {
   "name": "@bylan280/xaiop",
   "version": "0.15.1",
-  "description": "XAIOP protocol SDK — Node.js primary; browser client via @bylan280/xaiop/browser (protocol v0.6.0 Frozen)",
+  "description": "XAIOP protocol SDK — Node.js primary; browser client via @bylan280/xaiop/browser (protocol v0.7.0 Draft)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

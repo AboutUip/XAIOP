@@ -2,7 +2,7 @@
 
 [English](API.md) · [简体中文](API.zh-CN.md)
 
-**Protocol**: v0.6.0 Frozen (sealed)  
+**Protocol**: v0.7.0 Draft  
 **SDK**: **0.15.1**  
 **Runtime**: **Python ≥ 3.10**  
 **Package**: `xaiop`  
@@ -148,9 +148,11 @@ Primary methods are **synchronous**. Network `send` / WS `done` / `closed` expos
 | `=path` | Fuzzy locate (no create; zero hits → syntax error) |
 | `@path` | Exact path from Root; **create** missing object segments and enter |
 | `!path` | Broadcast: match all full path fragments; later lines run on each Cursor |
+| `?selector` | Array-local select (`?2` · `?id:A2` · `?*` · `?*k:v`); does not create |
 | `&path` | Delete deepest key; does **not** move Cursor |
+| `&` | Delete current direct array element; land on the parent array |
 
-Path segments use `>` (e.g. `@a>b`, `&a>b`). Bare Labels, bare `&`, bare `<` at Root, and newlines inside values are forbidden.
+Path segments use `>` (e.g. `@a>b`, `&a>b`). Bare Labels, bare `&` except on a direct array element, bare `<` at Root, and newlines inside values are forbidden.
 
 **Example:**
 
@@ -193,8 +195,8 @@ Empty source → `{}`. Compat `forcedRoot` injects an object root for fragment o
 | Document root | **Object only**; array root / fragment root → syntax error |
 | Cursor chain | Deleting current Cursor or an ancestor → **syntax error** |
 | Broadcast | `&path` is **relative** to each Cursor; missing on that Cursor → no-op for it; any chain conflict → whole line fails |
-| Arrays | May delete an entire named array value; **no** element-index delete |
-| Cursor | **Unchanged** by `&`; later Content still writes at the prior Cursor |
+| Arrays | May delete an entire named array value. Element delete is bare `&` after `?` / `>`; `&path` has no index segment |
+| Cursor | **Unchanged** by `&path`; later Content still writes at the prior Cursor. Bare `&` (element delete) **does** move to the parent array |
 
 ### 2.5 `#` custom annotation transmission (protocol)
 
@@ -269,10 +271,12 @@ cursor_restore_lines() -> list[str]  # `>` / `>name-` chain for cover restore; a
 
 | Method | Notes |
 | --- | --- |
-| `feed_line` | Complete logical line (no trailing LF/CRLF) |
+| `feed_line` | Complete logical line (no trailing LF/CRLF). `""` → `empty line is a Content syntax error` |
 | `feed_text` | Split like `parse_sync` — **no half-line buffer across calls**; a trailing segment without LF is a full line. For arbitrary network chunks use `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | Current document (further feeds mutate in place) |
 | `cursor_restore_lines` | Unavailable while broadcast is active; anonymous / array-element frames on stack → syntax error |
+
+**Trailing `\n`:** encode ends with one `\n` (when `trailing_newline=True`, default). `parse_sync` / `feed_text` drop a final empty segment. Do **not** `encode_sync(x).split("\n")` into `feed_line` — the last `""` is the terminator, not a Content line. `feed_line` stays the per-line primitive; skip that empty, or pass whole wire to `feed_text`.
 
 ```python
 from xaiop import LiveParser
@@ -324,14 +328,14 @@ encode_sync(
 ) -> str
 ```
 
-Encodes **plain JSON** to **strict** XAIOP (compatibility mode **never** changes encode output).  
+Encodes **plain JSON** to **strict** XAIOP (compatibility mode **never** changes encode output). There is **no** public `encode_async` (sync-first; same as no `parse_async`). Node `encode` / `encodeAsync` map here.  
 Free function / `XaiopEngine.encode_sync` produce the same wire for the same `(value, options)`.
 
-**Guarantees:** for accepted values, `parse_sync(encode_sync(value, …))` deep-equals `value`; wire ends with exactly one `\n` when `trailing_newline=True` (default).  
+**Guarantees:** for accepted values, `parse_sync(encode_sync(value, …))` deep-equals `value`; wire ends with exactly one `\n` when `trailing_newline=True` (default; terminator, not a Content line — see §3.2).  
 **Not guaranteed:** byte-identical `encode(parse(handwritten wire))`.  
 **Float tokens:** wire formatting matches ECMAScript `Number#toString` for shared fixtures / golden CI.
 
-**Rejected string values (raise `XaiopEncodeError`):** containing CR/LF; **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable.
+**Rejected string values (raise `XaiopEncodeError`):** **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable. Semantic CR/LF in the value are encoded as `\n` / `\r` (protocol **0.7.0**); a physical line break is never placed inside a Content payload.
 
 ```python
 from xaiop import encode_sync, DOT_POLICY
@@ -365,7 +369,7 @@ engine.encode_sync(value, {"dot_policy": "none"})
 | `symbol_keys` | `False` | Opt-in U+001F label-escape dialect so keys may begin with `#` `@` `>` `<` `=` `!` `&` or U+001F; **both encode and parse must enable**; see [label-escape](../../protocol/notes/label-escape.md) |
 | `trailing_newline` | `True` | Finalize with `\n` |
 
-Path-list overload is **mutually exclusive** with `phase_every` / `max_phases` / `should_phase`; requires `style: "reset"`; array index must be the **final** path segment. Helpers: `parse_json_path` / `format_json_path` (in `xaiop.encode`; used by type paths / Annotation Span).
+Path-list overload is **mutually exclusive** with `phase_every` / `max_phases` / `should_phase`; requires `style: "reset"`; array index must be the **final** path segment. Helpers: `parse_json_path` / `format_json_path` (in `xaiop.encode`; JSON-path `items[0]`; wire locate uses `>` — `@items>it_1`; also type paths / Annotation Span).
 
 ### 4.3 Rejected keys
 
@@ -377,6 +381,8 @@ These keys raise `XaiopEncodeError` (no silent reshape):
 | Ends with `-` | Conflicts with `>name-` array enter |
 | Contains `>` `<` `=` `!` **`&`** (in the key body) | Cursor / locate / delete operator ambiguity |
 | **Begins with** `#` `@` `>` `<` `=` `!` `&` or **U+001F** | Line-class / reserved escape introducer — unless `symbol_keys=True` |
+
+**Not a general JSON serializer.** RFC 8259 keys such as `a:b`, `""`, `"a b"`, `"tags-"`, `"a>b"` are legal JSON and still raise here. `symbol_keys` only escapes a **leading** line-class character; it does **not** admit `:` / whitespace / operators in the body. String values containing CR/LF are legal JSON and encoded via `\n` / `\r`. Unicode labels are fine when they are legal Labels. Host-only values (`None` omit vs JSON `null`, etc.) are a separate encode policy, not this gap. Constrain keys at the **JSON → encode** boundary (`upload_json_sync`); parse / materialize the other way is ordinary JSON. See [label-escape](../../protocol/notes/label-escape.md).
 
 Constants: `DOT_POLICY` · `LABEL_ESCAPE_INTRODUCER` (`"\u001f"`).
 
@@ -445,7 +451,7 @@ Fix IDs (camelCase attributes on `CompatPolicy`): `forcedRoot`, `rewriteBareName
 | `encode_type_schema_frame()` | Encode control frame (prefer `push_type_consistency` on the connection) |
 | `on_type_violation(fn\|None)` | Violation hook (called **before** raising `XaiopTypeError`) |
 
-**Path house style:** `data.fork`, `items[0]` (same as encode `parse_json_path`; **not** wire `data>fork`).
+**Path house style:** `data.fork`, `items[0]` (encode `parse_json_path`). Wire `@` / `=` / `!` / `&` use `>` (`@items>it_1`) — do not mix.
 
 **Optional surface sugar:** `string`, `array<int>`, `object<name:string,old:int>` → compared as **canonical** types.
 
@@ -873,6 +879,8 @@ Exports include: `CONTROL_NS` / `CONTROL_NAME` / `CONTROL_CAPABILITY`, `ControlD
 
 **Not a Diff applicator:** `merge_json` / `merge_to_json` **do not delete** keys that are absent from the overlay. Example: `merge_json({"cart": {"a": 1, "b": 2}}, {"cart": {"a": 1}})` keeps `b`. Phase Diffs from `on_chunk` / `on_phase` are **subtree replacement** (or cumulative commit) surfaces — to apply a Diff locally, replace by path (or take `get_committed_snapshot()`); **do not** pipe Diffs into `merge_json`.
 
+**Live parser vs inject:** overlay XAIOP is parsed as a **new document** (empty tree), then JSON-merged — `@` / `:value` do **not** run on the stored tree. `@items>it_1>history` + `:7` **appends** on `LiveParser` (same session) or `parse(encode(stored) + patch)`. The same patch to `inject_xaiop_sync` / `merge_to_json` raises `:value scalar Content is only valid at array level` (`@` creates `{}` when the overlay has no array). Overlay `>history-` + `:7` **replaces** the array with `[7]` (arrays are atomic). Store + cursor patches → live parser / concat parse, **not** inject.
+
 Constants: `MERGE_CONFLICT["OVERWRITE"]` / `MERGE_CONFLICT["KEEP"]`.
 
 | API | Returns |
@@ -943,7 +951,7 @@ Recovery does **not** invent field names; still raises `XaiopSyntaxError` when r
 
 | Export | Value / notes |
 | --- | --- |
-| `PROTOCOL_VERSION` | `"0.6.0"` |
+| `PROTOCOL_VERSION` | `"0.7.0"` |
 | `SDK_VERSION` | `"0.15.1"` |
 | `__version__` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |

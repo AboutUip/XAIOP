@@ -2,7 +2,7 @@
 
 [English](API.md) · [简体中文](API.zh-CN.md)
 
-**协议版本**: v0.6.0 Frozen（已封存）  
+**协议版本**: v0.7.0 Draft  
 **SDK 版本**: **0.15.1**  
 **运行时**: **Python ≥ 3.10**  
 **包名**: `xaiop`  
@@ -148,9 +148,11 @@ hub.close()
 | `=path` | 模糊定位（不创建；零命中 → 语法错误） |
 | `@path` | 自 Root 的精确路径；**创建**缺失的对象段并进入 |
 | `!path` | 广播：匹配所有完整路径片段；后续行在每个 Cursor 上执行 |
+| `?selector` | 数组局部选择（`?2` · `?id:A2` · `?*` · `?*k:v`）；不创建 |
 | `&path` | 删除最深键；**不**移动 Cursor |
+| `&` | 删除当前直接数组元素；落到父数组 |
 
-路径段使用 `>`（例如 `@a>b`、`&a>b`）。禁止裸 Labels、裸 `&`、在 Root 的裸 `<`，以及值内换行。
+路径段使用 `>`（例如 `@a>b`、`&a>b`）。禁止裸 Labels、裸 `&`（直接数组元素上除外）、在 Root 的裸 `<`，以及值内换行。
 
 **示例：**
 
@@ -193,8 +195,8 @@ name:Bob
 | 文档根 | **仅对象**；数组根 / fragment 根 → 语法错误 |
 | Cursor 链 | 删除当前 Cursor 或其祖先 → **语法错误** |
 | 广播 | `&path` 相对每个 Cursor；该 Cursor 上缺失 → 对该 Cursor no-op；任一链冲突 → 整行失败 |
-| 数组 | 可删除整个具名数组值；**无**按元素下标删除 |
-| Cursor | `&` **不改变** Cursor；后续 Content 仍写在先前 Cursor |
+| 数组 | 可删除整个具名数组值。元素删除用 `?` / `>` 之后的裸 `&`；`&path` 无下标段 |
+| Cursor | `&path` **不改变** Cursor；后续 Content 仍写在先前 Cursor。裸 `&`（删元素）**会**落到父数组 |
 
 ### 2.5 `#` 自定义注解传输（协议）
 
@@ -269,10 +271,12 @@ cursor_restore_lines() -> list[str]  # cover 恢复用的 `>` / `>name-` 链；�
 
 | 方法 | 说明 |
 | --- | --- |
-| `feed_line` | 完整逻辑行（无尾随 LF/CRLF） |
+| `feed_line` | 完整逻辑行（无尾随 LF/CRLF）。`""` → `empty line is a Content syntax error` |
 | `feed_text` | 按 `parse_sync` 方式切分 — **跨调用无半行缓冲**；无 LF 的尾段仍算一整行。任意网络分片请用 `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | 当前文档（后续 feed 原地变更） |
 | `cursor_restore_lines` | 广播激活时不可用；栈上有匿名 / 数组元素帧 → 语法错误 |
+
+**尾 `\n`：** encode 默认以一个 `\n` 结尾（`trailing_newline=True`）。`parse_sync` / `feed_text` 会丢掉末尾空段。不要把 `encode_sync(x).split("\n")` 喂进 `feed_line` — 最后的 `""` 是终止符，不是一行 Content。`feed_line` 仍是逐行原语；跳过那个空串，或整段交给 `feed_text`。
 
 ```python
 from xaiop import LiveParser
@@ -324,14 +328,14 @@ encode_sync(
 ) -> str
 ```
 
-将**普通 JSON** 编码为**严格** XAIOP（兼容模式**永不**改变 encode 输出）。  
+将**普通 JSON** 编码为**严格** XAIOP（兼容模式**永不**改变 encode 输出）。门面上**没有**公开的 `encode_async`（同步优先；与没有 `parse_async` 相同）。Node 的 `encode` / `encodeAsync` 对应本函数。  
 自由函数 / `XaiopEngine.encode_sync` 对同一 `(value, options)` 产出相同线文。
 
-**保证：** 对可接受的值，`parse_sync(encode_sync(value, …))` 与 `value` 深度相等；当 `trailing_newline=True`（默认）时线文以恰好一个 `\n` 结尾。  
+**保证：** 对可接受的值，`parse_sync(encode_sync(value, …))` 与 `value` 深度相等；当 `trailing_newline=True`（默认）时线文以恰好一个 `\n` 结尾（终止符，不是一行 Content — 见 §3.2）。  
 **不保证：** `encode(parse(手写线文))` 字节级相同。  
 **浮点记号：** 线文格式与 ECMAScript `Number#toString` 对齐，供共享 fixture / golden CI。
 
-**拒绝的字符串值（抛 `XaiopEncodeError`）：** 含 CR/LF；**以 U+0020 SPACE 开头**（`:` 后的强制字符串标记不是载荷 — 发出此类值会在解析时静默剥掉前导空格）。Tab（`U+0009`）与尾随空格仍可编码。
+**拒绝的字符串值（抛 `XaiopEncodeError`）：** **以 U+0020 SPACE 开头**（`:` 后的强制字符串标记不是载荷 — 发出此类值会在解析时静默剥掉前导空格）。Tab（`U+0009`）与尾随空格仍可编码。值里的语义 CR/LF 编码为 `\n` / `\r`（协议 **0.7.0**）；Content 载荷内从不放置物理换行。
 
 ```python
 from xaiop import encode_sync, DOT_POLICY
@@ -365,7 +369,7 @@ engine.encode_sync(value, {"dot_policy": "none"})
 | `symbol_keys` | `False` | 可选 U+001F label-escape 方言，使键可始于 `#` `@` `>` `<` `=` `!` `&` 或 U+001F；**encode 与 parse 均须启用**；见 [label-escape](../../protocol/notes/label-escape.md) |
 | `trailing_newline` | `True` | 以 `\n` 收尾 |
 
-路径列表重载与 `phase_every` / `max_phases` / `should_phase` **互斥**；要求 `style: "reset"`；数组下标必须是路径的**最后一段**。辅助：`parse_json_path` / `format_json_path`（在 `xaiop.encode`；供类型路径 / Annotation Span 使用）。
+路径列表重载与 `phase_every` / `max_phases` / `should_phase` **互斥**；要求 `style: "reset"`；数组下标必须是路径的**最后一段**。辅助：`parse_json_path` / `format_json_path`（在 `xaiop.encode`；JSON 路径 `items[0]`；线上定位用 `>` — `@items>it_1`；亦供类型路径 / Annotation Span 使用）。
 
 ### 4.3 拒绝的键
 
@@ -377,6 +381,8 @@ engine.encode_sync(value, {"dot_policy": "none"})
 | 以 `-` 结尾 | 与 `>name-` 数组进入冲突 |
 | 键体内含 `>` `<` `=` `!` **`&`** | Cursor / 定位 / 删除算子歧义 |
 | **以** `#` `@` `>` `<` `=` `!` `&` 或 **U+001F** **开头** | 行类 / 保留转义引入符 — 除非 `symbol_keys=True` |
+
+**不是通用 JSON 序列化。** RFC 8259 合法键如 `a:b`、`""`、`"a b"`、`"tags-"`、`"a>b"` 在这里仍会抛。`symbol_keys` 只逃逸**行类首字符**，**不解**体里的 `:` / 空白 / 算符。含 CR/LF 的字符串值是合法 JSON，encode 经 `\n` / `\r` 发出。Unicode 名在合法 Label 时可用。宿主独有值（与 JSON `null` 相对的省略等）是另一套 encode 策略，不是这条缺口。约束放在 **JSON → encode** 边界（`upload_json_sync`）；反方向 parse / 物化就是普通 JSON。见 [label-escape](../../protocol/notes/label-escape.zh-CN.md)。
 
 常量：`DOT_POLICY` · `LABEL_ESCAPE_INTRODUCER`（`"\u001f"`）。
 
@@ -445,7 +451,7 @@ Fix ID（`CompatPolicy` 上的 camelCase 属性）：`forcedRoot`、`rewriteBare
 | `encode_type_schema_frame()` | 编码控制帧（连接上优先用 `push_type_consistency`） |
 | `on_type_violation(fn\|None)` | 违规钩子（在抛 `XaiopTypeError` **之前**调用） |
 
-**路径惯例：** `data.fork`、`items[0]`（与 encode 的 `parse_json_path` 相同；**不是**线文 `data>fork`）。
+**路径惯例：** `data.fork`、`items[0]`（encode `parse_json_path`）。线上 `@` / `=` / `!` / `&` 用 `>`（`@items>it_1`）——不要混用。
 
 **可选表层糖：** `string`、`array<int>`、`object<name:string,old:int>` → 按**规范**类型比较。
 
@@ -873,6 +879,8 @@ encode_phase_object(obj, *, final=False, encode_options=None) -> str
 
 **不是 Diff 应用器：** `merge_json` / `merge_to_json` **不删除** overlay 中缺失的键。例：`merge_json({"cart": {"a": 1, "b": 2}}, {"cart": {"a": 1}})` 保留 `b`。`on_chunk` / `on_phase` 的相位 Diff 是**子树替换**（或累计 commit）面 — 要本地应用 Diff，按路径替换（或取 `get_committed_snapshot()`）；**勿**把 Diff 管道进 `merge_json`。
 
+**Live 与 inject：** overlay 当作**新文档** parse（空树），再 JSON 合并——`@` / `:value` **不会**作用在存量树上。`@items>it_1>history` + `:7` 在同一条 `LiveParser`（或 `parse(encode(存量) + 补丁)`）上是**追加**；交给 `inject_xaiop_sync` / `merge_to_json` 会报 `:value scalar Content is only valid at array level`（overlay 里没有该数组时 `@` 造的是 `{}`）。overlay 写成 `>history-` + `:7` 会把数组**整段换成** `[7]`（数组整体冲突）。存文档 + 光标补丁 → live / 拼接重 parse，**不要**走 inject。
+
 常量：`MERGE_CONFLICT["OVERWRITE"]` / `MERGE_CONFLICT["KEEP"]`。
 
 | API | 返回 |
@@ -943,7 +951,7 @@ engine.set_compat_forced_root(False)  # 模式关闭时返回 False
 
 | 导出 | 值 / 说明 |
 | --- | --- |
-| `PROTOCOL_VERSION` | `"0.6.0"` |
+| `PROTOCOL_VERSION` | `"0.7.0"` |
 | `SDK_VERSION` | `"0.15.1"` |
 | `__version__` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |

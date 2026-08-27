@@ -120,7 +120,7 @@ def test_long_string() -> None:
 
 def test_reject_operator_head_keys() -> None:
     # Line-operator introducers refused as object keys
-    for bad in ("#a", "=a", "@a", "!a", "&a"):
+    for bad in ("#a", "=a", "@a", "!a", "&a", "?a"):
         with pytest.raises(XaiopEncodeError):
             encode_sync({bad: 1})
     with pytest.raises(XaiopEncodeError):

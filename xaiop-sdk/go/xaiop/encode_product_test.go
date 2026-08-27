@@ -76,10 +76,17 @@ func TestEncodeLeadingSpaceRejected(t *testing.T) {
 	}
 }
 
-func TestEncodeCRLFRejected(t *testing.T) {
-	_, err := encNone(map[string]any{"s": "a\nb"})
-	if err == nil {
-		t.Fatal("expected CRLF reject")
+func TestEncodeCRLFRoundTrip(t *testing.T) {
+	wire, err := encNone(map[string]any{"s": "a\nb"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := Parse(wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !valuesEqual(got, map[string]any{"s": "a\nb"}) {
+		t.Fatalf("got %#v", got)
 	}
 }
 
@@ -160,7 +167,7 @@ func TestEncodeESFloatToken(t *testing.T) {
 }
 
 func TestEncodeSymbolKeysHelpers(t *testing.T) {
-	if !KeyNeedsSymbolEscape("#k") || !KeyNeedsSymbolEscape("@k") {
+	if !KeyNeedsSymbolEscape("#k") || !KeyNeedsSymbolEscape("@k") || !KeyNeedsSymbolEscape("?k") {
 		t.Fatal("operator heads need escape")
 	}
 	if KeyNeedsSymbolEscape("normal") {

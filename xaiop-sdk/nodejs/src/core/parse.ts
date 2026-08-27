@@ -2,7 +2,7 @@
 import { CompatPolicy, resolveCompatOptions } from "./compat.js";
 import { decodeWireLabel } from "./label-escape.js";
 
-/** @typedef {'object'|'array'|'fragment'} NodeKind */
+/** @typedef {'object'|'array'|'fragment'|'scalar'} NodeKind */
 /** @typedef {import("./compat.js").CompatFixId} CompatFixId */
 
 /**
@@ -13,7 +13,7 @@ import { decodeWireLabel } from "./label-escape.js";
  */
 
 /**
- * Deterministic XAIOP parser (protocol v0.6.0 Frozen).
+ * Deterministic XAIOP parser (protocol v0.7.0 Draft).
  * Silent repair exists only under an explicit compatibility policy.
  * Optional {@link ParseOptions.symbolKeys}: decode U+001F label escapes (pair with encode).
  */
@@ -193,7 +193,7 @@ class Parser {
     this.fragmentEntries = null;
     /** @type {'none'|'object'|'array'|'fragment'} */
     this.docKind = "none";
-    /** @type {{ kind: NodeKind, value: object|unknown[] }[]} */
+    /** @type {{ kind: NodeKind, value: unknown, viaKey?: string|null, viaIndex?: number }[]} */
     this.stack = [];
     /**
      * When set, write/pop ops fan out to every cursor stack (broadcast mode after `!`).
@@ -586,7 +586,16 @@ class Parser {
       return;
     }
 
+    if (head === 63 /* ? */) {
+      this.selectArrayElement(line.slice(1));
+      return;
+    }
+
     if (head === 38 /* & */) {
+      if (line.length === 1) {
+        this.deleteCurrentArrayElement();
+        return;
+      }
       this.deleteAtPath(line.slice(1));
       return;
     }
@@ -666,7 +675,7 @@ class Parser {
       );
     }
     const key = this._logicalName(line.slice(0, colon));
-    const value = parseValue(line.slice(colon + 1));
+    const value = parseValue(line.slice(colon + 1), this.lineNo);
     if (this.broadcastStacks === null) {
       // Hot path: STRICT one-shot Encode wires never broadcast.
       this.writeContent(key, value);
@@ -806,8 +815,14 @@ class Parser {
     const cur = this.current();
     if (cur.kind === "array") {
       const obj = {};
-      /** @type {unknown[]} */ (cur.value).push(obj);
-      this.stack.push({ kind: "object", value: obj, viaKey: null });
+      const arr = /** @type {unknown[]} */ (cur.value);
+      arr.push(obj);
+      this.stack.push({
+        kind: "object",
+        value: obj,
+        viaKey: null,
+        viaIndex: arr.length - 1,
+      });
       return;
     }
     if (cur.kind === "object") {
@@ -838,8 +853,14 @@ class Parser {
     const cur = this.current();
     const arr = [];
     if (cur.kind === "array") {
-      /** @type {unknown[]} */ (cur.value).push(arr);
-      this.stack.push({ kind: "array", value: arr, viaKey: null });
+      const parent = /** @type {unknown[]} */ (cur.value);
+      parent.push(arr);
+      this.stack.push({
+        kind: "array",
+        value: arr,
+        viaKey: null,
+        viaIndex: parent.length - 1,
+      });
       return;
     }
     throw new XaiopSyntaxError(
@@ -859,6 +880,12 @@ class Parser {
     if (cur.kind === "array") {
       throw new XaiopSyntaxError(
         `>name while Cursor is inside an array (use < to leave array first): >${name}`,
+        { line: this.lineNo },
+      );
+    }
+    if (cur.kind === "scalar") {
+      throw new XaiopSyntaxError(
+        `>name is not valid on a scalar array element: >${name}`,
         { line: this.lineNo },
       );
     }
@@ -894,6 +921,12 @@ class Parser {
         { line: this.lineNo },
       );
     }
+    if (cur.kind === "scalar") {
+      throw new XaiopSyntaxError(
+        `>name- is not valid on a scalar array element: >${name}-`,
+        { line: this.lineNo },
+      );
+    }
     const obj = /** @type {Record<string, unknown>} */ (cur.value);
     const existing = obj[name];
     // Align with >name objects: re-enter existing array (append); otherwise create.
@@ -916,6 +949,12 @@ class Parser {
       this.ensureFragmentRoot();
     }
     const cur = this.current();
+    if (cur.kind === "scalar") {
+      throw new XaiopSyntaxError(
+        "Content is not valid on a scalar array element (use & to delete or . to reset)",
+        { line: this.lineNo },
+      );
+    }
     if (cur.kind === "array") {
       if (key === "") {
         /** @type {unknown[]} */ (cur.value).push(value);
@@ -1106,6 +1145,147 @@ class Parser {
     this.broadcastStacks = matches.map((s) => s.slice());
     this.stack = this.broadcastStacks[0].slice();
     this.phase = "active";
+  }
+
+  /**
+   * {@code ?} — array-local element select. See protocol hierarchy §12.5.
+   * @param {string} raw
+   */
+  selectArrayElement(raw) {
+    this.requireNotBroadcast("?");
+    if (this.phase === "init" || this.docKind === "none" || this.stack.length === 0) {
+      throw new XaiopSyntaxError("? requires an array Cursor", {
+        line: this.lineNo,
+      });
+    }
+    const cur = this.current();
+    if (cur.kind !== "array") {
+      throw new XaiopSyntaxError("? requires an array Cursor", {
+        line: this.lineNo,
+      });
+    }
+    const arr = /** @type {unknown[]} */ (cur.value);
+    if (!raw) {
+      throw new XaiopSyntaxError("empty ? selector", { line: this.lineNo });
+    }
+    let all = false;
+    let rest = raw;
+    if (rest.charCodeAt(0) === 42 /* * */) {
+      all = true;
+      rest = rest.slice(1);
+    }
+    /** @type {number[]} */
+    let indices;
+    if (rest.length === 0) {
+      if (!all) {
+        throw new XaiopSyntaxError("empty ? selector", { line: this.lineNo });
+      }
+      if (arr.length === 0) {
+        throw new XaiopSyntaxError("? matched no array elements", {
+          line: this.lineNo,
+        });
+      }
+      indices = arr.map((_, i) => i);
+    } else if (!all && isIndexSelector(rest)) {
+      const i = Number(rest);
+      if (i >= arr.length) {
+        throw new XaiopSyntaxError(`? index out of range: ${rest}`, {
+          line: this.lineNo,
+        });
+      }
+      indices = [i];
+    } else {
+      const colon = rest.indexOf(":");
+      if (colon === -1) {
+        throw new XaiopSyntaxError(
+          `invalid ? selector: ${JSON.stringify(raw)}`,
+          { line: this.lineNo },
+        );
+      }
+      const key = this._logicalName(rest.slice(0, colon));
+      if (!key) {
+        throw new XaiopSyntaxError("empty ? predicate key", {
+          line: this.lineNo,
+        });
+      }
+      assertName(key, this.lineNo, this.symbolKeys);
+      const want = parseValue(rest.slice(colon + 1), this.lineNo);
+      indices = [];
+      for (let i = 0; i < arr.length; i++) {
+        const el = arr[i];
+        if (
+          el &&
+          typeof el === "object" &&
+          !Array.isArray(el) &&
+          Object.prototype.hasOwnProperty.call(el, key) &&
+          valuesMatch(el[key], want)
+        ) {
+          indices.push(i);
+          if (!all) break;
+        }
+      }
+      if (indices.length === 0) {
+        throw new XaiopSyntaxError(`? matched no array elements: ${raw}`, {
+          line: this.lineNo,
+        });
+      }
+    }
+    const broadcast = all || indices.length > 1;
+    if (broadcast) {
+      this.broadcastStacks = indices.map((i) => {
+        const st = this.stack.slice();
+        pushArrayElementFrame(st, arr, i);
+        return st;
+      });
+      this.stack = this.broadcastStacks[0].slice();
+    } else {
+      pushArrayElementFrame(this.stack, arr, indices[0]);
+    }
+    this.phase = "active";
+  }
+
+  /**
+   * Bare {@code &}: delete the current direct array element and land on the parent array.
+   */
+  deleteCurrentArrayElement() {
+    const stacks = this.broadcastStacks ? this.broadcastStacks : [this.stack];
+    /** @type {unknown[]|null} */
+    let parentArr = null;
+    /** @type {number[]} */
+    const indices = [];
+    for (let s = 0; s < stacks.length; s++) {
+      const st = stacks[s];
+      if (st.length < 2) {
+        throw new XaiopSyntaxError(
+          "bare & deletes the current array element (Cursor is not an array element)",
+          { line: this.lineNo },
+        );
+      }
+      const el = st[st.length - 1];
+      const par = st[st.length - 2];
+      if (par.kind !== "array") {
+        throw new XaiopSyntaxError(
+          "bare & deletes the current array element (Cursor is not an array element)",
+          { line: this.lineNo },
+        );
+      }
+      const arr = /** @type {unknown[]} */ (par.value);
+      if (parentArr === null) parentArr = arr;
+      else if (parentArr !== arr) {
+        throw new XaiopSyntaxError(
+          "bare & broadcast requires every Cursor to be an element of the same array",
+          { line: this.lineNo },
+        );
+      }
+      indices.push(arrayElementIndex(arr, el, this.lineNo));
+    }
+    const uniq = [...new Set(indices)].sort((a, b) => b - a);
+    for (const i of uniq) {
+      parentArr.splice(i, 1);
+    }
+    const landed = stacks[0].slice(0, -1);
+    this.broadcastStacks = null;
+    this.stack = landed;
   }
 
   /**
@@ -1355,7 +1535,7 @@ function stripBom(s) {
 
 /**
  * ASCII operator-line heads (content keys never start with these in STRICT).
- * `> < = ! & # . - @`
+ * `> < = ! & # . - @ ?`
  * @param {number} c char code
  */
 function isOperatorHeadCode(c) {
@@ -1368,7 +1548,8 @@ function isOperatorHeadCode(c) {
     c === 35 || // #
     c === 46 || // .
     c === 45 || // -
-    c === 64 // @
+    c === 64 || // @
+    c === 63 // ?
   );
 }
 
@@ -1388,6 +1569,68 @@ function restOnlyEols(source, from) {
 /** Compare syntax errors ignoring the `line N:` prefix. */
 function syntaxErrorKey(err) {
   return String(err.message || "").replace(/^line \d+:\s*/, "");
+}
+
+/** @param {string} s */
+function isIndexSelector(s) {
+  if (!s) return false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 48 || c > 57) return false;
+  }
+  if (s.length > 1 && s.charCodeAt(0) === 48) return false;
+  return true;
+}
+
+function valuesMatch(a, b) {
+  if (typeof a === "boolean" || typeof b === "boolean") return a === b;
+  if (typeof a === "number" && typeof b === "number") return a === b;
+  return Object.is(a, b);
+}
+
+/**
+ * @param {{ kind: NodeKind, value: unknown, viaKey?: string|null, viaIndex?: number }[]} stack
+ * @param {unknown[]} arr
+ * @param {number} index
+ */
+function pushArrayElementFrame(stack, arr, index) {
+  const el = arr[index];
+  if (el !== null && typeof el === "object") {
+    if (Array.isArray(el)) {
+      stack.push({ kind: "array", value: el, viaKey: null, viaIndex: index });
+    } else {
+      stack.push({ kind: "object", value: el, viaKey: null, viaIndex: index });
+    }
+  } else {
+    stack.push({ kind: "scalar", value: el, viaKey: null, viaIndex: index });
+  }
+}
+
+/**
+ * @param {unknown[]} arr
+ * @param {{ kind: NodeKind, value: unknown, viaIndex?: number }} el
+ * @param {number} lineNo
+ */
+function arrayElementIndex(arr, el, lineNo) {
+  const vi = el.viaIndex;
+  if (
+    typeof vi === "number" &&
+    vi >= 0 &&
+    vi < arr.length &&
+    Object.is(arr[vi], el.value)
+  ) {
+    return vi;
+  }
+  if (el.kind !== "scalar") {
+    const idx = arr.indexOf(el.value);
+    if (idx >= 0) return idx;
+  } else if (typeof vi === "number" && vi >= 0 && vi < arr.length) {
+    return vi;
+  }
+  throw new XaiopSyntaxError(
+    "bare & deletes the current array element (element is no longer in the parent array)",
+    { line: lineNo },
+  );
 }
 
 /**
@@ -1533,24 +1776,68 @@ function collectPathMatches(node, nodeKind, segments, out, trail = []) {
  * @param {string} rawValue
  * @returns {unknown}
  */
-function parseValue(rawValue) {
+function unescapeContent(payload, lineNo) {
+  if (payload.indexOf("\\") === -1) return payload;
+  let out = "";
+  for (let i = 0; i < payload.length; i++) {
+    const c = payload.charCodeAt(i);
+    if (c !== 92) {
+      out += payload[i];
+      continue;
+    }
+    if (i + 1 >= payload.length) {
+      throw new XaiopSyntaxError("incomplete Content escape (trailing backslash)", {
+        line: lineNo,
+      });
+    }
+    const n = payload.charCodeAt(i + 1);
+    if (n === 110) {
+      out += "\n";
+      i++;
+    } else if (n === 114) {
+      out += "\r";
+      i++;
+    } else if (n === 92) {
+      out += "\\";
+      i++;
+    } else {
+      throw new XaiopSyntaxError(
+        `unknown Content escape \\${payload[i + 1]}`,
+        { line: lineNo },
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * @param {string} rawValue
+ * @param {number} [lineNo]
+ */
+function parseValue(rawValue, lineNo) {
   if (rawValue.length === 0) return rawValue;
   const c0 = rawValue.charCodeAt(0);
+  let payload = rawValue;
+  let forced = false;
   // Forced string: one or more spaces immediately after :
   if (c0 === 32) {
     let i = 1;
     while (i < rawValue.length && rawValue.charCodeAt(i) === 32) i++;
-    return rawValue.slice(i);
+    payload = rawValue.slice(i);
+    forced = true;
   }
-  if (rawValue === "true") return true;
-  if (rawValue === "false") return false;
-  if (rawValue === "null") return null;
+  payload = unescapeContent(payload, lineNo);
+  if (forced) return payload;
+  if (payload === "true") return true;
+  if (payload === "false") return false;
+  if (payload === "null") return null;
+  const p0 = payload.length ? payload.charCodeAt(0) : 0;
   // Fast reject: non-numeric heads cannot be int/float tokens.
-  if (c0 === 43 || c0 === 45 || c0 === 46 || (c0 >= 48 && c0 <= 57)) {
-    if (isIntToken(rawValue)) return Number(rawValue);
-    if (isFloatToken(rawValue)) return Number(rawValue); // IEEE 754 binary64
+  if (p0 === 43 || p0 === 45 || p0 === 46 || (p0 >= 48 && p0 <= 57)) {
+    if (isIntToken(payload)) return Number(payload);
+    if (isFloatToken(payload)) return Number(payload); // IEEE 754 binary64
   }
-  return rawValue;
+  return payload;
 }
 
 /** @param {string} s */

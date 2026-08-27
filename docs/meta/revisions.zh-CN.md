@@ -24,14 +24,20 @@ XAIOP **规范包**的有序修订历史。
 
 ### 0.7.0 — Draft（进行中）
 
-**类型：** 加法性规范方言（Label 转义 / 符号键模式）。
+**类型：** 加法 / 破坏性规范（Content 字符串转义）+ 加法方言（Label 转义 / 符号键模式）。
 
-**摘要：** 保留 **U+001F** 为 Label 转义头。默认：键不得以行类首字符 `#` `@` `>` `<` `=` `!` `&` 或 U+001F 开头。可选符号键模式：encode 前缀一层 U+001F，parse 剥一层（逻辑键已以 U+001F 开头则双重转义）。不改变独立 `#…` 自定义注解传递。
+**摘要：**
+
+- **Content（一律生效）：** 保留 `\\` `\n` `\r` 为 Content 转义字母表。物理 `LF`/`CRLF` 仍结束一行。字符串值中的 `U+000A`/`U+000D` 只能以这两字符序列出现。未知 `\x` 与末尾光杆 `\` 为语法错误。剥强制 string 空格后、打字前解转义。相对 **0.6.0** 中字面 `\n` 的载荷为 breaking。
+- **Label 转义（可选）：** 保留 **U+001F** 为 Label 转义头。默认键不得以行类首字符开头。可选符号键模式 encode 前缀一层、parse 剥一层。不改变独立 `#…`。
+- **数组元素选择：** 算子 `?`（`?2` / `?id:A2` / `?*` / `?*k:v`）。裸 `&` 删除当前直接数组元素。不是 JSON Patch / RFC 6902。
 
 | 区域 | 变更 |
 | --- | --- |
+| `PROT-CONTENT` §4 | 语义换行；转义字母表 |
+| `PROT-SYNTAX` §1.8 / §3 | 物理 vs 语义多行 |
 | `PROT-NOTE-LABEL-ESC` | Draft 笔记 [protocol/notes/label-escape.zh-CN.md](../protocol/notes/label-escape.zh-CN.md) |
-| Node.js / Java SDK | encode + parse（及 stream / WS / checkpoint）的 `symbolKeys` |
+| `PROT-HIER` §9 / §12.5 | `?` 选元素；裸 `&` 删元素 |
 
 ---
 

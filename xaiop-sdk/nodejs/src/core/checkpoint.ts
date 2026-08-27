@@ -1305,8 +1305,8 @@ function phaseNeedsPriorTree(raw) {
       continue;
     }
     const c = raw.charCodeAt(i);
-    // `=` (61), `!` (33), `&` (38), `@` (64) — create-vs-enter needs prior tree
-    if (c === 61 || c === 33 || c === 38 || c === 64) return true;
+    // `=` (61), `!` (33), `&` (38), `@` (64), `?` (63) — locate / select / delete need prior tree
+    if (c === 61 || c === 33 || c === 38 || c === 64 || c === 63) return true;
     while (i < n) {
       const ch = raw.charCodeAt(i);
       if (ch === 10) {

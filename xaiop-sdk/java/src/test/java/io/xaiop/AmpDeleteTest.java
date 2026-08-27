@@ -24,7 +24,7 @@ class AmpDeleteTest {
 
   @Test
   void versions() {
-    assertEquals("0.6.0", Xaiop.PROTOCOL_VERSION);
+    assertEquals("0.7.0", Xaiop.PROTOCOL_VERSION);
     assertEquals("0.15.1", Xaiop.SDK_VERSION);
   }
 
@@ -138,7 +138,9 @@ class AmpDeleteTest {
   void bareAmpIsSyntaxError() {
     XaiopSyntaxError e =
         assertThrows(XaiopSyntaxError.class, () -> Parse.parse(wire(">", "&")));
-    assertTrue(e.getMessage().contains("empty & path"));
+    assertTrue(
+        e.getMessage().contains("empty & path")
+            || e.getMessage().contains("not an array element"));
   }
 
   @Test

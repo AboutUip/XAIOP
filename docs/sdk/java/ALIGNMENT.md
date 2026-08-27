@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Document | Living parity matrix (Java official port) |
-| Java artifact | `io.xaiop:xaiop` **0.15.1** |
+| Java artifact | `io.github.aboutuip:xaiop` **0.15.1** (Maven Central; packages `io.xaiop.*`) |
 | Node package | `@bylan280/xaiop` **0.15.1** (npm) |
-| Protocol wire | **0.6.0** Frozen (`Xaiop.PROTOCOL_VERSION`) |
+| Protocol wire | **0.7.0** Draft (`Xaiop.PROTOCOL_VERSION`) |
 | Normative | **No** — product parity inventory (not protocol conformance) |
 | Authority | Node reference + [../behavioral-contract.md](../behavioral-contract.md) |
 
@@ -22,9 +22,9 @@ This document is the **definitive parity matrix** for the Java port against the 
 
 | Stack | Package / artifact | SDK | Protocol | Status |
 | --- | --- | --- | --- | --- |
-| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | Reference |
-| Java (official port) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
-| Python (official port) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
+| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | Reference |
+| Java (official port) | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
+| Python (official port) | `xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
 
 Pin the Maven artifact version; read `Xaiop.PROTOCOL_VERSION` for the wire package. Java has **no** `xaiop/browser` subpath — listen and connect share one JDK package (`io.xaiop.ws`).
 
@@ -72,6 +72,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | Node.js | Java |
 | --- | --- |
 | `async` first, `*Sync` mirrors | **Sync first**; `parseAsync` / `encodeAsync` → `CompletableFuture`; checkpoint `pushAsync` / `finishAsync` coalesce on a daemon thread |
+| `encode` (async short) ≡ `encodeAsync`; `encodeSync` → `string` | Java `Encode.encode()` / `Xaiop.encode()` **are the string** (Node `encodeSync`). Async mirror: `Encode.encodeAsync` |
 | Plain objects / arrays | `LinkedHashMap<String,Object>` / `ArrayList<Object>`; scalars `String`, `Integer`/`Long`/`Double`, `Boolean`, `null` |
 | `undefined` vs `null` | Only `null`; `undefinedPolicy` inert (option-table parity) |
 | Annotation Span keep (`return undefined`) | Return `AnnotationSpan.KEEP` |
@@ -221,7 +222,7 @@ cd xaiop-sdk/timing && npm run bench:java:quick   # optional same-machine stage 
 
 ## 8. Behavioral-contract §8 checklist (Java official port)
 
-All items **satisfied** by `io.xaiop:xaiop` **0.15.1** (see [../behavioral-contract.md](../behavioral-contract.md) §8):
+All items **satisfied** by `io.github.aboutuip:xaiop` **0.15.1** (see [../behavioral-contract.md](../behavioral-contract.md) §8):
 
 - [x] Strict default; compat opt-in; encode always strict  
 - [x] Eight compat fixes with same rewrite / pop-and-retry / locate retries  

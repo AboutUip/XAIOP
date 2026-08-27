@@ -6,7 +6,8 @@
 | --- | --- |
 | 模块 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` |
 | SDK | **0.15.1** |
-| 协议 | **0.6.0** Frozen |
+| 协议 | **0.7.0** Draft |
+| 安装 | `go get github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1` · [pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1) |
 | 对等 | [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) |
 
 ```go
@@ -17,11 +18,12 @@ import "github.com/AboutUip/XAIOP/xaiop-sdk/go/xaiop"
 
 | API | 说明 |
 | --- | --- |
-| `ProtocolVersion` / `SDKVersion` | `"0.6.0"` / `"0.15.1"` |
+| `ProtocolVersion` / `SDKVersion` | `"0.7.0"` / `"0.15.1"` |
 | `Parse` | 仅 STRICT |
 | `ParseWithOptions` | Compat ×8（`compat.Resolve`）· `SymbolKeys` |
-| `Encode` / `EncodeOptions` | 产品默认；ES 浮点线文 |
-| `MergeJSON` / `Engine` | 离线合并 / 存储 |
+| `Encode` / `EncodeOptions` | 产品默认；ES 浮点线文。对应 Node `encodeSync`。**没有** `EncodeAsync`（CPU 绑定）。Label 安全 JSON 子集，不是完整 RFC 8259 键（`symbolKeys` 只逃逸行类首字符）。`ParseJSONPath` / `FormatJSONPath`：JSON 路径（`items[0]`）；线上 `@` 用 `>`（`@items>it_1`）。 |
+| `LiveParser` | 增量 STRICT。`FeedLine` 吃完整逻辑行（`""` 语法错误）；encode 尾 `\n` 走 `FeedText` / `Parse`，不要 `strings.Split` 再喂最后一个空串 |
+| `MergeJSON` / `Engine` | 离线合并 / 存储。overlay **单独** parse；`@` + `:value` 追加走 `LiveParser` / 拼接 parse，不是 inject |
 | `PhaseEncodeJSON` / `PhaseEncodeKeyValue` | 相位推送 |
 
 ## 子包
@@ -38,8 +40,8 @@ import "github.com/AboutUip/XAIOP/xaiop-sdk/go/xaiop"
 
 ```bash
 cd xaiop-sdk/go && go test ./...
-cd xaiop-sdk/conformance && npm run golden:go   # Node↔Go · 50 例
-cd xaiop-sdk/conformance && npm run core-wire   # Python↔Go · 46 例
+cd xaiop-sdk/conformance && npm run golden:go   # Node↔Go · 60 例
+cd xaiop-sdk/conformance && npm run core-wire   # Python↔Go · 152 例
 ```
 
 叙事参考仍以 Node API 为准：[../nodejs/API.zh-CN.md](../nodejs/API.zh-CN.md)。完整表见英文 [API.md](API.md)。

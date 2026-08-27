@@ -2,7 +2,7 @@
 
 [English](API.md) · [简体中文](API.zh-CN.md)
 
-**Protocol**: v0.6.0 Frozen (sealed)  
+**Protocol**: v0.7.0 Draft  
 **SDK**: 0.15.1 (TypeScript) · npm **`@bylan280/xaiop`**  
 **Runtime**: default entry **Node.js ≥ 18 (ESM)**; browser via subpath (see §0)  
 **Code**: [../../../xaiop-sdk/nodejs/](../../../xaiop-sdk/nodejs/) (`src/` TS → `dist/`) · [npm](https://www.npmjs.com/package/@bylan280/xaiop)  
@@ -122,9 +122,11 @@ Primary methods are **async**, with matching **sync** variants (parse / encode /
 | `=path` | Fuzzy locate (no create; zero hits → syntax error) |
 | `@path` | Exact path from Root; **create** missing object segments and enter |
 | `!path` | Broadcast: match all full path fragments; later lines run on each Cursor |
+| `?selector` | Array-local select (`?2` · `?id:A2` · `?*` · `?*k:v`); does not create |
 | `&path` | Delete deepest key; does **not** move Cursor |
+| `&` | Delete current direct array element; land on the parent array |
 
-Path segments use `>` (e.g. `@a>b`, `&a>b`). Bare Labels, bare `&`, bare `<` at Root, and newlines inside values are forbidden.
+Path segments use `>` (e.g. `@a>b`, `&a>b`). Bare Labels, bare `&` except on a direct array element, bare `<` at Root, and newlines inside values are forbidden.
 
 **Example:**
 
@@ -167,8 +169,8 @@ Empty source → `{}`. Compat `forcedRoot` injects an object root for fragment o
 | Document root | **Object only**; array root / fragment root → syntax error |
 | Cursor chain | Deleting current Cursor or an ancestor → **syntax error** |
 | Broadcast | `&path` is **relative** to each Cursor; missing on that Cursor → no-op for it; any chain conflict → whole line fails |
-| Arrays | May delete an entire named array value; **no** element-index delete |
-| Cursor | **Unchanged** by `&`; later Content still writes at the prior Cursor |
+| Arrays | May delete an entire named array value. Element delete is bare `&` after `?` / `>`; `&path` has no index segment |
+| Cursor | **Unchanged** by `&path`; later Content still writes at the prior Cursor. Bare `&` (element delete) **does** move to the parent array |
 
 ### 2.5 `#` custom annotation transmission (protocol)
 
@@ -242,10 +244,12 @@ cursorRestoreLines(): string[]     // `>` / `>name-` chain for cover restore; at
 
 | Method | Notes |
 | --- | --- |
-| `feedLine` | Complete logical line (no trailing LF/CRLF) |
+| `feedLine` | Complete logical line (no trailing LF/CRLF). `""` → `empty line is a Content syntax error` |
 | `feedText` | Split like `parseSync` — **no half-line buffer across calls**; a trailing segment without LF is a full line. For arbitrary network chunks use `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | Current document (further feeds mutate in place) |
 | `cursorRestoreLines` | Unavailable while broadcast is active; anonymous / array-element frames on stack → syntax error |
+
+**Trailing `\n`:** encode ends with one `\n`. `parseSync` / `feedText` drop a final empty segment. Do **not** `encodeSync(x).split("\n").forEach(feedLine)` — the last `""` is the terminator, not a Content line. `feedLine` stays the per-line primitive; skip that empty, or pass whole wire to `feedText`.
 
 ```js
 const live = new LiveXaiopParser();
@@ -272,20 +276,30 @@ Streaming / WS JSON surfaces run `materializeSnapshot`: fragment → clone of `e
 
 ## 4. Encode API
 
-### 4.1 `encodeSync` / `encode`
+### 4.1 `encodeSync` / `encodeAsync` / `encode`
 
 ```ts
 encodeSync(value, options?: EncodeOptions): string
-encode(value, options?: EncodeOptions): Promise<string>
+encodeAsync(value, options?: EncodeOptions): Promise<string>
+encode(value, options?: EncodeOptions): Promise<string>  // identical to encodeAsync
 ```
+
+`encode` is the **async short name** — same function as `encodeAsync`. It returns a `Promise<string>`; calling `.split()` on it throws a generic `TypeError`. For a string, use **`encodeSync`**.
+
+| Stack | Sync (string) | Async (`Promise` / `Future`) |
+| --- | --- | --- |
+| Node.js | `encodeSync` | `encodeAsync` · `encode` (short) |
+| Java | `Encode.encode` · `Xaiop.encode` | `Encode.encodeAsync` |
+| Python | `encode_sync` | **none** (sync-first; same as no `parse_async`) |
+| Go | `Encode` | **none** (CPU-bound; no goroutine wrapper) |
 
 Encodes **plain JSON** to **strict** XAIOP (compatibility mode **never** changes encode output).  
 Free functions / `XaiopEngine` static / instance produce the same wire for the same `(value, options)`.
 
-**Guarantees:** for accepted values, `parseSync(encodeSync(value, opt))` deep-equals `value`; wire ends with exactly one `\n`.  
+**Guarantees:** for accepted values, `parseSync(encodeSync(value, opt))` deep-equals `value`; wire ends with exactly one `\n` (terminator, not a Content line — see §3.2).  
 **Not guaranteed:** byte-identical `encode(parse(handwritten wire))`.
 
-**Rejected string values (throw `XaiopEncodeError`):** containing CR/LF; **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable.
+**Rejected string values (throw `XaiopEncodeError`):** **beginning with U+0020 SPACE** (forced-string markers after `:` are not payload — emitting such values would silently strip leading spaces on parse). Tab (`U+0009`) and trailing spaces remain encodable. Semantic CR/LF in the value are encoded as `\n` / `\r` (protocol **0.7.0**); a physical line break is never placed inside a Content payload.
 ```js
 import { encodeSync, DOT_POLICY } from "@bylan280/xaiop";
 
@@ -311,7 +325,7 @@ encodeSync(obj, { dotPolicy: ["meta", "items[0]"] }); // path cuts
 | `shouldPhase` | — | Required when `dotPolicy: "custom"` |
 | `symbolKeys` | `false` | Opt-in U+001F label-escape dialect so keys may begin with `#` `@` `>` `<` `=` `!` `&` or U+001F; **both encode and parse must enable**; see [label-escape](../../protocol/notes/label-escape.md) |
 
-Path-array overload is **mutually exclusive** with `phaseEvery` / `maxPhases` / `shouldPhase`; requires `style: "reset"`; array index must be the **final** path segment. Helpers: `parseJsonPath` / `formatJsonPath`.
+Path-array overload is **mutually exclusive** with `phaseEvery` / `maxPhases` / `shouldPhase`; requires `style: "reset"`; array index must be the **final** path segment. Helpers: `parseJsonPath` / `formatJsonPath` (JSON-path `items[0]`; wire locate uses `>` — `@items>it_1`).
 
 ### 4.3 Rejected keys
 
@@ -323,6 +337,8 @@ These keys throw `XaiopEncodeError` (no silent reshape):
 | Ends with `-` | Conflicts with `>name-` array enter |
 | Contains `>` `<` `=` `!` **`&`** (in the key body) | Cursor / locate / delete operator ambiguity |
 | **Begins with** `#` `@` `>` `<` `=` `!` `&` or **U+001F** | Line-class / reserved escape introducer — unless `symbolKeys: true` |
+
+**Not a general JSON serializer.** RFC 8259 keys such as `a:b`, `""`, `"a b"`, `"tags-"`, `"a>b"` are legal JSON and still throw here. `symbolKeys` only escapes a **leading** line-class character; it does **not** admit `:` / whitespace / operators in the body. String values containing CR/LF are legal JSON and encoded via `\n` / `\r`. Unicode labels are fine when they are legal Labels. JS-only (`undefined`, Symbol keys) is outside JSON — a separate encode policy, not this gap. Constrain keys at the **JSON → encode** boundary (`uploadJson`); parse / materialize the other way is ordinary JSON. See [label-escape](../../protocol/notes/label-escape.md).
 
 Constants: `DOT_POLICY` · `LABEL_ESCAPE_INTRODUCER` (`"\u001f"`).
 
@@ -352,7 +368,7 @@ const engineCompat = new XaiopEngine({ compatibilityMode: true });
 
 | API | Notes |
 | --- | --- |
-| `encode` / `encodeSync` | Same as free functions; **ignores** compat switch |
+| `encode` / `encodeAsync` / `encodeSync` | Same as free functions; **ignores** compat switch |
 | `mergeToJson` / Sync | Base JSON + XAIOP → JSON (parse uses instance compat; override via `options.compat`) |
 | `mergeToXaiop` / Sync | → XAIOP wire |
 | `injectXaiop` / Sync | Inject XAIOP into existing `dataId` (mutates store) |
@@ -363,7 +379,7 @@ const engineCompat = new XaiopEngine({ compatibilityMode: true });
 | API | Notes |
 | --- | --- |
 | `XaiopEngine.parse` / `parseSync` | Second arg **boolean only** |
-| `XaiopEngine.encode` / `encodeSync` | Same as free functions |
+| `XaiopEngine.encode` / `encodeAsync` / `encodeSync` | Same as free functions |
 | `XaiopEngine.mergeToJson` / `mergeToXaiop` | Same as free functions |
 
 ### 5.4 Compatibility switches (instance)
@@ -389,7 +405,7 @@ const engineCompat = new XaiopEngine({ compatibilityMode: true });
 | `encodeTypeSchemaFrame()` | Encode control frame (prefer `pushTypeConsistency` on the connection) |
 | `onTypeViolation(fn\|null)` | Violation hook (called **before** throwing `XaiopTypeError`) |
 
-**Path house style:** `data.fork`, `items[0]` (same as encode `parseJsonPath`; **not** wire `data>fork`).
+**Path house style:** `data.fork`, `items[0]` (encode `parseJsonPath`). Wire `@` / `=` / `!` / `&` use `>` (`@items>it_1`) — do not mix.
 
 **Optional surface sugar:** `string`, `array<int>`, `object<name:string,old:int>` → compared as **canonical** types.
 
@@ -821,6 +837,8 @@ Product convention (not a Frozen 0.6.0 grammar change): lines starting with `#!`
 
 **Not a Diff applicator:** `mergeJson` / `mergeToJson` **do not delete** keys that are absent from the overlay. Example: `mergeJson({ cart: { a: 1, b: 2 } }, { cart: { a: 1 } })` keeps `b`. Phase Diffs from `onChunk` / `onPhase` are **subtree replacement** (or cumulative commit) surfaces — to apply a Diff locally, replace by path (or take `getCommittedSnapshot()`); **do not** pipe Diffs into `mergeJson`. See [notes/streaming-parse.md](notes/streaming-parse.md) (Commit vs chunk).
 
+**Live parser vs inject:** overlay XAIOP is parsed as a **new document** (empty tree), then JSON-merged — `@` / `:value` do **not** run on the stored tree. `@items>it_1>history` + `:7` **appends** on `LiveXaiopParser` (same session) or `parse(encode(stored) + patch)`. The same patch to `injectXaiop` / `mergeToJson` throws `:value scalar Content is only valid at array level` (`@` creates `{}` when the overlay has no array). Overlay `>history-` + `:7` **replaces** the array with `[7]` (arrays are atomic). Store + cursor patches → live parser / concat parse, **not** inject.
+
 Constants: `MERGE_CONFLICT.OVERWRITE` / `KEEP`.
 
 | API | Returns |
@@ -893,7 +911,7 @@ Recovery does **not** invent field names; still throws `XaiopSyntaxError` when r
 
 | Export | Value / notes |
 | --- | --- |
-| `PROTOCOL_VERSION` | `"0.6.0"` |
+| `PROTOCOL_VERSION` | `"0.7.0"` |
 | `SDK_VERSION` | `"0.15.1"` |
 | `DOT_POLICY` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM` |
 | `MERGE_CONFLICT` | `OVERWRITE` · `KEEP` |

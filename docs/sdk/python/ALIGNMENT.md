@@ -7,7 +7,7 @@
 | Document | Living parity matrix (Python official port) |
 | Python package | `xaiop` **0.15.1** |
 | Node package | `@bylan280/xaiop` **0.15.1** (npm) |
-| Protocol wire | **0.6.0** Frozen (`PROTOCOL_VERSION`) |
+| Protocol wire | **0.7.0** Draft (`PROTOCOL_VERSION`) |
 | Normative | **No** — product parity inventory (not protocol conformance alone) |
 | Authority | Node reference + [../behavioral-contract.md](../behavioral-contract.md) |
 
@@ -23,9 +23,9 @@ This document is the **definitive parity matrix** for the Python official port a
 
 | Stack | Package | SDK | Protocol | Status |
 | --- | --- | --- | --- | --- |
-| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.6.0** | Reference |
-| Java (official) | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | Aligned |
-| Python (official port) | `xaiop` | **0.15.1** | **0.6.0** | Aligned |
+| Node.js (primary) | `@bylan280/xaiop` | **0.15.1** | **0.7.0** Draft | Reference |
+| Java (official) | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
+| Python (official port) | `xaiop` | **0.15.1** | **0.7.0** Draft | Aligned |
 
 ---
 
@@ -70,6 +70,7 @@ Legend: ✅ = present and aligned at observable-semantics level.
 | Node.js | Python |
 | --- | --- |
 | `parseSync` / `encodeSync` | `parse_sync` / `encode_sync` |
+| `encode` / `encodeAsync` | **none** (sync-first; same as no `parse_async`) |
 | `LiveXaiopParser` | `LiveParser` (`feed_text` / `feed_line`) |
 | `materializeSnapshot` | `materialize` / `materialize_snapshot` |
 | Annotation Span keep (`undefined`) | `AnnotationSpan.KEEP` |
@@ -202,7 +203,7 @@ cd xaiop-sdk/conformance && npm run core-wire
 python xaiop-sdk/conformance/fuzz/fuzz-python.py --max=100 --seed=1
 ```
 
-**Golden coverage (product):** encode corpus (**30** values) + parse/stream for ten fixtures (`complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast`, `d1-named-enter`, `locate-equals`, `hash-ignore`, `at-exact`) → **50** NDJSON cases.
+**Golden coverage (product):** encode corpus (**40** values) + parse/stream for ten fixtures (`complex`, `stream-phases`, `overwrite-id`, `delete-phases`, `at-array-d2`, `bang-broadcast`, `d1-named-enter`, `locate-equals`, `hash-ignore`, `at-exact`) → **60** NDJSON cases.
 
 **Separate track:** Python ↔ Go STRICT core-wire (`npm run core-wire`) remains for protocol wire only — not a substitute for Node product golden.
 

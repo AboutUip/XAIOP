@@ -195,7 +195,7 @@ func EnsureDiffDocumentRoot(raw string, rootKind string) string {
 	return ">\n" + raw
 }
 
-// PhaseNeedsPriorTree reports whether the phase contains = / ! / & / @ (needs prior tree).
+// PhaseNeedsPriorTree reports whether the phase contains = / ! / & / @ / ? (needs prior tree).
 func PhaseNeedsPriorTree(raw string) bool {
 	i := 0
 	n := len(raw)
@@ -205,7 +205,7 @@ func PhaseNeedsPriorTree(raw string) bool {
 			continue
 		}
 		c := raw[i]
-		if c == '=' || c == '!' || c == '&' || c == '@' {
+		if c == '=' || c == '!' || c == '&' || c == '@' || c == '?' {
 			return true
 		}
 		for i < n {

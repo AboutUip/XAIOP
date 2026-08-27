@@ -5,9 +5,9 @@
 | 字段 | 值 |
 | --- | --- |
 | 文档 | 现行对等矩阵（Java 官方移植） |
-| Java 产物 | `io.xaiop:xaiop` **0.15.1** |
+| Java 产物 | `io.github.aboutuip:xaiop` **0.15.1**（Maven Central；包名 `io.xaiop.*`） |
 | Node 包 | `@bylan280/xaiop` **0.15.1**（npm） |
-| 协议线格式 | **0.6.0** Frozen（`Xaiop.PROTOCOL_VERSION`） |
+| 协议线格式 | **0.7.0** Draft（`Xaiop.PROTOCOL_VERSION`） |
 | 规范性 | **否** — 产品对等清单（非协议符合性） |
 | 权威来源 | Node 参考实现 + [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) |
 
@@ -22,9 +22,9 @@
 
 | 技术栈 | 包 / 产物 | SDK | 协议 | 状态 |
 | --- | --- | --- | --- | --- |
-| Node.js（主实现） | `xaiop` | **0.15.1** | **0.6.0** | 参考 |
-| Java（官方移植） | `io.xaiop:xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
-| Python（官方移植） | `xaiop` | **0.15.1** | **0.6.0** | 已对齐 |
+| Node.js（主实现） | `xaiop` | **0.15.1** | **0.7.0** Draft | 参考 |
+| Java（官方移植） | `io.github.aboutuip:xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
+| Python（官方移植） | `xaiop` | **0.15.1** | **0.7.0** Draft | 已对齐 |
 
 请锁定 Maven 产物版本；需要线格式版本时读取 `Xaiop.PROTOCOL_VERSION`。Java **无** `xaiop/browser` 分包 — listen 与 connect 同属 JDK 包 `io.xaiop.ws`。
 
@@ -72,6 +72,7 @@
 | Node.js | Java |
 | --- | --- |
 | 以 `async` 为主，附 `*Sync` | **以同步为主**；`parseAsync` / `encodeAsync` → `CompletableFuture`；checkpoint 的 `pushAsync` / `finishAsync` 合并到守护线程 |
+| `encode`（异步短名）≡ `encodeAsync`；`encodeSync` → 字符串 | Java 的 `Encode.encode()` / `Xaiop.encode()` **就是字符串**（对应 Node `encodeSync`）。异步镜像：`Encode.encodeAsync` |
 | 普通对象 / 数组 | `LinkedHashMap<String,Object>` / `ArrayList<Object>`；标量 `String`、`Integer`/`Long`/`Double`、`Boolean`、`null` |
 | `undefined` 与 `null` | 仅有 `null`；`undefinedPolicy` 不触发（仅为选项表对齐） |
 | Annotation Span 保留（`return undefined`） | 返回 `AnnotationSpan.KEEP` |
@@ -200,7 +201,7 @@ cd xaiop-sdk/timing && npm run bench:java:quick   # 可选：同机阶段计时
 
 ## 8. 行为契约 §8 检查清单（Java 官方移植）
 
-以下各项均由 `io.xaiop:xaiop` **0.15.1** **满足**（见 [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) §8）：
+以下各项均由 `io.github.aboutuip:xaiop` **0.15.1** **满足**（见 [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) §8）：
 
 - [x] 默认严格；兼容可选；encode 始终严格  
 - [x] 八项兼容修复与同类 rewrite / pop-and-retry / locate 重试  

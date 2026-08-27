@@ -58,9 +58,9 @@ Every specification document **MUST** declare exactly one status:
 | **Repository default branch** | **MAY** contain Draft work for a *future* package version, editorial mirrors, SDK code, and practice docs |
 | **Claiming conformance** | Implementations **MUST** name the sealed protocol package version (e.g. `0.5.0`), **not** “latest Frozen” without a number |
 
-### 3.2 Working-tree tip for package 0.5.0
+### 3.2 Working-tree tip for package 0.7.0
 
-Protocol wire documents that declare **Version `0.6.0`** and **Status `Frozen`** constitute the sealed **0.6.0** package in this repository snapshot.
+Protocol wire documents that declare **Version `0.7.0`** and **Status `Draft`** constitute the **0.7.0** working package in this repository snapshot. Sealed **0.6.0** remains citable and immutable.
 
 If editors open **0.6.0** (or any newer package) as Draft, those Draft documents **MUST** use the new version number in headers. Sealed **0.5.0** headers **MUST NOT** be used for Draft text.
 
@@ -85,7 +85,8 @@ If editors open **0.6.0** (or any newer package) as Draft, those Draft documents
 
 | Protocol package | Status | Notes |
 | --- | --- | --- |
-| `0.6.0` | **Frozen** | Current sealed wire in this tree (includes `#` custom annotation transmission) |
+| `0.7.0` | **Draft** | Working wire in this tree: Content `\n`/`\r`/`\\` (always on) + Label U+001F dialect |
+| `0.6.0` | **Frozen** | Prior sealed wire (`#` custom annotation transmission) |
 | `0.5.0` | **Frozen** (historical) | `&path` delete; do not rewrite; cite by version |
 | `0.4.0` | **Frozen** (historical) | Prior sealed package; do not rewrite; cite by version |
 | `0.3.0` | **Frozen** (historical) | Prior sealed package |

@@ -2,7 +2,7 @@
 
 跨 SDK 的 encode / parse / stream Diff 黄金转储与比对。  
 Fuzz：[`fuzz/`](fuzz/)。  
-Python ↔ Go **核心线文**（STRICT 协议轨，**非**产品黄金）：[`core-wire/`](core-wire/)。
+Python ↔ Go **核心线文**（STRICT 协议轨，**非**产品黄金）：[`core-wire/`](core-wire/) — **152** 例，Node / Java / Python / Go 单测同样加载。
 
 ## 布局
 
@@ -28,7 +28,7 @@ Python ↔ Go **核心线文**（STRICT 协议轨，**非**产品黄金）：[`c
 
 流式用例使用 `DotCheckpointEngine` 且 `mergeChunkWindow: false`。
 
-**产品黄金覆盖（现行）：** encode 语料（**30**）+ 十个 fixture 的 parse/stream → **50** 例：
+**产品黄金覆盖（现行）：** encode 语料（**40**）+ 十个 fixture 的 parse/stream → **60** 例：
 
 `complex` · `stream-phases`（`stream:phases`）· `overwrite-id` · `delete-phases` · `at-array-d2` · `bang-broadcast` · `d1-named-enter` · `locate-equals` · `hash-ignore` · `at-exact`
 
@@ -58,7 +58,7 @@ npm run golden:go
 npm run core-wire
 ```
 
-STRICT 语料：**46** 例。
+STRICT 语料：**152** 例。
 
 ## CI
 

@@ -22,7 +22,7 @@ const fixtureJson = path.resolve(
 );
 
 test("protocol version", () => {
-  assert.equal(PROTOCOL_VERSION, "0.6.0");
+  assert.equal(PROTOCOL_VERSION, "0.7.0");
 });
 
 test("named array >name- re-enters and appends (with .)", () => {

@@ -2,9 +2,9 @@
 
 [English](API.md) · [简体中文](API.zh-CN.md)
 
-**协议版本**: v0.6.0 Frozen（已封存）  
+**协议版本**: v0.7.0 Draft  
 **SDK 版本**: 0.15.1（Java）  
-**运行时**: **Java 17+** · 产物 **`io.xaiop:xaiop`**（单 JAR，零 runtime 依赖）  
+**运行时**: **Java 17+** · 产物 **`io.github.aboutuip:xaiop`**（Maven Central；Java 包名 `io.xaiop.*`；单 JAR，零 runtime 依赖）  
 **代码**: [../../../xaiop-sdk/java/](../../../xaiop-sdk/java/)（`src/main/java/io/xaiop/`）  
 **对等矩阵**: [ALIGNMENT.zh-CN.md](ALIGNMENT.zh-CN.md) · **产品选择目录**: [../behavioral-contract.zh-CN.md](../behavioral-contract.zh-CN.md) · **发行索引**: [../../meta/releases.zh-CN.md](../../meta/releases.zh-CN.md)  
 **Node 参考 API**: [../nodejs/API.zh-CN.md](../nodejs/API.zh-CN.md)
@@ -144,9 +144,11 @@ hub.close().join();
 | `=path` | 模糊定位（不创建；零命中 → 语法错误） |
 | `@path` | 自 Root 的精确路径；**创建**缺失的对象段并进入 |
 | `!path` | 广播：匹配所有完整路径片段；后续行在每个 Cursor 上执行 |
+| `?selector` | 数组局部选择（`?2` · `?id:A2` · `?*` · `?*k:v`）；不创建 |
 | `&path` | 删除最深键；**不**移动 Cursor |
+| `&` | 删除当前直接数组元素；落到父数组 |
 
-路径段使用 `>`（例如 `@a>b`、`&a>b`）。禁止裸 Label、裸 `&`、Root 处裸 `<`，以及值内换行。
+路径段使用 `>`（例如 `@a>b`、`&a>b`）。禁止裸 Label、裸 `&`（直接数组元素上除外）、Root 处裸 `<`，以及值内换行。
 
 **示例：**
 
@@ -189,8 +191,8 @@ name:Bob
 | 文档根 | **仅对象**；数组根 / fragment 根 → 语法错误 |
 | Cursor 链 | 删除当前 Cursor 或其祖先 → **语法错误** |
 | 广播 | `&path` 相对每个 Cursor；该 Cursor 上缺失 → 对该 Cursor no-op；任一链冲突 → 整行失败 |
-| 数组 | 可删除整个具名数组值；**无**按下标删元素 |
-| Cursor | `&` **不改变** Cursor；后续 Content 仍写在原 Cursor |
+| 数组 | 可删除整个具名数组值。元素删除用 `?` / `>` 之后的裸 `&`；`&path` 无下标段 |
+| Cursor | `&path` **不改变** Cursor；后续 Content 仍写在原 Cursor。裸 `&`（删元素）**会**落到父数组 |
 
 ### 2.5 `#` 自定义注解传输（协议）
 
@@ -280,10 +282,12 @@ docKind(): String            // "object" / "array" / "fragment" / null
 
 | 方法 | 说明 |
 | --- | --- |
-| `feedLine` | 完整逻辑行（无尾随 LF/CRLF） |
+| `feedLine` | 完整逻辑行（无尾随 LF/CRLF）。`""` → `empty line is a Content syntax error` |
 | `feedText` | 切分方式同 `Parse.parse` — **跨调用无半行缓冲**；无 LF 的尾段仍视为一整行。任意网络分片请用 `DotCheckpointEngine.push` / `XaiopStream` |
 | `value` | 当前文档（后续投喂会就地修改） |
 | `cursorRestoreLines` | 广播激活时不可用；栈上有匿名 / 数组元素帧 → 语法错误 |
+
+**尾 `\n`：** encode 以一个 `\n` 结尾。`Parse.parse` / `feedText` 会丢掉末尾空段。不要把 encode 结果按 `"\n"` 拆进 `feedLine` — 最后的 `""` 是终止符，不是一行 Content。`feedLine` 仍是逐行原语；跳过那个空串，或整段交给 `feedText`。
 
 ```java
 Parse.LiveXaiopParser live = new Parse.LiveXaiopParser();
@@ -320,12 +324,13 @@ Encode.encodeAsync(value[, options]): CompletableFuture<String>
 ```
 
 将 **普通 JSON 树** 编码为 **严格** XAIOP（兼容模式 **永不** 改变 encode 输出）。  
+Java 的 `Encode.encode()` / `Xaiop.encode()` 返回 **`String`**（对应 Node `encodeSync`）。Node 的 `encode` 是**异步短名**（`=== encodeAsync`）。Java 异步镜像只有 `Encode.encodeAsync`（`Xaiop` 门面保持同步优先，与 `parse` 相同）。  
 自由函数 / `XaiopEngine` 静态 / 实例对同一 `(value, options)` 产生相同线文。
 
-**保证：** 对可接受的值，`Parse.parse(Encode.encode(value, opt))` 深相等 `value`；线文恰以一个 `\n` 结尾。  
+**保证：** 对可接受的值，`Parse.parse(Encode.encode(value, opt))` 深相等 `value`；线文恰以一个 `\n` 结尾（终止符，不是一行 Content — 见 §3.2）。  
 **不保证：** `encode(parse(手写线文))` 逐字节相同。
 
-**被拒绝的字符串值（抛 `XaiopEncodeError`）：** 含 CR/LF；**以 U+0020 SPACE 开头**（`:` 后的强制 string 标记不是载荷 — 若发出此类值，解析时会静默剥掉前导空格）。Tab（`U+0009`）与尾随空格仍可编码。
+**被拒绝的字符串值（抛 `XaiopEncodeError`）：** **以 U+0020 SPACE 开头**（`:` 后的强制 string 标记不是载荷 — 若发出此类值，解析时会静默剥掉前导空格）。Tab（`U+0009`）与尾随空格仍可编码。值里的语义 CR/LF 编码为 `\n` / `\r`（协议 **0.7.0**）；Content 载荷内从不放置物理换行。
 
 ```java
 import io.xaiop.*;
@@ -357,7 +362,7 @@ Encode.encode(obj, EncodeOptions.builder()
 | `shouldPhase` | — | `dotPolicy: CUSTOM` 时必需；`Predicate<PhaseContext>` |
 | `symbolKeys` | `false` | 可选 U+001F 标签转义方言，使键可以以 `#` `@` `>` `<` `=` `!` `&` 或 U+001F 开头；**encode 与 parse 都必须启用**；见 [label-escape](../../protocol/notes/label-escape.md) |
 
-路径数组重载（`dotPolicyPaths`）与 `phaseEvery` / `maxPhases` / `shouldPhase` **互斥**；要求 `style: RESET`；数组下标必须是路径的 **最后一段**。辅助：`Encode.parseJsonPath` / `Encode.formatJsonPath`。
+路径数组重载（`dotPolicyPaths`）与 `phaseEvery` / `maxPhases` / `shouldPhase` **互斥**；要求 `style: RESET`；数组下标必须是路径的 **最后一段**。辅助：`Encode.parseJsonPath` / `Encode.formatJsonPath`（JSON 路径 `items[0]`；线上定位用 `>` — `@items>it_1`）。
 
 `PhaseContext` record：`key`、`index`、`total`、`keysInPhase`、`phaseIndex`。
 
@@ -371,6 +376,8 @@ Encode.encode(obj, EncodeOptions.builder()
 | 以 `-` 结尾 | 与 `>name-` 数组进入冲突 |
 | 键体含 `>` `<` `=` `!` **`&`** | Cursor / 定位 / 删除算子歧义 |
 | **以** `#` `@` `>` `<` `=` `!` `&` 或 **U+001F** **开头** | 行类 / 保留转义引入符 — 除非 `symbolKeys: true` |
+
+**不是通用 JSON 序列化。** RFC 8259 合法键如 `a:b`、`""`、`"a b"`、`"tags-"`、`"a>b"` 在这里仍会抛。`symbolKeys` 只逃逸**行类首字符**，**不解**体里的 `:` / 空白 / 算符。含 CR/LF 的字符串值是合法 JSON，encode 经 `\n` / `\r` 发出。Unicode 名在合法 Label 时可用。宿主独有值（`undefined`、Symbol 键）本来就不是 JSON——那是另一套 encode 策略，不是这条缺口。约束放在 **JSON → encode** 边界（`uploadJsonSync`）；反方向 parse / 物化就是普通 JSON。见 [label-escape](../../protocol/notes/label-escape.zh-CN.md)。
 
 常量：`DotPolicy.*` · `LabelEscape.INTRODUCER`（`"\u001f"`，包 `io.xaiop.internal`）。
 
@@ -439,7 +446,7 @@ XaiopEngine engineCompat = new XaiopEngine(true);
 | `encodeTypeSchemaFrame()` | 编码控制帧（优先在连接上用 `pushTypeConsistency`） |
 | `onTypeViolation(BiConsumer\|null)` | 违规钩子（在抛出 `XaiopTypeError` **之前**调用） |
 
-**路径风格：** `data.fork`、`items[0]`（同 encode 的 `parseJsonPath`；**不是**线格式 `data>fork`）。
+**路径风格：** `data.fork`、`items[0]`（encode `parseJsonPath`）。线上 `@` / `=` / `!` / `&` 用 `>`（`@items>it_1`）——不要混用。
 
 **可选表面糖：** `string`、`array<int>`、`object<name:string,old:int>` → 按 **规范** 类型比较。
 
@@ -876,6 +883,8 @@ Java **没有** `xaiop/browser` 子路径。相位客户端与服务端同属 `i
 
 **不是 Diff 应用器：** `Merge.mergeJson` / `mergeToJson` **不会删除** overlay 中缺失的键。例：`mergeJson({ cart: { a: 1, b: 2 } }, { cart: { a: 1 } })` 保留 `b`。`onChunk` / `onPhase` 的相位 Diff 是 **子树替换**（或累积 commit）表面 — 若要在本地应用 Diff，请按路径替换（或取 `getCommittedSnapshot()`）；**不要** 把 Diff 喂进 `mergeJson`。
 
+**Live 与 inject：** overlay 当作**新文档** parse（空树），再 JSON 合并——`@` / `:value` **不会**作用在存量树上。`@items>it_1>history` + `:7` 在同一条 `LiveXaiopParser`（或 `parse(encode(存量) + 补丁)`）上是**追加**；交给 `injectXaiopSync` / `mergeToJson` 会报 `:value scalar Content is only valid at array level`（overlay 里没有该数组时 `@` 造的是 `{}`）。overlay 写成 `>history-` + `:7` 会把数组**整段换成** `[7]`（数组整体冲突）。存文档 + 光标补丁 → live / 拼接重 parse，**不要**走 inject。
+
 | API | 返回 |
 | --- | --- |
 | `Merge.mergeJson(base, overlay[, conflict])` | JSON ← JSON+JSON |
@@ -947,7 +956,7 @@ engine.setCompatFix(CompatFixId.forcedRoot, false); // 模式关闭时返回 fal
 
 | 导出 | 值 / 说明 |
 | --- | --- |
-| `Xaiop.PROTOCOL_VERSION` | `"0.6.0"` |
+| `Xaiop.PROTOCOL_VERSION` | `"0.7.0"` |
 | `Xaiop.SDK_VERSION` | `"0.15.1"` |
 | `DotPolicy` | `NONE` · `PER_TOP_LEVEL_KEY` · `PER_N_KEYS` · `CUSTOM`（字符串常量） |
 | `MergeConflict` | `OVERWRITE` · `KEEP` |

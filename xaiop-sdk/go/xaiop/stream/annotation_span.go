@@ -166,7 +166,7 @@ func collectForwardSiblings(lines []string, from, baseDepth int) captureResult {
 				break
 			}
 		}
-		if strings.HasPrefix(line, "=") || strings.HasPrefix(line, "@") || strings.HasPrefix(line, "!") {
+		if strings.HasPrefix(line, "=") || strings.HasPrefix(line, "@") || strings.HasPrefix(line, "!") || strings.HasPrefix(line, "?") {
 			break
 		}
 		capture = append(capture, line)
@@ -265,6 +265,10 @@ func applySimLine(stack *[]simFrame, line string) {
 				*stack = append(*stack, simFrame{kind: "object", key: s})
 			}
 		}
+		return
+	}
+	if strings.HasPrefix(line, "?") {
+		*stack = append(*stack, simFrame{kind: "object"})
 		return
 	}
 	if strings.HasPrefix(line, "&") {

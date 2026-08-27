@@ -6,13 +6,16 @@ import io.xaiop.XaiopSyntaxError;
 import io.xaiop.compat.CompatFixId;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
- * Deterministic XAIOP parser (protocol v0.6.0 Frozen).
+ * Deterministic XAIOP parser (protocol v0.7.0 Draft).
  * Silent repair exists only under an explicit compatibility policy.
  *
  * <p>Faithful port of the internal {@code class Parser} from the Node.js SDK's
@@ -27,7 +30,8 @@ public final class Parser {
   public enum NodeKind {
     OBJECT,
     ARRAY,
-    FRAGMENT
+    FRAGMENT,
+    SCALAR
   }
 
   private enum DocKind {
@@ -51,15 +55,22 @@ public final class Parser {
     final NodeKind kind;
     final Object value;
     final String viaKey;
+    /** Index in parent array when this frame is a direct array element; {@code -1} otherwise. */
+    final int viaIndex;
 
     Frame(NodeKind kind, Object value) {
-      this(kind, value, null);
+      this(kind, value, null, -1);
     }
 
     Frame(NodeKind kind, Object value, String viaKey) {
+      this(kind, value, viaKey, -1);
+    }
+
+    Frame(NodeKind kind, Object value, String viaKey, int viaIndex) {
       this.kind = kind;
       this.value = value;
       this.viaKey = viaKey;
+      this.viaIndex = viaIndex;
     }
   }
 
@@ -440,7 +451,16 @@ public final class Parser {
       return;
     }
 
+    if (head == '?') {
+      selectArrayElement(line.substring(1));
+      return;
+    }
+
     if (head == '&') {
+      if (line.length() == 1) {
+        deleteCurrentArrayElement();
+        return;
+      }
       deleteAtPath(line.substring(1));
       return;
     }
@@ -518,7 +538,7 @@ public final class Parser {
           "Bare Label or unknown line form: " + Json.stringify(line), lineNo);
     }
     String key = logicalName(line.substring(0, colon));
-    Object value = parseValue(line.substring(colon + 1));
+    Object value = parseValue(line.substring(colon + 1), lineNo);
     if (broadcastStacks == null) {
       // Hot path: STRICT one-shot Encode wires never broadcast.
       writeContent(key, value);
@@ -539,6 +559,7 @@ public final class Parser {
       case '.':
       case '-':
       case '@':
+      case '?':
         return true;
       default:
         return false;
@@ -665,8 +686,9 @@ public final class Parser {
     Frame cur = current();
     if (cur.kind == NodeKind.ARRAY) {
       LinkedHashMap<String, Object> obj = new LinkedHashMap<>();
-      ((List<Object>) cur.value).add(obj);
-      stack.add(new Frame(NodeKind.OBJECT, obj));
+      List<Object> arr = (List<Object>) cur.value;
+      arr.add(obj);
+      stack.add(new Frame(NodeKind.OBJECT, obj, null, arr.size() - 1));
       return;
     }
     if (cur.kind == NodeKind.OBJECT) {
@@ -697,8 +719,9 @@ public final class Parser {
     Frame cur = current();
     ArrayList<Object> arr = new ArrayList<>();
     if (cur.kind == NodeKind.ARRAY) {
-      ((List<Object>) cur.value).add(arr);
-      stack.add(new Frame(NodeKind.ARRAY, arr));
+      List<Object> parent = (List<Object>) cur.value;
+      parent.add(arr);
+      stack.add(new Frame(NodeKind.ARRAY, arr, null, parent.size() - 1));
       return;
     }
     throw new XaiopSyntaxError(
@@ -718,6 +741,10 @@ public final class Parser {
       throw new XaiopSyntaxError(
           ">name while Cursor is inside an array (use < to leave array first): >" + name,
           lineNo);
+    }
+    if (cur.kind == NodeKind.SCALAR) {
+      throw new XaiopSyntaxError(
+          ">name is not valid on a scalar array element: >" + name, lineNo);
     }
     Map<String, Object> obj = (Map<String, Object>) cur.value;
     Object existing = obj.get(name);
@@ -741,6 +768,10 @@ public final class Parser {
           ">name- while Cursor is inside an array (use < to leave first): >" + name + "-",
           lineNo);
     }
+    if (cur.kind == NodeKind.SCALAR) {
+      throw new XaiopSyntaxError(
+          ">name- is not valid on a scalar array element: >" + name + "-", lineNo);
+    }
     Map<String, Object> obj = (Map<String, Object>) cur.value;
     Object existing = obj.get(name);
     // Align with >name objects: re-enter existing array (append); otherwise create.
@@ -760,6 +791,11 @@ public final class Parser {
       ensureFragmentRoot();
     }
     Frame cur = current();
+    if (cur.kind == NodeKind.SCALAR) {
+      throw new XaiopSyntaxError(
+          "Content is not valid on a scalar array element (use & to delete or . to reset)",
+          lineNo);
+    }
     if (cur.kind == NodeKind.ARRAY) {
       List<Object> arr = (List<Object>) cur.value;
       if (key.isEmpty()) {
@@ -896,6 +932,163 @@ public final class Parser {
       obj.put(seg, next);
       stack.add(new Frame(NodeKind.OBJECT, next, seg));
     }
+  }
+
+  /**
+   * {@code ?} — array-local element select.
+   */
+  @SuppressWarnings("unchecked")
+  private void selectArrayElement(String raw) {
+    requireNotBroadcast("?");
+    if (phase == Phase.INIT || docKind == DocKind.NONE || stack.isEmpty()) {
+      throw new XaiopSyntaxError("? requires an array Cursor", lineNo);
+    }
+    Frame cur = current();
+    if (cur.kind != NodeKind.ARRAY) {
+      throw new XaiopSyntaxError("? requires an array Cursor", lineNo);
+    }
+    List<Object> arr = (List<Object>) cur.value;
+    if (raw.isEmpty()) {
+      throw new XaiopSyntaxError("empty ? selector", lineNo);
+    }
+    boolean all = raw.charAt(0) == '*';
+    String rest = all ? raw.substring(1) : raw;
+    List<Integer> indices = new ArrayList<>();
+    if (rest.isEmpty()) {
+      if (!all) {
+        throw new XaiopSyntaxError("empty ? selector", lineNo);
+      }
+      if (arr.isEmpty()) {
+        throw new XaiopSyntaxError("? matched no array elements", lineNo);
+      }
+      for (int i = 0; i < arr.size(); i++) indices.add(i);
+    } else if (!all && isIndexSelector(rest)) {
+      int i = Integer.parseInt(rest);
+      if (i >= arr.size()) {
+        throw new XaiopSyntaxError("? index out of range: " + rest, lineNo);
+      }
+      indices.add(i);
+    } else {
+      int colon = rest.indexOf(':');
+      if (colon < 0) {
+        throw new XaiopSyntaxError("invalid ? selector: " + Json.stringify(raw), lineNo);
+      }
+      String key = logicalName(rest.substring(0, colon));
+      if (key.isEmpty()) {
+        throw new XaiopSyntaxError("empty ? predicate key", lineNo);
+      }
+      assertName(key, lineNo, symbolKeys);
+      Object want = parseValue(rest.substring(colon + 1), lineNo);
+      for (int i = 0; i < arr.size(); i++) {
+        Object el = arr.get(i);
+        if (el instanceof Map<?, ?> map
+            && map.containsKey(key)
+            && valuesMatch(map.get(key), want)) {
+          indices.add(i);
+          if (!all) break;
+        }
+      }
+      if (indices.isEmpty()) {
+        throw new XaiopSyntaxError("? matched no array elements: " + raw, lineNo);
+      }
+    }
+    boolean broadcast = all || indices.size() > 1;
+    if (broadcast) {
+      broadcastStacks = new ArrayList<>();
+      for (int i : indices) {
+        List<Frame> st = new ArrayList<>(stack);
+        st.add(arrayElementFrame(arr.get(i), i));
+        broadcastStacks.add(st);
+      }
+      stack = new ArrayList<>(broadcastStacks.get(0));
+    } else {
+      stack.add(arrayElementFrame(arr.get(indices.get(0)), indices.get(0)));
+    }
+    phase = Phase.ACTIVE;
+  }
+
+  @SuppressWarnings("unchecked")
+  private void deleteCurrentArrayElement() {
+    List<List<Frame>> stacks =
+        broadcastStacks != null ? broadcastStacks : List.of(stack);
+    List<Object> parentArr = null;
+    List<Integer> indices = new ArrayList<>();
+    for (List<Frame> st : stacks) {
+      if (st.size() < 2) {
+        throw new XaiopSyntaxError(
+            "bare & deletes the current array element (Cursor is not an array element)",
+            lineNo);
+      }
+      Frame el = st.get(st.size() - 1);
+      Frame par = st.get(st.size() - 2);
+      if (par.kind != NodeKind.ARRAY) {
+        throw new XaiopSyntaxError(
+            "bare & deletes the current array element (Cursor is not an array element)",
+            lineNo);
+      }
+      List<Object> arr = (List<Object>) par.value;
+      if (parentArr == null) parentArr = arr;
+      else if (parentArr != arr) {
+        throw new XaiopSyntaxError(
+            "bare & broadcast requires every Cursor to be an element of the same array",
+            lineNo);
+      }
+      indices.add(arrayElementIndex(arr, el));
+    }
+    TreeSet<Integer> uniq = new TreeSet<>(Comparator.reverseOrder());
+    uniq.addAll(indices);
+    for (int i : uniq) {
+      parentArr.remove(i);
+    }
+    List<Frame> landed = new ArrayList<>(stacks.get(0).subList(0, stacks.get(0).size() - 1));
+    broadcastStacks = null;
+    stack = landed;
+  }
+
+  private static Frame arrayElementFrame(Object el, int index) {
+    if (el instanceof List<?>) {
+      return new Frame(NodeKind.ARRAY, el, null, index);
+    }
+    if (el instanceof Map<?, ?>) {
+      return new Frame(NodeKind.OBJECT, el, null, index);
+    }
+    return new Frame(NodeKind.SCALAR, el, null, index);
+  }
+
+  private int arrayElementIndex(List<Object> arr, Frame el) {
+    int vi = el.viaIndex;
+    if (vi >= 0 && vi < arr.size() && arr.get(vi) == el.value) {
+      return vi;
+    }
+    if (el.kind != NodeKind.SCALAR) {
+      for (int i = 0; i < arr.size(); i++) {
+        if (arr.get(i) == el.value) return i;
+      }
+    } else if (vi >= 0 && vi < arr.size()) {
+      return vi;
+    }
+    throw new XaiopSyntaxError(
+        "bare & deletes the current array element (element is no longer in the parent array)",
+        lineNo);
+  }
+
+  static boolean isIndexSelector(String s) {
+    if (s == null || s.isEmpty()) return false;
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c < '0' || c > '9') return false;
+    }
+    return !(s.length() > 1 && s.charAt(0) == '0');
+  }
+
+  static boolean valuesMatch(Object a, Object b) {
+    if (a instanceof Boolean || b instanceof Boolean) {
+      return a instanceof Boolean && b instanceof Boolean && a.equals(b);
+    }
+    if (a instanceof Number && b instanceof Number) {
+      return ((Number) a).doubleValue() == ((Number) b).doubleValue();
+    }
+    return Objects.equals(a, b);
   }
 
   /**
@@ -1349,34 +1542,74 @@ public final class Parser {
   }
 
   static Object parseValue(String rawValue) {
+    return parseValue(rawValue, null);
+  }
+
+  static Object parseValue(String rawValue, Integer lineNo) {
     if (rawValue.isEmpty()) return rawValue;
+    boolean forced = false;
+    String payload = rawValue;
     // Forced string: one or more spaces immediately after :
     if (rawValue.charAt(0) == ' ') {
       int i = 1;
       while (i < rawValue.length() && rawValue.charAt(i) == ' ') i++;
-      return rawValue.substring(i);
+      payload = rawValue.substring(i);
+      forced = true;
     }
-    if (rawValue.equals("true")) return Boolean.TRUE;
-    if (rawValue.equals("false")) return Boolean.FALSE;
-    if (rawValue.equals("null")) return null;
-    char c0 = rawValue.charAt(0);
+    payload = unescapeContent(payload, lineNo);
+    if (forced) return payload;
+    if (payload.equals("true")) return Boolean.TRUE;
+    if (payload.equals("false")) return Boolean.FALSE;
+    if (payload.equals("null")) return null;
+    if (payload.isEmpty()) return payload;
+    char c0 = payload.charAt(0);
     if (c0 == '+' || c0 == '-' || c0 == '.' || (c0 >= '0' && c0 <= '9')) {
-      if (isIntToken(rawValue)) {
+      if (isIntToken(payload)) {
         try {
-          long l = Long.parseLong(rawValue);
+          long l = Long.parseLong(payload);
           if (l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) {
             return (int) l;
           }
           return l;
         } catch (NumberFormatException overflow) {
-          return Double.parseDouble(rawValue);
+          return Double.parseDouble(payload);
         }
       }
-      if (isFloatToken(rawValue)) {
-        return Double.parseDouble(rawValue); // IEEE 754 binary64
+      if (isFloatToken(payload)) {
+        return Double.parseDouble(payload); // IEEE 754 binary64
       }
     }
-    return rawValue;
+    return payload;
+  }
+
+  /** PROT-CONTENT §4.1 — always-on Content escape ({@code \\} {@code \n} {@code \r}). */
+  static String unescapeContent(String payload, Integer lineNo) {
+    if (payload.indexOf('\\') < 0) return payload;
+    StringBuilder out = new StringBuilder(payload.length());
+    for (int i = 0; i < payload.length(); i++) {
+      char c = payload.charAt(i);
+      if (c != '\\') {
+        out.append(c);
+        continue;
+      }
+      if (i + 1 >= payload.length()) {
+        throw new XaiopSyntaxError("incomplete Content escape (trailing backslash)", lineNo);
+      }
+      char n = payload.charAt(i + 1);
+      if (n == 'n') {
+        out.append('\n');
+        i++;
+      } else if (n == 'r') {
+        out.append('\r');
+        i++;
+      } else if (n == '\\') {
+        out.append('\\');
+        i++;
+      } else {
+        throw new XaiopSyntaxError("unknown Content escape \\" + n, lineNo);
+      }
+    }
+    return out.toString();
   }
 
   private static boolean isIntToken(String s) {

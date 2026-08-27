@@ -6,13 +6,13 @@
 | --- | --- |
 | Package | `xaiop` |
 | Track | **Official product SDK** |
-| Protocol | **0.6.0** Frozen (`PROTOCOL_VERSION`) |
+| Protocol | **0.7.0** Draft (`PROTOCOL_VERSION`) |
 | SDK | `0.15.1` (`SDK_VERSION`) |
 | Code | [../../../xaiop-sdk/python/](../../../xaiop-sdk/python/) |
 | **API reference** | **[API.md](API.md)** (authoritative surface) |
 | Parity | **[ALIGNMENT.md](ALIGNMENT.md)** |
 
-Official port of Node `xaiop` **0.15.1** product surface (no browser). Protocol wire remains **0.6.0**.
+Official port of Node `xaiop` **0.15.1** product surface (no browser). Protocol wire is **0.7.0** Draft.
 
 For the full Python API (parse / encode / engine / stream / WS / control / types), see **[API.md](API.md)**.
 
@@ -48,7 +48,7 @@ pytest
 cd xaiop-sdk/conformance && npm run golden:python
 ```
 
-**50** Node↔Python golden cases (encode corpus **30** + ten parse/stream fixtures). Jobs: `python`, `golden-python` in `.github/workflows/ci.yml`.
+**60** Node↔Python golden cases (encode corpus **40** + ten parse/stream fixtures). Jobs: `python`, `golden-python` in `.github/workflows/ci.yml`.
 
 ## Timing
 

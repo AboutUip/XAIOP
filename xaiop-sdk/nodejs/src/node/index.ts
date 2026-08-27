@@ -18,6 +18,7 @@ export {
   DotCheckpointEngine,
   DOT_POLICY,
   encode,
+  encodeAsync,
   encodeAckFrame,
   encodeControlFrame,
   encodePhaseJson,

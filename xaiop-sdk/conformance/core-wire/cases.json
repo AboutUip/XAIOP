@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Shared STRICT core-wire corpus for Python ↔ Go (protocol-authoritative; not Node/Java product golden).",
   "cases": [
     {
@@ -214,10 +214,333 @@
       "root": "object"
     },
     {
-      "id": "encode_error.newline_string",
-      "kind": "encode_error",
+      "id": "encode.newline_string",
+      "kind": "encode",
       "value": { "s": "a\nb" },
-      "root": "object"
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:a\\nb\n"
+    },
+    {
+      "id": "parse.content.escape.lf",
+      "kind": "parse",
+      "wire": ">\ns:hello\\nworld\n",
+      "expect": { "s": "hello\nworld" }
+    },
+    {
+      "id": "parse.content.escape.cr",
+      "kind": "parse",
+      "wire": ">\ns:a\\rb\n",
+      "expect": { "s": "a\rb" }
+    },
+    {
+      "id": "parse.content.escape.crlf",
+      "kind": "parse",
+      "wire": ">\ns:a\\r\\nb\n",
+      "expect": { "s": "a\r\nb" }
+    },
+    {
+      "id": "parse.content.escape.backslash",
+      "kind": "parse",
+      "wire": ">\ns:a\\\\b\n",
+      "expect": { "s": "a\\b" }
+    },
+    {
+      "id": "parse.content.escape.literal_backslash_n",
+      "kind": "parse",
+      "wire": ">\ns:a\\\\nb\n",
+      "expect": { "s": "a\\nb" }
+    },
+    {
+      "id": "parse.content.escape.only_newline",
+      "kind": "parse",
+      "wire": ">\ns:\\n\n",
+      "expect": { "s": "\n" }
+    },
+    {
+      "id": "parse.content.escape.consecutive_nl",
+      "kind": "parse",
+      "wire": ">\ns:a\\n\\nb\n",
+      "expect": { "s": "a\n\nb" }
+    },
+    {
+      "id": "parse.content.escape.unicode",
+      "kind": "parse",
+      "wire": ">\ns:你好\\n世界\n",
+      "expect": { "s": "你好\n世界" }
+    },
+    {
+      "id": "parse.content.escape.colon",
+      "kind": "parse",
+      "wire": ">\ns:a:b\\nc\n",
+      "expect": { "s": "a:b\nc" }
+    },
+    {
+      "id": "parse.content.escape.forced",
+      "kind": "parse",
+      "wire": ">\ns: hello\\nworld\n",
+      "expect": { "s": "hello\nworld" }
+    },
+    {
+      "id": "parse.content.escape.forced_true_nl",
+      "kind": "parse",
+      "wire": ">\ns: true\\n\n",
+      "expect": { "s": "true\n" }
+    },
+    {
+      "id": "parse.content.escape.not_int",
+      "kind": "parse",
+      "wire": ">\ns:1\\n2\n",
+      "expect": { "s": "1\n2" }
+    },
+    {
+      "id": "parse.content.escape.start",
+      "kind": "parse",
+      "wire": ">\na:\\nhey\n",
+      "expect": { "a": "\nhey" }
+    },
+    {
+      "id": "parse.content.escape.complete_bs",
+      "kind": "parse",
+      "wire": ">\na:end\\\\\n",
+      "expect": { "a": "end\\" }
+    },
+    {
+      "id": "parse.content.escape.array_scalar",
+      "kind": "parse",
+      "wire": "-\n:line1\\nline2\n",
+      "expect": ["line1\nline2"]
+    },
+    {
+      "id": "parse.content.escape.nested",
+      "kind": "parse",
+      "wire": ">\n>meta\nt:a\\nb\n",
+      "expect": { "meta": { "t": "a\nb" } }
+    },
+    {
+      "id": "parse.content.escape.tab_literal",
+      "kind": "parse",
+      "wire": ">\ns:a\tb\n",
+      "expect": { "s": "a\tb" }
+    },
+    {
+      "id": "parse.content.escape.hash_adjacent",
+      "kind": "parse",
+      "wire": ">\n# note\ns:a\\nb\n#\n",
+      "expect": { "s": "a\nb" }
+    },
+    {
+      "id": "parse.content.escape.overwrite",
+      "kind": "parse",
+      "wire": ">\ns:old\n.\n>\ns:a\\nb\n",
+      "expect": { "s": "a\nb" }
+    },
+    {
+      "id": "parse.content.escape.fragment",
+      "kind": "parse",
+      "fragment": true,
+      "wire": ">a\ns:hello\\nworld\n",
+      "expect": { "a": { "s": "hello\nworld" } }
+    },
+    {
+      "id": "parse.content.escape.leading_nl",
+      "kind": "parse",
+      "wire": ">\ns:\\nstart\n",
+      "expect": { "s": "\nstart" }
+    },
+    {
+      "id": "parse.content.escape.trailing_nl",
+      "kind": "parse",
+      "wire": ">\ns:end\\n\n",
+      "expect": { "s": "end\n" }
+    },
+    {
+      "id": "parse.content.escape.tab_and_nl",
+      "kind": "parse",
+      "wire": ">\ns:a\tb\\nc\n",
+      "expect": { "s": "a\tb\nc" }
+    },
+    {
+      "id": "parse.content.escape.true_prefix",
+      "kind": "parse",
+      "wire": ">\ns:true\\nx\n",
+      "expect": { "s": "true\nx" }
+    },
+    {
+      "id": "parse_error.content.unknown_t",
+      "kind": "parse_error",
+      "wire": ">\na:x\\ty\n"
+    },
+    {
+      "id": "parse_error.content.unknown_x",
+      "kind": "parse_error",
+      "wire": ">\na:x\\xy\n"
+    },
+    {
+      "id": "parse_error.content.unknown_quote",
+      "kind": "parse_error",
+      "wire": ">\na:x\\\"y\n"
+    },
+    {
+      "id": "parse_error.content.unknown_N",
+      "kind": "parse_error",
+      "wire": ">\na:x\\Ny\n"
+    },
+    {
+      "id": "parse_error.content.trailing_backslash",
+      "kind": "parse_error",
+      "wire": ">\na:end\\\n"
+    },
+    {
+      "id": "parse_error.content.physical_lf",
+      "kind": "parse_error",
+      "wire": ">\na:hello\nworld\n"
+    },
+    {
+      "id": "parse_error.content.unknown_u",
+      "kind": "parse_error",
+      "wire": ">\ns:a\\ub\n"
+    },
+    {
+      "id": "parse_error.content.unknown_0",
+      "kind": "parse_error",
+      "wire": ">\ns:a\\0b\n"
+    },
+    {
+      "id": "parse_error.content.unknown_b",
+      "kind": "parse_error",
+      "wire": ">\ns:a\\bb\n"
+    },
+    {
+      "id": "encode.cr_string",
+      "kind": "encode",
+      "value": { "s": "a\rb" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:a\\rb\n"
+    },
+    {
+      "id": "encode.backslash_string",
+      "kind": "encode",
+      "value": { "s": "a\\b" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:a\\\\b\n"
+    },
+    {
+      "id": "encode.crlf_string",
+      "kind": "encode",
+      "value": { "s": "a\r\nb" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:a\\r\\nb\n"
+    },
+    {
+      "id": "encode.array_newline",
+      "kind": "encode",
+      "value": ["a\nb"],
+      "root": "array",
+      "expect_wire": "-\n:a\\nb\n"
+    },
+    {
+      "id": "encode.nested_newline",
+      "kind": "encode",
+      "value": { "meta": { "t": "a\nb" } },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\n>meta\nt:a\\nb\n"
+    },
+    {
+      "id": "encode.mixed_backslash_newline",
+      "kind": "encode",
+      "value": { "s": "a\\\nb" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:a\\\\\\nb\n"
+    },
+    {
+      "id": "encode.leading_nl_string",
+      "kind": "encode",
+      "value": { "s": "\nhello" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:\\nhello\n"
+    },
+    {
+      "id": "encode.trailing_nl_string",
+      "kind": "encode",
+      "value": { "s": "hello\n" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:hello\\n\n"
+    },
+    {
+      "id": "encode.backslash_only",
+      "kind": "encode",
+      "value": { "s": "\\" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:\\\\\n"
+    },
+    {
+      "id": "encode.tab_and_newline",
+      "kind": "encode",
+      "value": { "s": "a\tb\nc" },
+      "root": "object",
+      "key_order": "sorted",
+      "expect_wire": ">\ns:a\tb\\nc\n"
+    },
+    {
+      "id": "roundtrip.content.escapes",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": {
+        "lf": "hello\nworld",
+        "cr": "a\rb",
+        "bs": "a\\b",
+        "zh": "你好\n世界",
+        "empty": "",
+        "tab": "a\tb"
+      }
+    },
+    {
+      "id": "roundtrip.content.array_and_nested",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": {
+        "meta": { "t": "a\nb" },
+        "tags": ["x\ny", "z"]
+      }
+    },
+    {
+      "id": "live.chunks.content_escape",
+      "kind": "live",
+      "chunks": [">\n", "t:p1\\np2\n"],
+      "expect": { "t": "p1\np2" }
+    },
+    {
+      "id": "live.chunks.content_escape_nested",
+      "kind": "live",
+      "chunks": [">\n", ">meta\n", "t:a\\nb\n"],
+      "expect": { "meta": { "t": "a\nb" } }
+    },
+    {
+      "id": "live.chunks.content_escape_crlf",
+      "kind": "live",
+      "chunks": [">\n", "s:a\\r\\nb\n"],
+      "expect": { "s": "a\r\nb" }
+    },
+    {
+      "id": "live.chunks.content_escape_bs",
+      "kind": "live",
+      "chunks": [">\n", "s:a\\\\b\n"],
+      "expect": { "s": "a\\b" }
+    },
+    {
+      "id": "roundtrip.content.tab_and_nl",
+      "kind": "roundtrip",
+      "key_order": "sorted",
+      "value": { "s": "a\tb\nc", "t": "\n", "u": "\\" }
     },
     {
       "id": "roundtrip.nested",
@@ -292,6 +615,341 @@
       "kind": "roundtrip",
       "key_order": "sorted",
       "value": { "a": null, "b": false, "c": true, "d": 0 }
+    },
+    {
+      "id": "parse.array.select.index",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n@orders\n?1\nstatus:shipped\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A2", "status": "shipped" }] }
+    },
+    {
+      "id": "parse.array.select.predicate",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n@orders\n?id:A2\nstatus:shipped\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A2", "status": "shipped" }] }
+    },
+    {
+      "id": "parse.array.select.star_pred",
+      "kind": "parse",
+      "wire": ">\n>orders-\n>\nid:A1\nstatus:pending\n<\n>\nid:A2\nstatus:pending\n<\n>\nid:A3\nstatus:done\n.\n@orders\n?*status:pending\nchecked:true\n",
+      "expect": {
+        "orders": [
+          { "id": "A1", "status": "pending", "checked": true },
+          { "id": "A2", "status": "pending", "checked": true },
+          { "id": "A3", "status": "done" }
+        ]
+      }
+    },
+    {
+      "id": "parse.array.select.star_all",
+      "kind": "parse",
+      "wire": ">\n>tags-\nid:a\nid:b\n.\n@tags\n?*\nok:true\n",
+      "expect": { "tags": [{ "id": "a", "ok": true }, { "id": "b", "ok": true }] }
+    },
+    {
+      "id": "parse.array.select.amp_enter",
+      "kind": "parse",
+      "wire": ">\n>items-\n>\nid:keep\n<\n>\nid:drop\n&\n",
+      "expect": { "items": [{ "id": "keep" }] }
+    },
+    {
+      "id": "parse.array.select.amp_pred",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\nid:A3\n.\n@orders\n?id:A2\n&\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A3" }] }
+    },
+    {
+      "id": "parse.array.select.amp_star",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n@orders\n?*\n&\n",
+      "expect": { "orders": [] }
+    },
+    {
+      "id": "parse.array.select.scalar_amp",
+      "kind": "parse",
+      "wire": ">\n>n-\n:a\n:b\n:c\n.\n@n\n?1\n&\n",
+      "expect": { "n": ["a", "c"] }
+    },
+    {
+      "id": "parse.array.select.nested_append",
+      "kind": "parse",
+      "wire": ">\n>wrap-\n-\n:a\n:b\n.\n@wrap\n?0\n:c\n",
+      "expect": { "wrap": [["a", "b", "c"]] }
+    },
+    {
+      "id": "parse.array.select.root",
+      "kind": "parse",
+      "wire": "-\nid:A\nid:B\n?1\nx:1\n",
+      "expect": [{ "id": "A" }, { "id": "B", "x": 1 }]
+    },
+    {
+      "id": "parse.array.select.num_bool",
+      "kind": "parse",
+      "wire": ">\n>rows-\nn:1\nn:2\n.\n@rows\n?n:1\nhit:true\n",
+      "expect": { "rows": [{ "n": 1, "hit": true }, { "n": 2 }] }
+    },
+    {
+      "id": "parse.array.select.forced_string",
+      "kind": "parse",
+      "wire": ">\n>rows-\nid: 1\nid:2\n.\n@rows\n?id: 1\nhit:true\n",
+      "expect": { "rows": [{ "id": "1", "hit": true }, { "id": 2 }] }
+    },
+    {
+      "id": "parse.array.select.escape_pred",
+      "kind": "parse",
+      "wire": ">\n>rows-\nt:a\\nb\nt:plain\n.\n@rows\n?t:a\\nb\nhit:true\n",
+      "expect": { "rows": [{ "t": "a\nb", "hit": true }, { "t": "plain" }] }
+    },
+    {
+      "id": "parse.array.select.first_of_dup",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A\nid:A\n.\n@orders\n?id:A\nx:1\n",
+      "expect": { "orders": [{ "id": "A", "x": 1 }, { "id": "A" }] }
+    },
+    {
+      "id": "parse.array.select.leave_append",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\n.\n@orders\n?0\nx:1\n<\nid:A2\n",
+      "expect": { "orders": [{ "id": "A1", "x": 1 }, { "id": "A2" }] }
+    },
+    {
+      "id": "live.chunks.array_select",
+      "kind": "live",
+      "chunks": [">\n", ">orders-\n", "id:A1\n", "id:A2\n", ".\n", "@orders\n", "?id:A2\n", "status:ok\n"],
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A2", "status": "ok" }] }
+    },
+    {
+      "id": "parse_error.array.select.at_object",
+      "kind": "parse_error",
+      "wire": ">\n>a\nx:1\n?0\n"
+    },
+    {
+      "id": "parse_error.array.select.empty",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?\n"
+    },
+    {
+      "id": "parse_error.array.select.oob",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?9\n"
+    },
+    {
+      "id": "parse_error.array.select.miss",
+      "kind": "parse_error",
+      "wire": ">\n>n-\nid:A\n.\n@n\n?id:Z\n"
+    },
+    {
+      "id": "parse_error.array.select.star_empty",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n.\n@n\n?*\n"
+    },
+    {
+      "id": "parse_error.array.select.leading_zero",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?01\n"
+    },
+    {
+      "id": "parse_error.array.select.star_index",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?*2\n"
+    },
+    {
+      "id": "parse_error.array.select.scalar_content",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?0\nk:v\n"
+    },
+    {
+      "id": "parse_error.array.select.during_broadcast",
+      "kind": "parse_error",
+      "wire": ">\n>a\nx:1\n.\n!a\n?0\n"
+    },
+    {
+      "id": "parse_error.array.select.bare_amp_object",
+      "kind": "parse_error",
+      "wire": ">\n&\n"
+    },
+    {
+      "id": "parse_error.array.select.bare_amp_array",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n&\n"
+    },
+    {
+      "id": "parse.array.select.bool",
+      "kind": "parse",
+      "wire": ">\n>rows-\nok:true\nok:false\n.\n@rows\n?ok:true\nx:1\n",
+      "expect": { "rows": [{ "ok": true, "x": 1 }, { "ok": false }] }
+    },
+    {
+      "id": "parse.array.select.null_pred",
+      "kind": "parse",
+      "wire": ">\n>rows-\nn:null\nn:1\n.\n@rows\n?n:null\nhit:true\n",
+      "expect": { "rows": [{ "n": null, "hit": true }, { "n": 1 }] }
+    },
+    {
+      "id": "parse.array.select.star_one",
+      "kind": "parse",
+      "wire": ">\n>orders-\n>\nid:A1\nstatus:pending\n<\n>\nid:A2\nstatus:done\n.\n@orders\n?*status:pending\nchecked:true\n",
+      "expect": {
+        "orders": [
+          { "id": "A1", "status": "pending", "checked": true },
+          { "id": "A2", "status": "done" }
+        ]
+      }
+    },
+    {
+      "id": "parse.array.select.amp_star_pred",
+      "kind": "parse",
+      "wire": ">\n>orders-\n>\nid:A1\nstatus:pending\n<\n>\nid:A2\nstatus:pending\n<\n>\nid:A3\nstatus:done\n.\n@orders\n?*status:pending\n&\n",
+      "expect": { "orders": [{ "id": "A3", "status": "done" }] }
+    },
+    {
+      "id": "parse.array.select.star_amp_path",
+      "kind": "parse",
+      "wire": ">\n>orders-\n>\nid:A1\nstatus:pending\n<\n>\nid:A2\nstatus:pending\n.\n@orders\n?*\n&status\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A2" }] }
+    },
+    {
+      "id": "parse.array.select.nested_object",
+      "kind": "parse",
+      "wire": ">\n>orders-\n>\nid:A1\n<\n>\nid:A2\n.\n@orders\n?id:A2\n>detail\nsku:x\n",
+      "expect": {
+        "orders": [{ "id": "A1" }, { "id": "A2", "detail": { "sku": "x" } }]
+      }
+    },
+    {
+      "id": "parse.array.select.reselect",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n@orders\n?0\nx:1\n<\n?1\ny:1\n",
+      "expect": { "orders": [{ "id": "A1", "x": 1 }, { "id": "A2", "y": 1 }] }
+    },
+    {
+      "id": "parse.array.select.eq_then_q",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n=orders\n?1\nstatus:ok\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A2", "status": "ok" }] }
+    },
+    {
+      "id": "parse.array.select.amp_then_append",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\nid:A3\n.\n@orders\n?id:A2\n&\nid:A4\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A3" }, { "id": "A4" }] }
+    },
+    {
+      "id": "parse.array.select.mixed_skip_scalar",
+      "kind": "parse",
+      "wire": ">\n>n-\n:x\nid:A\n.\n@n\n?id:A\nhit:true\n",
+      "expect": { "n": ["x", { "id": "A", "hit": true }] }
+    },
+    {
+      "id": "parse.array.select.deep_index",
+      "kind": "parse",
+      "wire": ">\n>wrap-\n-\n:a\n:b\n.\n@wrap\n?0\n?1\n&\n",
+      "expect": { "wrap": [["a"]] }
+    },
+    {
+      "id": "parse.array.select.two_arrays",
+      "kind": "parse",
+      "wire": ">\n>items-\nid:x\n.\n>orders-\nid:A1\nid:A2\n.\n@orders\n?1\nstatus:ok\n",
+      "expect": {
+        "items": [{ "id": "x" }],
+        "orders": [{ "id": "A1" }, { "id": "A2", "status": "ok" }]
+      }
+    },
+    {
+      "id": "parse.array.select.amp_index0",
+      "kind": "parse",
+      "wire": ">\n>n-\n:a\n:b\n:c\n.\n@n\n?0\n&\n",
+      "expect": { "n": ["b", "c"] }
+    },
+    {
+      "id": "parse.array.select.at_slot_is_key",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\n.\n@orders>0\nx:1\n",
+      "expect": { "orders": { "0": { "x": 1 } } }
+    },
+    {
+      "id": "parse.array.select.amp_path_noop_index",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n&orders>0\n",
+      "expect": { "orders": [{ "id": "A1" }, { "id": "A2" }] }
+    },
+    {
+      "id": "parse.array.select.amp_named_array",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\n.\n&orders\n",
+      "expect": {}
+    },
+    {
+      "id": "parse.array.select.star_then_dot_then_q",
+      "kind": "parse",
+      "wire": ">\n>orders-\nid:A1\nid:A2\n.\n@orders\n?*\nok:true\n.\n@orders\n?1\nextra:1\n",
+      "expect": {
+        "orders": [
+          { "id": "A1", "ok": true },
+          { "id": "A2", "ok": true, "extra": 1 }
+        ]
+      }
+    },
+    {
+      "id": "live.chunks.array_select_star",
+      "kind": "live",
+      "chunks": [">\n", ">orders-\n", "id:A1\n", "id:A2\n", ".\n", "@orders\n", "?*\n", "ok:true\n"],
+      "expect": { "orders": [{ "id": "A1", "ok": true }, { "id": "A2", "ok": true }] }
+    },
+    {
+      "id": "parse_error.array.select.neg",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?-1\n"
+    },
+    {
+      "id": "parse_error.array.select.empty_key",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?:x\n"
+    },
+    {
+      "id": "parse_error.array.select.float",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n:b\n.\n@n\n?1.5\n"
+    },
+    {
+      "id": "parse_error.array.select.plus",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?+1\n"
+    },
+    {
+      "id": "parse_error.array.select.space",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n:b\n.\n@n\n? 1\n"
+    },
+    {
+      "id": "parse_error.array.select.bool_ne_num",
+      "kind": "parse_error",
+      "wire": ">\n>rows-\nok:1\n.\n@rows\n?ok:true\n"
+    },
+    {
+      "id": "parse_error.array.select.star_then_q",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n:b\n.\n@n\n?*\n?0\n"
+    },
+    {
+      "id": "parse_error.array.select.star_one_then_q",
+      "kind": "parse_error",
+      "wire": ">\n>orders-\n>\nid:A1\nstatus:pending\n<\n>\nid:A2\nstatus:done\n.\n@orders\n?*status:pending\n?0\n"
+    },
+    {
+      "id": "parse_error.array.select.q_on_element",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n:b\n.\n@n\n?0\n?0\n"
+    },
+    {
+      "id": "parse_error.array.select.pred_scalars",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n:b\n.\n@n\n?id:A\n"
+    },
+    {
+      "id": "parse_error.array.select.zero_zero",
+      "kind": "parse_error",
+      "wire": ">\n>n-\n:a\n.\n@n\n?00\n"
     }
   ]
 }

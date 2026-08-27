@@ -2,7 +2,7 @@
 
 Cross-SDK golden dumps and comparison for encode / parse / stream Diff parity.  
 Fuzz harness: [`fuzz/`](fuzz/).  
-Python ↔ Go **core-wire** (STRICT protocol track, **not** product golden): [`core-wire/`](core-wire/).
+Python ↔ Go **core-wire** (STRICT protocol track, **not** product golden): [`core-wire/`](core-wire/) — **152** cases, also loaded by Node / Java / Python / Go unit tests.
 
 ## Layout
 
@@ -30,7 +30,7 @@ Each line:
 
 Case ids must match across runtimes. Stream cases use `DotCheckpointEngine` with `mergeChunkWindow: false`.
 
-**Product golden coverage (current):** encode corpus (**30**) + parse/stream for ten fixtures → **50** cases:
+**Product golden coverage (current):** encode corpus (**40**) + parse/stream for ten fixtures → **60** cases:
 
 `complex` · `stream-phases` (`stream:phases`) · `overwrite-id` · `delete-phases` · `at-array-d2` · `bang-broadcast` · `d1-named-enter` · `locate-equals` · `hash-ignore` · `at-exact`
 
@@ -68,7 +68,7 @@ Prerequisites: Go ≥ 1.22, Node ≥ 18, built Node SDK.
 npm run core-wire
 ```
 
-Prerequisites: Python ≥ 3.10, Go ≥ 1.22, Node (for `compare-core.mjs` only). STRICT corpus: **46** cases.
+Prerequisites: Python ≥ 3.10, Go ≥ 1.22, Node (for `compare-core.mjs` only). STRICT corpus: **152** cases.
 
 ## Fuzz
 

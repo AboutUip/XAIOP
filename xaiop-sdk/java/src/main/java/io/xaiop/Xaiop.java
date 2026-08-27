@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- * XAIOP Java SDK entry (artifact 0.15.1 · protocol wire 0.6.0 Frozen).
+ * XAIOP Java SDK entry (artifact 0.15.1 · protocol wire 0.7.0 Draft).
  *
  * <p>Convenience facade over {@link Parse}, {@link Encode}, {@link Merge},
  * {@link DotCheckpointEngine}, and {@link XaiopStream}. Every method here is a thin delegate —
@@ -21,7 +21,7 @@ import java.util.function.Consumer;
  */
 public final class Xaiop {
   /** Wire protocol package implemented by this artifact. */
-  public static final String PROTOCOL_VERSION = "0.6.0";
+  public static final String PROTOCOL_VERSION = "0.7.0";
   /** Maven / JAR artifact version. */
   public static final String SDK_VERSION = "0.15.1";
 

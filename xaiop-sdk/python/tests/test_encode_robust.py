@@ -123,11 +123,9 @@ def test_final_dot_true() -> None:
     assert wire.rstrip("\n").endswith(".")
 
 
-def test_cr_lf_rejected() -> None:
-    with pytest.raises(XaiopEncodeError, match="CR/LF|CR|LF|newline"):
-        encode_sync({"a": "x\ny"})
-    with pytest.raises(XaiopEncodeError):
-        encode_sync({"a": "x\ry"})
+def test_cr_lf_round_trip() -> None:
+    assert parse_sync(encode_sync({"a": "x\ny"}, dot_policy=DOT_POLICY["NONE"])) == {"a": "x\ny"}
+    assert parse_sync(encode_sync({"a": "x\ry"}, dot_policy=DOT_POLICY["NONE"])) == {"a": "x\ry"}
 
 
 def test_leading_space_rejected() -> None:

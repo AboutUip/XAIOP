@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Document ID | `PROT-SYNTAX` |
-| Status | **Frozen** |
-| Version | 0.6.0 |
-| Last updated | 2026-08-04 |
+| Status | **Draft** |
+| Version | 0.7.0 |
+| Last updated | 2026-08-27 |
 | Normative | **Normative** — grammar entry point |
 | Depends on | `PROT-BOUND`, `PROT-HIER`, `PROT-CONTENT` |
 | Informs | Generators, Parsers, SKILL authors, `CONF` |
@@ -30,7 +30,7 @@ Details: [boundary.md](boundary.md) · [hierarchy.md](hierarchy.md) · [content.
 5. **`<name`** pops one level, then creates/enters `name`.  
 6. **No** brace pairing, indentation, or multi-character terminators as boundaries.  
 7. **No** Block end marker — next Label line or EOF ends the Block.  
-8. Value **MUST NOT** contain line endings.  
+8. A Content **line** **MUST NOT** contain physical `LF` / `CRLF` inside the value. Semantic `U+000A` / `U+000D` in strings use `\n` / `\r` (and `\\` for `\`) — [content.md](content.md) §4.  
 9. Content splits on the **first** `:` only.  
 10. **`-` does not separate sibling array elements** — it opens an array (or a nested array element).  
 11. **Root opener** (Section 2): `>` / `-` declare a **complete** anonymous root document value; omitting them yields a **root fragment** (no outer object) — **not** the same as `{"a":{}}`.  
@@ -98,10 +98,12 @@ x:1
 | `=path` | Structure | Fuzzy locate (first match) |
 | `@path` | Structure | Exact from Root; **create** missing object segments |
 | `!path` | Structure | Broadcast to all path-fragment matches |
+| `?selector` | Structure | Array-local element select (`?2` / `?id:A2` / `?*` / `?*k:v`) |
 | `&path` | Structure | Delete deepest key (absolute from Root; no Cursor move) |
+| `&` | Structure | Delete current **array element** (only when Cursor is that element); land on the parent array |
 | `#…` | Custom annotation transmission | Standalone line; protocol does not interpret text after `#`; no Cursor / tree effect |
 
-**Forbidden:** Bare Label · bare `&` · `>>x` stacking · `<` at Root · multiline value.
+**Forbidden:** Bare Label · bare `&` except on a direct array element · `>>x` stacking · `<` at Root · physical multiline value (semantic `\n` / `\r` escapes are allowed).
 
 > **Terminology:** The official name for `#` lines is **custom annotation transmission** (not a “comment primitive”). Parsers may ignore the whole line; normative wording must use the former.
 

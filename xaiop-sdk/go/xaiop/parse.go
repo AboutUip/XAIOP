@@ -15,6 +15,7 @@ const (
 	kindObject   nodeKind = "object"
 	kindArray    nodeKind = "array"
 	kindFragment nodeKind = "fragment"
+	kindScalar   nodeKind = "scalar"
 )
 
 type docKind string
@@ -37,13 +38,13 @@ var bareNameArrayRE = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*-$`)
 
 var operatorHeads = map[rune]bool{
 	'>': true, '<': true, '=': true, '!': true, '&': true,
-	'#': true, '.': true, '-': true,
+	'#': true, '.': true, '-': true, '?': true,
 }
 
 // ASCII operator-line heads (content keys never start with these in STRICT).
 func isOperatorHeadByte(c byte) bool {
 	switch c {
-	case '>', '<', '=', '!', '&', '#', '.', '-', '@':
+	case '>', '<', '=', '!', '&', '#', '.', '-', '@', '?':
 		return true
 	default:
 		return false
@@ -51,11 +52,12 @@ func isOperatorHeadByte(c byte) bool {
 }
 
 type frame struct {
-	kind   nodeKind
-	value  any
-	viaKey string
-	obj    map[string]any // typed view when object/fragment
-	arr    *[]any         // typed view when array
+	kind     nodeKind
+	value    any
+	viaKey   string
+	viaIndex int // -1 if not a direct array element
+	obj      map[string]any
+	arr      *[]any
 }
 
 type parser struct {
@@ -74,15 +76,19 @@ type parser struct {
 }
 
 func objFrame(obj map[string]any, via string) frame {
-	return frame{kind: kindObject, value: obj, viaKey: via, obj: obj}
+	return frame{kind: kindObject, value: obj, viaKey: via, viaIndex: -1, obj: obj}
 }
 
 func fragFrame(obj map[string]any) frame {
-	return frame{kind: kindFragment, value: obj, obj: obj}
+	return frame{kind: kindFragment, value: obj, viaIndex: -1, obj: obj}
 }
 
 func arrFrame(arr *[]any, via string) frame {
-	return frame{kind: kindArray, value: arr, viaKey: via, arr: arr}
+	return frame{kind: kindArray, value: arr, viaKey: via, viaIndex: -1, arr: arr}
+}
+
+func scalarFrame(v any, idx int) frame {
+	return frame{kind: kindScalar, value: v, viaIndex: idx}
 }
 
 var parserPool = sync.Pool{New: func() any {
@@ -221,7 +227,11 @@ func (p *parser) syncArrayToParent(frameIdx int) {
 		if len(*pp) == 0 {
 			return
 		}
-		(*pp)[len(*pp)-1] = *ptr
+		idx := fr.viaIndex
+		if idx < 0 || idx >= len(*pp) {
+			idx = len(*pp) - 1
+		}
+		(*pp)[idx] = *ptr
 	}
 }
 
@@ -386,7 +396,12 @@ func (p *parser) handleLine(line string) error {
 			return err
 		}
 		return p.broadcastEnter(line[1:])
+	case line[0] == '?':
+		return p.selectArrayElement(line[1:])
 	case line[0] == '&':
+		if len(line) == 1 {
+			return p.deleteCurrentArrayElement()
+		}
 		return p.deleteAtPath(line[1:])
 	case line == ">":
 		if p.broadcastStacks == nil {
@@ -465,49 +480,14 @@ func (p *parser) handleContentLine(line string) error {
 	if p.symbolKeys {
 		key = DecodeWireLabel(key, true)
 	}
-	value := parseValue(line[colon+1:])
+	value, err := parseValue(line[colon+1:], p.lineNo)
+	if err != nil {
+		return err
+	}
 	if p.broadcastStacks != nil {
 		return p.runOnCursors(func() error { return p.writeContent(key, value) })
 	}
-	// Hot path: STRICT one-shot Encode wires never broadcast.
-	if p.phase == phaseInit || p.docKind == docNone {
-		p.ensureFragmentRoot()
-	}
-	if len(p.stack) == 0 {
-		return p.syntax("Cursor is at Root with no container")
-	}
-	cur := &p.stack[len(p.stack)-1]
-	if cur.kind == kindArray {
-		arrPtr := cur.arr
-		if arrPtr == nil {
-			var ok bool
-			arrPtr, ok = cur.value.(*[]any)
-			if !ok {
-				var err error
-				arrPtr, err = p.arrayPtrForFrame(len(p.stack) - 1)
-				if err != nil {
-					return err
-				}
-				cur.arr = arrPtr
-			}
-		}
-		if key == "" {
-			*arrPtr = append(*arrPtr, value)
-		} else {
-			*arrPtr = append(*arrPtr, map[string]any{key: value})
-		}
-		return nil
-	}
-	if key == "" {
-		return p.syntax(":value scalar Content is only valid at array level")
-	}
-	obj := cur.obj
-	if obj == nil {
-		obj = cur.value.(map[string]any)
-		cur.obj = obj
-	}
-	obj[key] = value
-	return nil
+	return p.writeContent(key, value)
 }
 
 func repr(s string) string {
@@ -655,7 +635,9 @@ func (p *parser) createEnterAnonymousObject() error {
 			}
 		}
 		*arrPtr = append(*arrPtr, obj)
-		p.stack = append(p.stack, objFrame(obj, ""))
+		f := objFrame(obj, "")
+		f.viaIndex = len(*arrPtr) - 1
+		p.stack = append(p.stack, f)
 		return nil
 	}
 	if cur.kind == kindObject {
@@ -701,7 +683,9 @@ func (p *parser) createEnterAnonymousArray() error {
 	items := make([]any, 0, 4)
 	ptr := &items
 	*parentPtr = append(*parentPtr, items)
-	p.stack = append(p.stack, arrFrame(ptr, ""))
+	f := arrFrame(ptr, "")
+	f.viaIndex = len(*parentPtr) - 1
+	p.stack = append(p.stack, f)
 	return nil
 }
 
@@ -719,6 +703,9 @@ func (p *parser) createEnterNamedObject(name string) error {
 		return p.syntax(
 			">name while Cursor is inside an array (use < to leave array first): >" + name,
 		)
+	}
+	if cur.kind == kindScalar {
+		return p.syntax(">name is not valid on a scalar array element: >" + name)
 	}
 	obj := cur.obj
 	if obj == nil {
@@ -751,6 +738,9 @@ func (p *parser) createEnterNamedArray(name string) error {
 			">name- while Cursor is inside an array (use < to leave first): >" + name + "-",
 		)
 	}
+	if cur.kind == kindScalar {
+		return p.syntax(">name- is not valid on a scalar array element: >" + name + "-")
+	}
 	obj := cur.obj
 	if obj == nil {
 		obj = cur.value.(map[string]any)
@@ -782,6 +772,9 @@ func (p *parser) writeContent(key string, value any) error {
 		return p.syntax("Cursor is at Root with no container")
 	}
 	cur := &p.stack[len(p.stack)-1]
+	if cur.kind == kindScalar {
+		return p.syntax("Content is not valid on a scalar array element (use & to delete or . to reset)")
+	}
 	if cur.kind == kindArray {
 		arrPtr := cur.arr
 		if arrPtr == nil {
@@ -981,6 +974,199 @@ func (p *parser) broadcastEnter(path string) error {
 	return nil
 }
 
+func (p *parser) selectArrayElement(raw string) error {
+	if err := p.requireNotBroadcast("?"); err != nil {
+		return err
+	}
+	if p.phase == phaseInit || p.docKind == docNone || len(p.stack) == 0 {
+		return p.syntax("? requires an array Cursor")
+	}
+	cur := &p.stack[len(p.stack)-1]
+	if cur.kind != kindArray {
+		return p.syntax("? requires an array Cursor")
+	}
+	arrPtr := cur.arr
+	if arrPtr == nil {
+		var err error
+		arrPtr, err = p.arrayPtrForFrame(len(p.stack) - 1)
+		if err != nil {
+			return err
+		}
+		cur.arr = arrPtr
+	}
+	arr := *arrPtr
+	if raw == "" {
+		return p.syntax("empty ? selector")
+	}
+	all := false
+	rest := raw
+	if rest[0] == '*' {
+		all = true
+		rest = rest[1:]
+	}
+	var indices []int
+	if rest == "" {
+		if !all {
+			return p.syntax("empty ? selector")
+		}
+		if len(arr) == 0 {
+			return p.syntax("? matched no array elements")
+		}
+		indices = make([]int, len(arr))
+		for i := range arr {
+			indices[i] = i
+		}
+	} else if !all && isIndexSelector(rest) {
+		i, err := strconv.Atoi(rest)
+		if err != nil {
+			return p.syntax("invalid ? selector: " + repr(raw))
+		}
+		if i >= len(arr) {
+			return p.syntax("? index out of range: " + rest)
+		}
+		indices = []int{i}
+	} else {
+		colon := strings.IndexByte(rest, ':')
+		if colon < 0 {
+			return p.syntax("invalid ? selector: " + repr(raw))
+		}
+		key := p.logicalName(rest[:colon])
+		if key == "" {
+			return p.syntax("empty ? predicate key")
+		}
+		if err := assertName(key, p.lineNo, p.symbolKeys); err != nil {
+			return err
+		}
+		want, err := parseValue(rest[colon+1:], p.lineNo)
+		if err != nil {
+			return err
+		}
+		for i, el := range arr {
+			m, ok := el.(map[string]any)
+			if !ok {
+				continue
+			}
+			got, exists := m[key]
+			if exists && valuesMatch(got, want) {
+				indices = append(indices, i)
+				if !all {
+					break
+				}
+			}
+		}
+		if len(indices) == 0 {
+			return p.syntax("? matched no array elements: " + raw)
+		}
+	}
+	broadcast := all || len(indices) > 1
+	if broadcast {
+		p.broadcastStacks = make([][]frame, len(indices))
+		for n, i := range indices {
+			st := append([]frame(nil), p.stack...)
+			fr, err := p.arrayElementFrame(arrPtr, i)
+			if err != nil {
+				return err
+			}
+			st = append(st, fr)
+			p.broadcastStacks[n] = st
+		}
+		p.stack = append([]frame(nil), p.broadcastStacks[0]...)
+	} else {
+		fr, err := p.arrayElementFrame(arrPtr, indices[0])
+		if err != nil {
+			return err
+		}
+		p.stack = append(p.stack, fr)
+	}
+	p.phase = phaseActive
+	return nil
+}
+
+func (p *parser) arrayElementFrame(arrPtr *[]any, index int) (frame, error) {
+	el := (*arrPtr)[index]
+	switch v := el.(type) {
+	case map[string]any:
+		f := objFrame(v, "")
+		f.viaIndex = index
+		return f, nil
+	case *[]any:
+		f := arrFrame(v, "")
+		f.viaIndex = index
+		return f, nil
+	case []any:
+		cp := v
+		ptr := &cp
+		(*arrPtr)[index] = ptr
+		f := arrFrame(ptr, "")
+		f.viaIndex = index
+		return f, nil
+	default:
+		return scalarFrame(el, index), nil
+	}
+}
+
+func (p *parser) deleteCurrentArrayElement() error {
+	stacks := p.broadcastStacks
+	if stacks == nil {
+		stacks = [][]frame{p.stack}
+	}
+	var parentPtr *[]any
+	var indices []int
+	for _, st := range stacks {
+		if len(st) < 2 {
+			return p.syntax("bare & deletes the current array element (Cursor is not an array element)")
+		}
+		el := st[len(st)-1]
+		par := st[len(st)-2]
+		if par.kind != kindArray {
+			return p.syntax("bare & deletes the current array element (Cursor is not an array element)")
+		}
+		pp := par.arr
+		if pp == nil {
+			if ptr, ok := par.value.(*[]any); ok {
+				pp = ptr
+			} else {
+				return p.syntax("bare & deletes the current array element (Cursor is not an array element)")
+			}
+		}
+		if parentPtr == nil {
+			parentPtr = pp
+		} else if parentPtr != pp {
+			return p.syntax("bare & broadcast requires every Cursor to be an element of the same array")
+		}
+		idx, err := arrayElementIndex(*pp, el)
+		if err != nil {
+			return p.syntax(err.Error())
+		}
+		indices = append(indices, idx)
+	}
+	seen := map[int]struct{}{}
+	uniq := make([]int, 0, len(indices))
+	for _, i := range indices {
+		if _, ok := seen[i]; ok {
+			continue
+		}
+		seen[i] = struct{}{}
+		uniq = append(uniq, i)
+	}
+	for i := 0; i < len(uniq); i++ {
+		for j := i + 1; j < len(uniq); j++ {
+			if uniq[j] > uniq[i] {
+				uniq[i], uniq[j] = uniq[j], uniq[i]
+			}
+		}
+	}
+	a := *parentPtr
+	for _, i := range uniq {
+		a = append(a[:i], a[i+1:]...)
+	}
+	*parentPtr = a
+	landed := append([]frame(nil), stacks[0][:len(stacks[0])-1]...)
+	p.broadcastStacks = nil
+	p.stack = landed
+	return nil
+}
+
 func (p *parser) deleteAtPath(path string) error {
 	segments, err := splitPathSegments(path, p.lineNo, "&", p.symbolKeys)
 	if err != nil {
@@ -1151,6 +1337,76 @@ func sameRef(a, b any) bool {
 	return va.Pointer() == vb.Pointer()
 }
 
+func isIndexSelector(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	if len(s) > 1 && s[0] == '0' {
+		return false
+	}
+	return true
+}
+
+func valuesMatch(a, b any) bool {
+	if ab, ok := a.(bool); ok {
+		bb, ok2 := b.(bool)
+		return ok2 && ab == bb
+	}
+	if _, ok := b.(bool); ok {
+		return false
+	}
+	af, aok := asFloat(a)
+	bf, bok := asFloat(b)
+	if aok && bok {
+		return af == bf
+	}
+	return a == b
+}
+
+func asFloat(v any) (float64, bool) {
+	switch n := v.(type) {
+	case int:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case float64:
+		return n, true
+	default:
+		return 0, false
+	}
+}
+
+func arrayElementIndex(arr []any, el frame) (int, error) {
+	vi := el.viaIndex
+	if vi >= 0 && vi < len(arr) && sameRef(arr[vi], el.value) {
+		return vi, nil
+	}
+	if vi >= 0 && vi < len(arr) && arr[vi] == el.value {
+		return vi, nil
+	}
+	if el.kind != kindScalar {
+		for i, x := range arr {
+			if sameRef(x, el.value) || x == el.value {
+				return i, nil
+			}
+		}
+	} else if vi >= 0 && vi < len(arr) {
+		return vi, nil
+	}
+	return -1, errBareAmpMissing
+}
+
+var errBareAmpMissing = errString("bare & deletes the current array element (element is no longer in the parent array)")
+
+type errString string
+
+func (e errString) Error() string { return string(e) }
+
 func (p *parser) cursorRestoreLines() ([]string, error) {
 	if p.broadcastStacks != nil {
 		return nil, p.syntax("cursor restore is not available while broadcast mode is active")
@@ -1301,37 +1557,90 @@ func stripAllSpace(s string) string {
 	}, s)
 }
 
-func parseValue(rawValue string) any {
-	if len(rawValue) > 0 && rawValue[0] == ' ' {
+func unescapeContent(payload string, line int) (string, error) {
+	if strings.IndexByte(payload, '\\') < 0 {
+		return payload, nil
+	}
+	var b strings.Builder
+	b.Grow(len(payload))
+	for i := 0; i < len(payload); i++ {
+		c := payload[i]
+		if c != '\\' {
+			b.WriteByte(c)
+			continue
+		}
+		if i+1 >= len(payload) {
+			return "", &SyntaxError{
+				Message: "incomplete Content escape (trailing backslash)",
+				Line:    line,
+			}
+		}
+		n := payload[i+1]
+		switch n {
+		case 'n':
+			b.WriteByte('\n')
+			i++
+		case 'r':
+			b.WriteByte('\r')
+			i++
+		case '\\':
+			b.WriteByte('\\')
+			i++
+		default:
+			return "", &SyntaxError{
+				Message: "unknown Content escape \\" + string(n),
+				Line:    line,
+			}
+		}
+	}
+	return b.String(), nil
+}
+
+func parseValue(rawValue string, line int) (any, error) {
+	if len(rawValue) == 0 {
+		return rawValue, nil
+	}
+	forced := false
+	payload := rawValue
+	if rawValue[0] == ' ' {
 		i := 1
 		for i < len(rawValue) && rawValue[i] == ' ' {
 			i++
 		}
-		return rawValue[i:]
+		payload = rawValue[i:]
+		forced = true
 	}
-	switch rawValue {
+	unescaped, err := unescapeContent(payload, line)
+	if err != nil {
+		return nil, err
+	}
+	payload = unescaped
+	if forced {
+		return payload, nil
+	}
+	switch payload {
 	case "true":
-		return true
+		return true, nil
 	case "false":
-		return false
+		return false, nil
 	case "null":
-		return nil
+		return nil, nil
 	}
-	if len(rawValue) == 0 {
-		return rawValue
+	if len(payload) == 0 {
+		return payload, nil
 	}
-	c := rawValue[0]
+	c := payload[0]
 	// Fast reject: non-numeric strings skip int/float scanners.
 	if c == '-' || c == '+' || c == '.' || (c >= '0' && c <= '9') {
-		if n, ok := parseIntToken(rawValue); ok {
-			return n
+		if n, ok := parseIntToken(payload); ok {
+			return n, nil
 		}
-		if isFloatToken(rawValue) {
-			f, _ := strconv.ParseFloat(rawValue, 64)
-			return f
+		if isFloatToken(payload) {
+			f, _ := strconv.ParseFloat(payload, 64)
+			return f, nil
 		}
 	}
-	return rawValue
+	return payload, nil
 }
 
 func parseIntToken(s string) (int64, bool) {
@@ -1688,7 +1997,13 @@ func (p *parser) arrayPtrForFrame(frameIdx int) (*[]any, error) {
 			if err != nil {
 				return nil, err
 			}
-			(*parentPtr)[len(*parentPtr)-1] = ptr
+			idx := fr.viaIndex
+			if idx < 0 || idx >= len(*parentPtr) {
+				idx = len(*parentPtr) - 1
+			}
+			if idx >= 0 {
+				(*parentPtr)[idx] = ptr
+			}
 			return ptr, nil
 		}
 	}

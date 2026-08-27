@@ -20,7 +20,7 @@ from .merge import (
 from .parse import parse_sync
 from .types import TypeChecker, TypeRegistry, encode_type_schema_frame
 
-PROTOCOL_VERSION = "0.6.0"
+PROTOCOL_VERSION = "0.7.0"
 SDK_VERSION = "0.15.1"
 
 

@@ -32,7 +32,7 @@ class SymbolKeysTest {
 
   @Test
   void helpersKeyNeedsAndWireLabels() {
-    assertTrue(LabelEscape.keyNeedsSymbolEscape("#k"));
+    assertTrue(LabelEscape.keyNeedsSymbolEscape("?k"));
     assertTrue(LabelEscape.keyNeedsSymbolEscape("@k"));
     assertTrue(LabelEscape.keyNeedsSymbolEscape(">t"));
     assertTrue(LabelEscape.keyNeedsSymbolEscape(ESC + "x"));
@@ -49,7 +49,7 @@ class SymbolKeysTest {
 
   @Test
   void defaultEncodeRejectsAllOperatorHeads() {
-    for (String key : List.of("#k", "@k", ">test", "<x", "=y", "!z", "&a", ESC + "h")) {
+    for (String key : List.of("#k", "@k", ">test", "<x", "=y", "!z", "&a", "?k", ESC + "h")) {
       XaiopEncodeError err =
           assertThrows(
               XaiopEncodeError.class,
@@ -69,6 +69,7 @@ class SymbolKeysTest {
     assertEquals(map("=eq", null), roundTrip(map("=eq", null)));
     assertEquals(map("!bang", 0), roundTrip(map("!bang", 0)));
     assertEquals(map("&amp", "x"), roundTrip(map("&amp", "x")));
+    assertEquals(map("?q", 4), roundTrip(map("?q", 4)));
     assertEquals(map(ESC + "hello", 3), roundTrip(map(ESC + "hello", 3)));
   }
 

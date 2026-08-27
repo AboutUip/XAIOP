@@ -115,7 +115,7 @@ final class CheckpointDiffBuild {
     return ">\n" + raw;
   }
 
-  /** Whether the phase contains {@code =}/{@code !}/{@code &}/{@code @} (needs the prior tree). */
+  /** Whether the phase contains {@code =}/{@code !}/{@code &}/{@code @}/{@code ?} (needs the prior tree). */
   static boolean phaseNeedsPriorTree(String raw) {
     int i = 0;
     int n = raw.length();
@@ -125,7 +125,7 @@ final class CheckpointDiffBuild {
         i++;
         continue;
       }
-      if (c == '=' || c == '!' || c == '&' || c == '@') return true;
+      if (c == '=' || c == '!' || c == '&' || c == '@' || c == '?') return true;
       while (i < n) {
         char ch = raw.charAt(i);
         if (ch == '\n') {

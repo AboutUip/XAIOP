@@ -31,7 +31,8 @@ public final class LabelEscape {
         || c == '<'
         || c == '='
         || c == '!'
-        || c == '&';
+        || c == '&'
+        || c == '?';
   }
 
   /** @return label text for the wire (no leading Cursor op) */

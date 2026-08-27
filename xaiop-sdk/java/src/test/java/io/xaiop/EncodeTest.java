@@ -135,7 +135,8 @@ class EncodeTest {
 
     assertThrows(XaiopEncodeError.class, () -> Encode.encode(map("a>b", 1)));
     assertThrows(XaiopEncodeError.class, () -> Encode.encode(map("a:b", 1)));
-    assertThrows(XaiopEncodeError.class, () -> Encode.encode(map("a", "line\nbreak")));
+    assertEquals(
+        map("a", "line\nbreak"), Parse.parse(Encode.encode(map("a", "line\nbreak"))));
     assertThrows(XaiopEncodeError.class, () -> Encode.encode(null));
   }
 

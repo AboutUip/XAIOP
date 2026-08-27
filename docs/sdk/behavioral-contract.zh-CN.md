@@ -6,12 +6,12 @@
 | --- | --- |
 | 文档 ID | `SDK-BEHAVE` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-08 |
+| 最近更新 | 2026-08-27 |
 | 规范性 | **否** — SDK 产品目录（非协议符合性） |
 | 参考实现（重心） | Node.js `xaiop` **0.15.1**（`xaiop-sdk/nodejs/`） |
-| Java 官方移植 | `io.xaiop:xaiop` **0.15.1** — 已对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)） |
+| Java 官方移植 | `io.github.aboutuip:xaiop` **0.15.1**（Maven Central；包名 `io.xaiop.*`）— 已对齐（[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md) · [安装](java/README.zh-CN.md#安装)） |
 | Python 官方移植 | `xaiop` **0.15.1** — 已对齐（[python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)） |
-| Go 官方移植 | `…/xaiop-sdk/go` **0.15.1** — 已对齐（[go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)） |
+| Go 官方移植 | `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.15.1**（[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.15.1)）— 已对齐（[go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md) · [安装](go/README.zh-CN.md#安装)） |
 | 协议线文 | Frozen **v0.6.0** |
 
 **隔离：** 协议 = **游标 IR** 线格式 · 实践 = 写者与传输 · 本文 = **第三方要对齐官方水平时必须匹配的行为** — [../SEPARATION.zh-CN.md](../SEPARATION.zh-CN.md)。  
@@ -72,7 +72,7 @@
 | 以 `>` / `-` 开头 | 完整对象 / 数组文档 |
 | 以 `>name` / Root Content 开头（无匿名根） | **Fragment** 类型（不是包一层 `{ "a": … }`） |
 | 空源 | `{}` |
-| 文档中间空行 | 语法错误 |
+| 空行 | 语法错误（含 `feedLine("")`）。encode 线文以 `\n` 结尾；`parseSync` / `feedText` 丢掉末尾空段。不要把 encode 结果 `split("\n")` 再 `feedLine` |
 | 行首 BOM（`U+FEFF`） | 剥离 |
 
 **面向 JSON 的流式表面** 将 fragment 物化为普通对象（`entries` 的克隆）。一次性 engine/static parse **可以**保留 fragment 类型。只暴露 JSON 的移植 **必须**说明走哪条路径。
@@ -105,13 +105,15 @@ Content 类型遵循 `PROT-CONTENT`（`:` 后空格强制字符串；int → flo
 附加锁定规则：
 
 1. `parse(encode(value))` 深度等于 `value`（`-0` → `0`）。
-2. 相同 `(value, options)` → 相同线文本；线以恰好一个尾 `\n` 结束。
+2. 相同 `(value, options)` → 相同线文本；线以恰好一个尾 `\n` 结束（终止符，不是一行 Content）。
 3. 命名数组 **可以**跨 `.` 相位（`>name-` 再进入即追加）。Encode 默认仍把每个命名数组放在一相（Diff 清晰度）。
 4. **数组文档根** 以 `-` 开头，**不**插入对象式顶层 `.` 相位（数组根上忽略用于分相的 `dotPolicy`）。
 5. 紧挨 `.` 或 EOF 前的尾 `<` 可省略（与 reset / 结束冗余）。
 6. 拒绝键：空 / 空白 / `:`、尾 `-`、字符 `>` `<` `=` `!`。
-7. 拒绝含 CR/LF、或以 **U+0020 SPACE 开头**的字符串值（强制 string 标记不算载荷——拒绝而非静默剥离）。
+7. 拒绝以 **U+0020 SPACE 开头**的字符串值（强制 string 标记不算载荷——拒绝而非静默剥离）。值里的语义 CR/LF 编码为 `\n` / `\r`（协议 **0.7.0**）。
 8. 稀疏数组 `undefined` 洞 → 错误；对象 `null` 在 `omit` 下丢键；**数组 null 仍编码**（除非 `nullPolicy: "error"`）。
+
+Encode 是 **Label 安全的 JSON 子集**，不是完整 RFC 8259 键空间。`symbolKeys`（协议 **0.7.0** 草案方言；SDK 可先行）只逃逸**行类首字符** — `a:b` 仍拒。约束在 **JSON → encode**；反方向 parse 就是普通 JSON。JS 独有值是另一套策略，不是这条缺口。
 
 完整指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) · [nodejs/notes/encode-attention.zh-CN.md](nodejs/notes/encode-attention.zh-CN.md)。
 
@@ -127,6 +129,8 @@ Content 类型遵循 `PROT-CONTENT`（`:` 后空格强制字符串；int → flo
 | 返回 | `mergeToJson` → JSON；`mergeToXaiop` → 线文（默认 encode `dotPolicy: "none"`） |
 | Engine 注入 | `injectXaiop` / `injectJson` 按 `dataId` 写回 store；`as: "json"\|"xaiop"` 选返回形态 |
 | 片段 | 已存 `XaiopFragment` 先物化再合并 |
+| Overlay 树 | overlay **单独** parse（空树）。存量 JSON **不是** `@` 的光标树 |
+| 光标补丁 | `@path` + `:value` 追加 → `LiveXaiopParser` / `parse(encode(base)+patch)`；**不是** inject。同一补丁交给 inject 会报 `:value scalar Content is only valid at array level`。overlay `>name-` + `:n` **整段替换**该数组 |
 | vs 流式 Diff | **不要**用 `mergeJson` 应用 `onChunk` Diff — Diff 是子树替换 / commit 面；merge 是离线深合并 |
 
 指南：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md)。
@@ -181,9 +185,9 @@ finish 时:
 
 API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-parse.zh-CN.md](nodejs/notes/streaming-parse.zh-CN.md)。
 
-**Java（`io.xaiop:xaiop` 0.15.1）：** 与 Node **0.15.1** 对齐的官方移植（协议 **0.6.0**）。`XaiopStream` 接通消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)。
+**Java（`io.github.aboutuip:xaiop` 0.15.1）：** 与 Node **0.15.1** 对齐的官方移植（协议 **0.7.0** Draft）。`XaiopStream` 接通消费端选项（cover · history · typeCheck · 行拦截 · Annotation Span · 控制根 session/autoAck · `chunks()`），覆盖 **HTTP / SSE / RAW / WebSocket**，另含 `XaiopWs` listen/connect、相位编码与 `symbolKeys`。对等：[java/ALIGNMENT.zh-CN.md](java/ALIGNMENT.zh-CN.md)。
 
-**Python（`xaiop` 0.15.1）：** 同一 Node **0.15.1** 产品面的官方移植（协议 **0.6.0**；无 browser）。Stream / WS / control / typeCheck / intercept / Annotation Span / history 见 [python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)。
+**Python（`xaiop` 0.15.1）：** 同一 Node **0.15.1** 产品面的官方移植（协议 **0.7.0** Draft；无 browser）。Stream / WS / control / typeCheck / intercept / Annotation Span / history 见 [python/ALIGNMENT.zh-CN.md](python/ALIGNMENT.zh-CN.md)。
 
 ---
 
@@ -217,11 +221,11 @@ API：[nodejs/API.zh-CN.md](nodejs/API.zh-CN.md) §6 · [nodejs/notes/streaming-
 - [ ] 最终 Snapshot ≡ 同兼容策略下全缓冲一次性 parse  
 - [ ] 若提供骨架会话：WS 相位 `.\n` / `final` / 关闭码  
 
-**Java 官方移植（`io.xaiop:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。Parse↔JSON 门槛：[java/ALIGNMENT.zh-CN.md §5](java/ALIGNMENT.zh-CN.md)。
+**Java 官方移植（`io.github.aboutuip:xaiop` 0.15.1）：** 已满足本清单 — 见 [java/ALIGNMENT.zh-CN.md §8](java/ALIGNMENT.zh-CN.md#8-行为契约8-检查清单java-官方移植)。阶段计时：[`../../xaiop-sdk/timing/java/`](../../xaiop-sdk/timing/java/)（`StageTimingMain` / `npm run bench:java`）。Parse↔JSON 门槛：[java/ALIGNMENT.zh-CN.md §5](java/ALIGNMENT.zh-CN.md)。
 
-**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest（~**487**）+ `golden-python`（**50** NDJSON）+ `core-wire`（**46**）+ Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
+**Python 官方端口（`xaiop` 0.15.1）：** 已满足本清单 — 见 [python/ALIGNMENT.zh-CN.md §8](python/ALIGNMENT.zh-CN.md)。验证：pytest + `golden-python`（**60** NDJSON）+ `core-wire`（**152**）+ Python fuzz。计时：[`../../xaiop-sdk/timing/python/`](../../xaiop-sdk/timing/python/)（`bench.py`）。
 
-**Go 官方端口（`…/xaiop-sdk/go` 0.15.1）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**50** NDJSON）+ `core-wire`（**46**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
+**Go 官方端口（`github.com/AboutUip/XAIOP/xaiop-sdk/go` 0.15.1）：** 已满足本清单 — 见 [go/ALIGNMENT.zh-CN.md](go/ALIGNMENT.zh-CN.md)。验证：`go test ./...` + `golden-go`（**60** NDJSON）+ `core-wire`（**152**）+ Go fuzz。交叉验证细节：[go/ALIGNMENT.zh-CN.md §5](go/ALIGNMENT.zh-CN.md#5-验证与交叉验证)。阶段计时：[`../../xaiop-sdk/timing/go/`](../../xaiop-sdk/timing/go/)（`npm run bench:go`）。
 
 **Node 参考实现（[`@bylan280/xaiop`](https://www.npmjs.com/package/@bylan280/xaiop) 0.15.1）：** 单测 **688**；阶段计时 + Parse↔JSON：[nodejs/notes/performance.zh-CN.md](nodejs/notes/performance.zh-CN.md) · 枢纽 [../performance.zh-CN.md](../performance.zh-CN.md)。极限性能 tip（2026-08-09，不升版本）：[../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md](../meta/release-notes-2026-08-09-sdk-extreme-perf-internal.zh-CN.md)。npm 上架：[../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md](../meta/release-notes-2026-08-09-nodejs-npm.zh-CN.md)。
 
