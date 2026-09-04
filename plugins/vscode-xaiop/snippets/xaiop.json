@@ -1,0 +1,32 @@
+{
+  "Anonymous root object": {
+    "prefix": ["root", "objroot"],
+    "body": [">", "$0"],
+    "description": "Anonymous root object"
+  },
+  "Anonymous root array": {
+    "prefix": ["arrroot"],
+    "body": ["-", "$0"],
+    "description": "Anonymous root array"
+  },
+  "Named object": {
+    "prefix": ["obj", "named"],
+    "body": [">${1:name}", "$0", "<"],
+    "description": "Named object + pop"
+  },
+  "Named array of scalars": {
+    "prefix": ["arr", "tags"],
+    "body": [">${1:name}-", ":${2:item}", "$0"],
+    "description": "Named array with scalar elements"
+  },
+  "Fillable array object element": {
+    "prefix": ["elem", "item"],
+    "body": [">", "$0", "<"],
+    "description": "Enter a fillable array object element"
+  },
+  "Phase reset": {
+    "prefix": ["phase", "dot"],
+    "body": [".", "$0"],
+    "description": "Reset Cursor / bound a phase"
+  }
+}

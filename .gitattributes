@@ -1,0 +1,2 @@
+# XAIOP wire is line-oriented; keep LF on the wire fixtures.
+*.xaiop text eol=lf

@@ -1,0 +1,307 @@
+{
+  "name": "xaiop",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.6.1",
+  "publisher": "aboutuip",
+  "license": "MIT",
+  "author": "小萱baibai",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Programming Languages", "Linters", "Snippets"],
+  "keywords": [
+    "xaiop",
+    "syntax",
+    "highlighting",
+    "hover",
+    "linter",
+    "json",
+    "cursor",
+    "folding",
+    "outline",
+    "encode",
+    "inspect"
+  ],
+  "homepage": "https://github.com/AboutUip/XAIOP/tree/main/plugins/vscode-xaiop",
+  "bugs": {
+    "url": "https://github.com/AboutUip/XAIOP/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AboutUip/XAIOP.git",
+    "directory": "plugins/vscode-xaiop"
+  },
+  "qna": "https://github.com/AboutUip/XAIOP/issues",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": true
+    }
+  },
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:xaiop"],
+  "scripts": {
+    "test": "node test/grammar.test.mjs && node test/hover.test.mjs && node test/lint.test.mjs && node test/structure.test.mjs && node test/complete.test.mjs && node test/explain.test.mjs && node test/preview.test.mjs && node test/encode.test.mjs && node test/nav.test.mjs && node test/inlay.test.mjs && node test/inspect.test.mjs",
+    "bundle": "node scripts/bundle.cjs"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "xaiop",
+        "aliases": ["XAIOP", "xaiop"],
+        "extensions": [".xaiop"],
+        "mimetypes": ["text/x-xaiop"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/xaiop.svg",
+          "dark": "./icons/xaiop.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "xaiop",
+        "scopeName": "source.xaiop",
+        "path": "./syntaxes/xaiop.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.xaiop.codeblock",
+        "path": "./syntaxes/xaiop.markdown.injection.json",
+        "injectTo": ["text.html.markdown"],
+        "embeddedLanguages": {
+          "meta.embedded.block.xaiop": "xaiop"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "xaiop",
+        "path": "./snippets/xaiop.json"
+      }
+    ],
+    "configuration": {
+      "title": "XAIOP",
+      "properties": {
+        "xaiop.lint.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.lint.enabled%"
+        },
+        "xaiop.lint.compat": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.lint.compat%"
+        },
+        "xaiop.lint.fragmentSeverity": {
+          "type": "string",
+          "enum": ["error", "warning", "information", "hint", "off"],
+          "default": "warning",
+          "description": "%config.lint.fragmentSeverity%"
+        },
+        "xaiop.lint.debounceMs": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "description": "%config.lint.debounceMs%"
+        },
+        "xaiop.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.statusBar.enabled%"
+        },
+        "xaiop.preview.follow": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.preview.follow%"
+        },
+        "xaiop.encode.dotPolicy": {
+          "type": "string",
+          "enum": ["none", "perTopLevelKey", "perNKeys"],
+          "default": "none",
+          "description": "%config.encode.dotPolicy%"
+        },
+        "xaiop.encode.style": {
+          "type": "string",
+          "enum": ["relative", "reset"],
+          "default": "relative",
+          "description": "%config.encode.style%"
+        },
+        "xaiop.inlay.types": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.inlay.types%"
+        },
+        "xaiop.inspect.autoOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.inspect.autoOpen%"
+        },
+        "xaiop.inspect.followCursor": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.inspect.followCursor%"
+        },
+        "xaiop.inspect.hover": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.inspect.hover%"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "xaiop.showJson",
+        "title": "%cmd.showJson%"
+      },
+      {
+        "command": "xaiop.previewJson",
+        "title": "%cmd.previewJson%"
+      },
+      {
+        "command": "xaiop.copyJson",
+        "title": "%cmd.copyJson%"
+      },
+      {
+        "command": "xaiop.goToPair",
+        "title": "%cmd.goToPair%"
+      },
+      {
+        "command": "xaiop.goToLine",
+        "title": "%cmd.goToLine%"
+      },
+      {
+        "command": "xaiop.wrapRoot",
+        "title": "%cmd.wrapRoot%"
+      },
+      {
+        "command": "xaiop.newFile",
+        "title": "%cmd.newFile%"
+      },
+      {
+        "command": "xaiop.pasteJson",
+        "title": "%cmd.pasteJson%"
+      },
+      {
+        "command": "xaiop.encodeJson",
+        "title": "%cmd.encodeJson%"
+      },
+      {
+        "command": "xaiop.copyAsXaiop",
+        "title": "%cmd.copyAsXaiop%"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "xaiop.previewJson",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "xaiop.previewJson",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xaiop.showJson",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation@2"
+        },
+        {
+          "command": "xaiop.copyJson",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation@3"
+        },
+        {
+          "command": "xaiop.goToPair",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation@4"
+        },
+        {
+          "command": "xaiop.wrapRoot",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation@5"
+        },
+        {
+          "command": "xaiop.pasteJson",
+          "when": "resourceLangId == xaiop",
+          "group": "navigation@6"
+        },
+        {
+          "command": "xaiop.encodeJson",
+          "when": "resourceLangId == json || resourceLangId == jsonc",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xaiop.copyAsXaiop",
+          "when": "resourceLangId == json || resourceLangId == jsonc",
+          "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "xaiop.showJson",
+          "when": "editorLangId == xaiop"
+        },
+        {
+          "command": "xaiop.previewJson",
+          "when": "editorLangId == xaiop"
+        },
+        {
+          "command": "xaiop.copyJson",
+          "when": "editorLangId == xaiop"
+        },
+        {
+          "command": "xaiop.goToPair",
+          "when": "editorLangId == xaiop"
+        },
+        {
+          "command": "xaiop.wrapRoot",
+          "when": "editorLangId == xaiop"
+        },
+        {
+          "command": "xaiop.pasteJson"
+        },
+        {
+          "command": "xaiop.encodeJson",
+          "when": "editorLangId == json || editorLangId == jsonc"
+        },
+        {
+          "command": "xaiop.copyAsXaiop",
+          "when": "editorLangId == json || editorLangId == jsonc"
+        },
+        {
+          "command": "xaiop.newFile"
+        },
+        {
+          "command": "xaiop.goToLine",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "xaiop.goToPair",
+        "key": "ctrl+shift+\\",
+        "mac": "cmd+shift+\\",
+        "when": "editorTextFocus && editorLangId == xaiop && !editorReadonly"
+      }
+    ],
+    "configurationDefaults": {
+      "[xaiop]": {
+        "files.trimTrailingWhitespace": false,
+        "files.insertFinalNewline": true,
+        "files.eol": "\n",
+        "editor.autoIndent": "none",
+        "editor.detectIndentation": false,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2
+      }
+    }
+  }
+}

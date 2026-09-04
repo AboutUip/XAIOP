@@ -1,0 +1,51 @@
+# highlighter corpus — line forms for the TextMate grammar (protocol 0.7.0 Draft)
+# not a conformance fixture; some relocate / select lines assume prior tree state
+>
+>meta
+name:demo
+version:1
+enabled:true
+count: 2
+ratio:1.5
+exp:1e3
+empty:null
+note:line1\nline2
+path:C:\\tmp
+.
+>tags-
+:alpha
+:beta
+.
+>users-
+>
+id:1
+name:alice
+status:pending
+<
+>
+id:2
+name:bob
+status:pending
+<
+a:solo
+.
+@users
+?id:1
+status:shipped
+.
+@users
+?*status:pending
+role:ops
+.
+@tags
+?0
+.
+@meta
+=meta>name
+!users
+.
+&meta
+# --- invalid on the wire (highlighter marks these) ---
+data
+>>stacked
+ leading

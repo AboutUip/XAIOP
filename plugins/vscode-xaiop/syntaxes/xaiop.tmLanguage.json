@@ -1,0 +1,240 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "XAIOP",
+  "scopeName": "source.xaiop",
+  "fileTypes": ["xaiop"],
+  "uuid": "c3e7a1d0-4b2f-4e9a-8c1d-7a6f0b2e9d41",
+  "patterns": [
+    { "include": "#empty-line" },
+    { "include": "#leading-whitespace" },
+    { "include": "#stacked-enter" },
+    { "include": "#annotation-control" },
+    { "include": "#annotation" },
+    { "include": "#phase" },
+    { "include": "#pop" },
+    { "include": "#pop-enter" },
+    { "include": "#locate" },
+    { "include": "#exact" },
+    { "include": "#broadcast" },
+    { "include": "#delete" },
+    { "include": "#select" },
+    { "include": "#object-anon" },
+    { "include": "#array-anon" },
+    { "include": "#array-named" },
+    { "include": "#object-named" },
+    { "include": "#content-forced-string" },
+    { "include": "#content-typed" },
+    { "include": "#bare-label" }
+  ],
+  "repository": {
+    "empty-line": {
+      "name": "invalid.illegal.empty-line.xaiop",
+      "match": "^$"
+    },
+    "leading-whitespace": {
+      "name": "invalid.illegal.leading-whitespace.xaiop",
+      "match": "^[ \\t].*$"
+    },
+    "stacked-enter": {
+      "name": "invalid.illegal.stacked-enter.xaiop",
+      "match": "^>>.*$"
+    },
+    "annotation-control": {
+      "name": "comment.line.annotation.control.xaiop",
+      "match": "^(#!)(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.annotation.xaiop" },
+        "2": { "name": "meta.annotation.control.body.xaiop" }
+      }
+    },
+    "annotation": {
+      "name": "comment.line.annotation.xaiop",
+      "match": "^(#)(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.annotation.xaiop" },
+        "2": { "name": "meta.annotation.body.xaiop" }
+      }
+    },
+    "phase": {
+      "name": "keyword.control.phase.xaiop",
+      "match": "^\\.$"
+    },
+    "pop": {
+      "name": "keyword.control.structure.xaiop",
+      "match": "^<$"
+    },
+    "pop-enter": {
+      "name": "meta.structure.pop-enter.xaiop",
+      "begin": "^(<)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.structure.xaiop" }
+      },
+      "patterns": [{ "include": "#path-body" }]
+    },
+    "locate": {
+      "name": "meta.structure.locate.xaiop",
+      "begin": "^(=)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.locate.xaiop" }
+      },
+      "patterns": [{ "include": "#path-body" }]
+    },
+    "exact": {
+      "name": "meta.structure.exact.xaiop",
+      "begin": "^(@)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.exact.xaiop" }
+      },
+      "patterns": [{ "include": "#path-body" }]
+    },
+    "broadcast": {
+      "name": "meta.structure.broadcast.xaiop",
+      "begin": "^(!)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.broadcast.xaiop" }
+      },
+      "patterns": [{ "include": "#path-body" }]
+    },
+    "delete": {
+      "name": "meta.structure.delete.xaiop",
+      "begin": "^(&)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.delete.xaiop" }
+      },
+      "patterns": [{ "include": "#path-body" }]
+    },
+    "select": {
+      "name": "meta.structure.select.xaiop",
+      "begin": "^(\\?)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.select.xaiop" }
+      },
+      "patterns": [
+        {
+          "name": "keyword.operator.wildcard.xaiop",
+          "match": "\\G\\*"
+        },
+        {
+          "name": "constant.numeric.integer.xaiop",
+          "match": "\\G(?:0|[1-9]\\d*)$"
+        },
+        {
+          "match": "\\G([^:]+)(:)(.*)$",
+          "captures": {
+            "1": { "name": "variable.other.property.xaiop" },
+            "2": { "name": "punctuation.separator.key-value.xaiop" },
+            "3": { "patterns": [{ "include": "#value-payload" }] }
+          }
+        }
+      ]
+    },
+    "object-anon": {
+      "name": "keyword.control.structure.xaiop",
+      "match": "^>$"
+    },
+    "array-anon": {
+      "name": "keyword.control.structure.xaiop",
+      "match": "^-$"
+    },
+    "array-named": {
+      "name": "meta.structure.array-named.xaiop",
+      "match": "^(>)(.+)(-)$",
+      "captures": {
+        "1": { "name": "keyword.control.structure.xaiop" },
+        "2": {
+          "name": "entity.name.section.xaiop",
+          "patterns": [{ "include": "#path-body" }]
+        },
+        "3": { "name": "punctuation.definition.array.xaiop" }
+      }
+    },
+    "object-named": {
+      "name": "meta.structure.object-named.xaiop",
+      "begin": "^(>)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.structure.xaiop" }
+      },
+      "patterns": [{ "include": "#path-body" }]
+    },
+    "content-forced-string": {
+      "name": "meta.content.forced-string.xaiop",
+      "begin": "^([^:]*)(:)( +)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "variable.other.property.xaiop" },
+        "2": { "name": "punctuation.separator.key-value.xaiop" },
+        "3": { "name": "punctuation.whitespace.forced-string.xaiop" }
+      },
+      "patterns": [{ "include": "#string-rest" }]
+    },
+    "content-typed": {
+      "name": "meta.content.xaiop",
+      "begin": "^([^:]*)(:)",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "variable.other.property.xaiop" },
+        "2": { "name": "punctuation.separator.key-value.xaiop" }
+      },
+      "patterns": [{ "include": "#value-payload" }]
+    },
+    "bare-label": {
+      "name": "invalid.illegal.bare-label.xaiop",
+      "match": "^.+$"
+    },
+    "path-body": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.path.xaiop",
+          "match": ">"
+        },
+        {
+          "name": "entity.name.section.xaiop",
+          "match": "[^>]+"
+        }
+      ]
+    },
+    "value-payload": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.xaiop",
+          "match": "\\G(?:true|false)$"
+        },
+        {
+          "name": "constant.language.null.xaiop",
+          "match": "\\Gnull$"
+        },
+        {
+          "name": "constant.numeric.integer.xaiop",
+          "match": "\\G[+-]?\\d+$"
+        },
+        {
+          "name": "constant.numeric.float.xaiop",
+          "match": "\\G[+-]?(?:\\d+\\.\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?$|\\G[+-]?\\d+[eE][+-]?\\d+$"
+        },
+        { "include": "#string-rest" }
+      ]
+    },
+    "string-rest": {
+      "name": "string.unquoted.xaiop",
+      "begin": "\\G",
+      "end": "$",
+      "patterns": [
+        {
+          "name": "constant.character.escape.xaiop",
+          "match": "\\\\[nr\\\\]"
+        },
+        {
+          "name": "invalid.illegal.escape.xaiop",
+          "match": "\\\\(?:$|[^nr\\\\])"
+        }
+      ]
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-Hub for three **coupled but isolated** trees — see **[SEPARATION.md](SEPARATION.md)**.  
+Hub for **coupled but isolated** layers — see **[SEPARATION.md](SEPARATION.md)** (protocol · practice · SDK · plugins).  
 **What XAIOP is:** [overview/introduction.md](overview/introduction.md).  
 **Frozen / sealed** = immutable protocol package versions — [meta/releases.md](meta/releases.md) · [meta/status-and-versioning.md](meta/status-and-versioning.md) (`META-VER`).  
 **Latest tip:** Official product SDKs **Node · Java · Python · Go** `0.16.0` ↔ protocol **0.7.0** Draft (**this tree**; registries still **0.15.1** until publish). Go parity: [sdk/go/ALIGNMENT.md](sdk/go/ALIGNMENT.md) (product golden **60** · core-wire **152**).  
@@ -15,8 +15,9 @@ Hub for three **coupled but isolated** trees — see **[SEPARATION.md](SEPARATIO
 **Browse live:** `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) ([Docsify](https://docsify.js.org) over this tree, same origin as the lab). Sidebar: `python docs/archive/gen-sidebar.py`.
 
 ```text
-protocol  →  practice  →  sdk  →  meta
+protocol  →  practice  →  sdk  →  plugins (optional hosts)
                 ↘ archive (target seals; not the live path)
+                     meta
 ```
 
 | Layer | Path | Role |
@@ -24,6 +25,7 @@ protocol  →  practice  →  sdk  →  meta
 | **Protocol** | [protocol/](protocol/) | Sealed streaming line wire (Cursor IR) |
 | **Practice** | [practice/](practice/) | Live usage scenarios (transport, sessions) |
 | **SDK** | [sdk/](sdk/) | Language APIs |
+| **Plugins** | [../plugins/](../plugins/) | Optional editor hosts (not the wire) |
 | **Meta** | [meta/](meta/) | Releases, seal rules, revisions |
 | **Archive** | [archive/](archive/) | Target-sealed snapshots (not live hubs) |
 

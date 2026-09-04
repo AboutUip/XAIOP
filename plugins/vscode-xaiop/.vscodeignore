@@ -1,0 +1,7 @@
+.vscode/**
+test/**
+examples/**
+scripts/**
+.gitignore
+.vscodeignore
+

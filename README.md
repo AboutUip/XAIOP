@@ -100,6 +100,7 @@ Materializes as:
   - **Java** `io.github.aboutuip:xaiop` **0.16.0** ([Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)) — [API](docs/sdk/java/) · [install](docs/sdk/java/README.md#install) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.md) · [code](xaiop-sdk/java/)
   - **Python** `xaiop` **0.16.0** — [API](docs/sdk/python/API.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.md) · [code](xaiop-sdk/python/) · [demo](demos/python/)
   - **Go** `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.16.0** ([pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.16.0)) — [API](docs/sdk/go/API.md) · [install](docs/sdk/go/README.md#install) · [ALIGNMENT](docs/sdk/go/ALIGNMENT.md) · [code](xaiop-sdk/go/) · [demo](demos/go/)
+- **Plugins** — [plugins/](plugins/) — editor hosts (not the wire). First plugin: [VS Code / Cursor](plugins/vscode-xaiop/) — `.xaiop` identification · highlighting · hover · linter · live JSON inspect · encode
 - **Preview docs** — same origin as lab: `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/) (Docsify over `docs/`; shared dark theme)
 - **Lab UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / live stream / API markdown render
 - **Sealed archives** — [docs/archive/](docs/archive/) (LLM emit / metrics recipes deliberately out of live hubs)

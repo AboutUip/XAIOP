@@ -6,18 +6,19 @@
 | --- | --- |
 | Document ID | `META-SEP` |
 | Status | Informative |
-| Last updated | 2026-08-04 |
+| Last updated | 2026-09-04 |
 | Normative | **No** — documentation architecture |
 
 ---
 
-## 1. Three layers, one wire
+## 1. Four layers, one wire
 
 | Layer | Path | Owns | Does **not** own |
 | --- | --- | --- | --- |
-| **Protocol** | [protocol/](protocol/) | Sealed **streaming, line-oriented, cursor-construction wire**: Label / Block / operators / Content typing / streaming validity / later-wins | Skills, prompts, LLM eval narratives, HTTP/SSE/WS recipes, language APIs, silent-repair policies |
+| **Protocol** | [protocol/](protocol/) | Sealed **streaming, line-oriented, cursor-construction wire**: Label / Block / operators / Content typing / streaming validity / later-wins | Skills, prompts, LLM eval narratives, HTTP/SSE/WS recipes, language APIs, silent-repair policies, editor UX |
 | **Practice** | [practice/](practice/) | **Recommended scenarios** for using the wire (transport framing, sessions). LLM emit recipes moved to [archive/](archive/) | New wire operators; treating a language method name as normative |
 | **SDK** | [sdk/](sdk/) + `xaiop-sdk/` | Language parse / encode / stream **APIs**. **Focus: Node.js**; other languages are secondary ports. Optional: [sdk/behavioral-contract.md](sdk/behavioral-contract.md) (Node product-choice catalog, not a cross-language mandate) | Redefining Label / later-wins / Block; inventing wire operators |
+| **Plugins** | [`../plugins/`](../plugins/) | Optional **editor / host tooling** (language id, highlighting, hover, lint, live JSON inspect, encode-from-JSON). First host: [vscode-xaiop](../plugins/vscode-xaiop/) | Wire grammar; inventing operators; substituting for the product SDK API |
 
 ```text
 ┌─────────────────────────────────────────────┐
@@ -30,13 +31,18 @@
                        │ implemented by
 ┌──────────────────────▼──────────────────────┐
 │ SDK — materialize / encode / stream / WS    │
+└──────────────────────┬──────────────────────┘
+                       │ optionally hosted by
+┌──────────────────────▼──────────────────────┐
+│ Plugins — editor identification / UX        │
 └─────────────────────────────────────────────┘
 ```
 
-**Identity:** The protocol is a **data-organization wire**, not an “AI output product.” SDK surfaces and transport sessions are **application layer**; optional LLM emit guidance is **target-sealed** under [archive/practice-llm-emit-2026-08-04/](archive/practice-llm-emit-2026-08-04/) and does not define the wire.
+**Identity:** The protocol is a **data-organization wire**, not an “AI output product.” SDK surfaces and transport sessions are **application layer**; editor plugins are **optional hosts** that present the same wire — they do not redefine it. Optional LLM emit guidance is **target-sealed** under [archive/practice-llm-emit-2026-08-04/](archive/practice-llm-emit-2026-08-04/) and does not define the wire.
 
 What XAIOP is: [overview/introduction.md](overview/introduction.md).  
-Seal / release rules: [meta/status-and-versioning.md](meta/status-and-versioning.md) · [meta/releases.md](meta/releases.md).
+Seal / release rules: [meta/status-and-versioning.md](meta/status-and-versioning.md) · [meta/releases.md](meta/releases.md).  
+Plugins hub: [../plugins/README.md](../plugins/README.md).
 
 **Node SDK human docs:** Prefer a **single API reference** — [sdk/nodejs/API.md](sdk/nodejs/API.md). Files under [sdk/nodejs/notes/](sdk/nodejs/notes/) are **implementation deep-dives**, not the primary API surface.
 
@@ -50,20 +56,23 @@ Seal / release rules: [meta/status-and-versioning.md](meta/status-and-versioning
 | [practice/](practice/) | How to *use* the wire in apps (transport, sessions) |
 | [archive/](archive/) | Target seals (incl. historical LLM emit / metrics recipes) |
 | [sdk/notes/](sdk/notes/) · [sdk/nodejs/notes/](sdk/nodejs/notes/) | Implementation Diff boundaries, encode, careful adjustments — deep-dives, not the Node primary API |
+| [`../plugins/`](../plugins/) | Editor-host READMEs / changelogs only — presentation of the wire, not protocol notes |
 
 **Rules:**
 
-1. Protocol documents **MUST NOT** name SDK methods as wire requirements.  
+1. Protocol documents **MUST NOT** name SDK methods (or editor commands) as wire requirements.  
 2. Practice documents **MUST NOT** change sealed wire meaning.  
 3. SDK documents **MUST NOT** invent wire operators.  
-4. When practice or SDK conflicts with a **cited sealed protocol package version**, that protocol package wins.
+4. Plugins **MUST NOT** invent wire operators or change line classification vs the cited protocol / SDK `classifyLine`. Highlighting is best-effort presentation; lint / encode in a host may bundle a Node parse/encode core, but the product SDK remains the API surface.  
+5. When practice, SDK, or a plugin conflicts with a **cited sealed protocol package version**, that protocol package wins.  
+6. `#` lines are **custom annotation transmission** on the wire. Editor hosts may map them to comment scopes / comment-toggle for themes; that mapping is UX only.
 
 ---
 
 ## 3. Conflict
 
-Practice / SDK vs sealed protocol package → **protocol package for the cited version wins**.  
-Coarser Diff delivery policy belongs in SDK (practice may summarize). Compatibility / silent repair = **SDK ingestion**, not wire permission.
+Practice / SDK / plugins vs sealed protocol package → **protocol package for the cited version wins**.  
+Coarser Diff delivery policy belongs in SDK (practice may summarize). Compatibility / silent repair = **SDK ingestion**, not wire permission. Editor Quick Fixes and live JSON inspect are **host aids**, not wire rules.
 
 ---
 
@@ -80,3 +89,4 @@ Coarser Diff delivery policy belongs in SDK (practice may summarize). Compatibil
 | LLM emit / metrics (sealed) | [archive/practice-llm-emit-2026-08-04/](archive/practice-llm-emit-2026-08-04/) |
 | Node SDK (primary) | [sdk/nodejs/API.md](sdk/nodejs/API.md) |
 | Node product-choice catalog (optional) | [sdk/behavioral-contract.md](sdk/behavioral-contract.md) |
+| Editor plugins | [../plugins/README.md](../plugins/README.md) · [vscode-xaiop](../plugins/vscode-xaiop/) |

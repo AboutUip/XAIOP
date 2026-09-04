@@ -1,8 +1,8 @@
 # =============================================================================
 # XAIOP — repository .gitignore
 # Layout: docs/ (Docsify via views) · views/ (lab) ·
-#         xaiop-sdk/{nodejs,java,python,go,timing} · skills/ (source-only, tracked) ·
-#         demos/ · resources/ · conformance/
+#         xaiop-sdk/{nodejs,java,python,go,timing} · plugins/ (editor hosts) ·
+#         skills/ (source-only, tracked) · demos/ · resources/ · conformance/
 # Intentionally TRACKED (do not ignore): docs/vendor/, skills/, docs/themes/
 # Local-only scratch: dev/ (never published)
 # =============================================================================
@@ -11,7 +11,7 @@
 # Personal scratch / trash -- local only; never commit.
 dev/
 .cursor/
-.vscode/
+/.vscode/
 .idea/
 *.code-workspace
 *.swp
@@ -221,7 +221,9 @@ src/*.egg-info/
 # Module: github.com/AboutUip/XAIOP/xaiop-sdk/go
 bin/
 **/bin/
-vendor/
+# Go module vendor trees only — plugins/*/vendor/ (bundled parse/encode) stays tracked
+xaiop-sdk/**/vendor/
+/vendor/
 *.exe
 *.exe~
 *.dll
