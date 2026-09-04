@@ -6,7 +6,7 @@
 | --- | --- |
 | Document ID | `SDK-NOTE-PRIN` |
 | Status | Informative |
-| Last updated | 2026-08-27 |
+| Last updated | 2026-09-04 |
 | Normative | **No** |
 
 ---
@@ -18,7 +18,8 @@
 3. **API shape** (method names, Diff boundary, store IDs, transport helpers) lives in SDK docs/notes.  
 4. Compatibility / recovery modes are **SDK ingest** features — never implied by Well-Formed wire.  
 5. Encode helpers (JSON→XAIOP) are SDK tooling; LLM bench dual-channel methodology stays separate ([../../performance.md](../../performance.md)).  
-6. **Two path notations.** Wire `@` / `=` / `!` / `&` join segments with `>` (`@items>it_1`). Host helpers `parseJsonPath` / `formatJsonPath` (encode cuts, typeCheck, Annotation Span) use JSON-path (`items[0]`, `sections[2].heading`). Do not mix.
+6. **Two path notations.** Wire `@` / `=` / `!` / `&` join segments with `>` (`@items>it_1`). Host helpers `parseJsonPath` / `formatJsonPath` (encode cuts, typeCheck, Annotation Span) use JSON-path (`items[0]`, `sections[2].heading`). Do not mix.  
+7. **Editor plugins** ([`../../../plugins/`](../../../plugins/)) are optional hosts, **not** wire authority; conflict order: [../../SEPARATION.md](../../SEPARATION.md) §0.
 
 ---
 

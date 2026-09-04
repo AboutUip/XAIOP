@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-**耦合但隔离**各层的枢纽 — 见 **[SEPARATION.zh-CN.md](SEPARATION.zh-CN.md)**（协议 · 实践 · SDK · 插件）。  
+**耦合但隔离**的三棵规范树枢纽 — 见 **[SEPARATION.zh-CN.md](SEPARATION.zh-CN.md)**（协议 · 实践 · SDK）。可选编辑器宿主在 [`../plugins/`](../plugins/)，**无规范效力**。  
 **XAIOP 是什么：** [overview/introduction.zh-CN.md](overview/introduction.zh-CN.md)。  
 **Frozen / 已封存** = 不可变协议包版本 — [meta/releases.zh-CN.md](meta/releases.zh-CN.md) · [meta/status-and-versioning.zh-CN.md](meta/status-and-versioning.zh-CN.md)（`META-VER`）。  
 **现行 tip：** 官方产品 SDK **Node · Java · Python · Go** `0.16.0` ↔ 协议 **0.7.0** Draft（**本树**；登记处在上架前仍是 **0.15.1**）。Go 对等：[sdk/go/ALIGNMENT.zh-CN.md](sdk/go/ALIGNMENT.zh-CN.md)（产品黄金 **60** · core-wire **152**）。  
@@ -15,9 +15,10 @@
 **在线浏览：** `cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/)（[Docsify](https://docsify.js.org) 直接读本树，与 Lab 同端口）。侧栏：`python docs/archive/gen-sidebar.py`。
 
 ```text
-协议 (protocol)  →  practice  →  sdk  →  plugins（可选宿主）
+协议 (protocol)  →  practice  →  sdk  →  meta
                      ↘ archive（目标封存，非现行主路径）
-                          meta
+
+plugins/  （可选宿主；不在本权威链上 — 见 SEPARATION §0）
 ```
 
 | 层 | 路径 | 职责 |
@@ -25,9 +26,9 @@
 | **协议** | [protocol/](protocol/) | 已封存流式行线文（Cursor IR） |
 | **实践** | [practice/](practice/) | 现行使用场景（传输、会话） |
 | **SDK** | [sdk/](sdk/) | 各语言 API |
-| **插件** | [../plugins/](../plugins/) | 可选编辑器宿主（不是线定义） |
 | **元** | [meta/](meta/) | 发行、封存规则、修订 |
 | **封存** | [archive/](archive/) | 目标封存快照（非现行枢纽） |
+| **插件** *（非规范）* | [../plugins/](../plugins/) | 可选编辑器宿主 — **不是**线定义 |
 
 ---
 

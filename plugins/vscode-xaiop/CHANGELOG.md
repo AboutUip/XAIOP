@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2
+
+- Docs only: harden host isolation (META-SEP §0 authority cascade; plugins are non-normative). No wire change.
+
 ## 0.6.1
 
 - Live inspect type: UI chrome uses the workbench font; JSON uses the editor mono stack with CJK fallbacks (avoid SimSun next to Consolas). Ligatures off in JSON.

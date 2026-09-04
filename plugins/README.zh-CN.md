@@ -2,25 +2,39 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-面向 XAIOP 线格式的编辑器 / 宿主工具。本目录**不**定义协议。
+面向 XAIOP 线格式的**可选编辑器 / 宿主工具**。
 
-| 路径 | 宿主 | 状态 | 首要能力 |
+**本目录不定义协议。** 它不是封存包，不是第四棵规范文档树，也不是线含义的证据。隔离：[../docs/SEPARATION.zh-CN.md](../docs/SEPARATION.zh-CN.md) §0–§2。
+
+| 路径 | 宿主 | 状态 | 表面（仅 UX） |
 | --- | --- | --- | --- |
-| [vscode-xaiop/](vscode-xaiop/) | VS Code · Cursor · VSCodium（及其它 VS Code 兼容编辑器） | **现行** | 语言 id `xaiop` · 高亮 · 悬浮 · linter · 实时 JSON 查阅 · 编码 |
+| [vscode-xaiop/](vscode-xaiop/) | VS Code · Cursor · VSCodium（VS Code 兼容） | **现行** | 语言 id · 高亮 · 悬浮 · lint UI · 实时 JSON 查阅 · encode UX |
 
 ## 状态
 
 | 项 | 值 |
 | --- | --- |
-| 产品 | 编辑器插件（可选宿主） |
-| 协议目标 | **0.7.0** Draft |
-| 权威文本 | 规范性线文仅以 [../docs/protocol/](../docs/protocol/) 为准 |
-| 与 SDK | 识别 / 高亮：无绑定。Linter + 编码：捆绑 Node parse/encode 核心 **0.16.0**（不是运行时 npm 依赖） |
+| 产品 | 可选编辑器宿主 |
+| 协议目标（所引） | **0.7.0** Draft |
+| 线权威 | 仅 [../docs/protocol/](../docs/protocol/) — 所引版本的已封存包胜出 |
+| 与 SDK | 识别 / TextMate / 大纲：**无** live SDK。Lint + encode：与 SDK **0.16.0** 对齐的**钉死**捆绑 Node parse/encode 核心（不是运行时 npm 依赖） |
+| `plugins/` 下的规范性文档 | **无** — 仅 README / changelog |
 
-## 规则
+## 权威顺序（做宿主时）
 
-1. 插件 **禁止** 发明线算子或改写行分类。
-2. 高亮是**展示层尽力而为**。Linter 诊断与 JSON→XAIOP 编码来自捆绑的 Node parse/encode 核心；产品 SDK 仍是 API 面。
-3. 线上 `#` 行的官方名称是 **自定义注解传递**。编辑器宿主可以把它映射到注释作用域 / 注释快捷键，以便主题把它变暗，并用「切换行注释」插入 `#` 行。
+1. 所引**已封存**协议包（论证封存版本时）。  
+2. Draft 期间 tip [../docs/protocol/syntax.md](../docs/protocol/syntax.md) §3。  
+3. 所引 SDK 版本的产品 `classifyLine` / `parseSync` / `encodeSync`（或本树对该核心的逐字 vendor 捆绑）。  
+4. 宿主 UX（高亮、悬浮文案、Quick Fix、实时路径）— **最末**；与 1–3 冲突则 UX 错。
 
-文法（权威表）：[../docs/protocol/syntax.md](../docs/protocol/syntax.md) §3。
+## 规则（必须）
+
+1. **禁止** 发明线算子、Label / Content / 流式规则或 later-wins 例外。  
+2. **禁止** 改写与 syntax §3 / SDK `classifyLine` 不一致的行分类。编辑器专属非法标记（`>>`、前导空白、空行）是坏线诊断，不是新原语。  
+3. **禁止** 把 TextMate 作用域、大纲/折叠、转到定义、重命名、状态栏路径或实时查阅 JSON 路径当成 Cursor / 树语义。权威物化 = 仅完整 parse。  
+4. **禁止** 默认用 SDK 兼容 / 静默修复做 lint。若暴露 compat，**必须**标明非严格。  
+5. **禁止** 在协议评审中用插件 UI 当线证据。  
+6. 线上 `#` 是 **自定义注解传递**。注释作用域映射只属于 UX。
+
+文法（权威表）：[../docs/protocol/syntax.md](../docs/protocol/syntax.md) §3。  
+冲突策略：[../docs/SEPARATION.zh-CN.md](../docs/SEPARATION.zh-CN.md) §3。

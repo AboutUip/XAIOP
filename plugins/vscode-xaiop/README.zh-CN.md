@@ -4,7 +4,9 @@
 
 XAIOP 线格式的语言识别、语法高亮、悬浮说明、linter、大纲/折叠、实时 JSON 查阅与 JSON→XAIOP 编码（协议 **0.7.0** Draft）。
 
-悬浮是按行说明。Linter 跑捆绑的 Node parse 核心（SDK **0.16.0**）：语法错误 + JSON 物化。大纲/折叠跟进入/上浮行，不是第二套解析器。线定义仍以 [docs/protocol](../../docs/protocol/) 为准。
+**非权威：** 本扩展是可选宿主，**不**定义线文。隔离与冲突顺序：[docs/SEPARATION.zh-CN.md](../../docs/SEPARATION.zh-CN.md) §0 · [plugins/README.zh-CN.md](../README.zh-CN.md)。
+
+悬浮是按行说明。Linter 跑 **钉死**捆绑的 Node parse 核心（SDK **0.16.0**）：语法错误 + JSON 物化。大纲/折叠跟进入/上浮*行做 UX*，不是第二套 Cursor 引擎。线定义仍以 [docs/protocol](../../docs/protocol/) 为准。
 
 ## 做什么
 
@@ -50,13 +52,20 @@ npx --yes @vscode/vsce package
 
 ## 文法
 
-[syntaxes/xaiop.tmLanguage.json](syntaxes/xaiop.tmLanguage.json) 是本宿主的 TextMate 源。行顺序对齐 [syntax.md](../../docs/protocol/syntax.md) §3 / SDK `classifyLine`。
+[syntaxes/xaiop.tmLanguage.json](syntaxes/xaiop.tmLanguage.json) 是本宿主的 TextMate 源。行**顺序**对齐 [syntax.md](../../docs/protocol/syntax.md) §3 / SDK `classifyLine`。作用域只是展示：若 TextMate 与 `classifyLine` 冲突，以 **`classifyLine` / 协议**为准。
 
 ```text
 cd plugins/vscode-xaiop
 npm test
 ```
 
+## 隔离（宿主）
+
+- 默认 lint 为**严格**线。`xaiop.lint.compat` 是 SDK 摄入，不是线许可。
+- 实时查阅 / 大纲 / 重命名 / 路径补全是**尽力而为的 UX**，不是 Cursor 语义。
+- Quick Fix 只把文本改向本已合法的形式，不扩大文法。
+- Vendor 捆绑：所引 SDK parse/encode tip 变更时用 `npm run bundle` 重生成，并升扩展版本号。
+
 ## 尚未包含
 
-语言服务器、以及 SDK 兼容修复（除非打开 `xaiop.lint.compat`）。编码用捆绑的 Node 核心，不是运行时 npm 依赖。
+语言服务器。编码用捆绑的 Node 核心，不是运行时 npm 依赖。

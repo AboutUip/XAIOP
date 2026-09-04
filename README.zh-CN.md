@@ -100,7 +100,7 @@ name:alice
   - **Java** `io.github.aboutuip:xaiop` **0.16.0**（[Maven Central](https://central.sonatype.com/artifact/io.github.aboutuip/xaiop)）— [API](docs/sdk/java/) · [安装](docs/sdk/java/README.zh-CN.md#安装) · [ALIGNMENT](docs/sdk/java/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/java/)
   - **Python** `xaiop` **0.16.0** — [API](docs/sdk/python/API.zh-CN.md) · [ALIGNMENT](docs/sdk/python/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/python/) · [演示](demos/python/)
   - **Go** `github.com/AboutUip/XAIOP/xaiop-sdk/go` **0.16.0**（[pkg.go.dev](https://pkg.go.dev/github.com/AboutUip/XAIOP/xaiop-sdk/go@v0.16.0)）— [API](docs/sdk/go/API.zh-CN.md) · [安装](docs/sdk/go/README.zh-CN.md#安装) · [ALIGNMENT](docs/sdk/go/ALIGNMENT.zh-CN.md) · [代码](xaiop-sdk/go/) · [演示](demos/go/)
-- **插件** — [plugins/](plugins/) — 编辑器宿主（不是线定义）。首个插件：[VS Code / Cursor](plugins/vscode-xaiop/) — `.xaiop` 识别 · 高亮 · 悬浮 · linter · 实时 JSON 查阅 · 编码
+- **插件** — [plugins/](plugins/) — **可选、非权威**编辑器宿主（不是线定义；见 [docs/SEPARATION.zh-CN.md](docs/SEPARATION.zh-CN.md) §0）。首个宿主：[VS Code / Cursor](plugins/vscode-xaiop/) — 仅呈现 / lint UI / 实时查阅 / encode UX
 - **文档预览** — 与实验 UI 同站：`cd views && npm run dev` → [http://127.0.0.1:5173/docs/](http://127.0.0.1:5173/docs/)（Docsify 读 `docs/`；深色主题与 Lab 共用）
 - **实验 UI** — [views/](views/) → [http://127.0.0.1:5173/](http://127.0.0.1:5173/) — playground / 直播流 / API 正文渲染
 - **目标封存** — [docs/archive/](docs/archive/)（LLM 发射 / 评测口径刻意不放进现行枢纽）

@@ -4,7 +4,9 @@
 
 Language identification, highlighting, hover docs, a wire linter, outline/folding, live JSON inspect, and JSON→XAIOP encode for XAIOP (protocol **0.7.0** Draft).
 
-Hover is line-local. The linter runs the bundled Node parse core (SDK **0.16.0**): syntax errors plus JSON materialization. Outline/folding follow enter/leave lines, not a second parser. The wire definition stays [docs/protocol](../../docs/protocol/).
+**Non-authority:** This extension is an optional host. It does **not** define the wire. Isolation and conflict order: [docs/SEPARATION.md](../../docs/SEPARATION.md) §0 · [plugins/README.md](../README.md).
+
+Hover is line-local. The linter runs a **pinned** bundled Node parse core (SDK **0.16.0**): syntax errors plus JSON materialization. Outline/folding follow enter/leave *lines for UX*, not a second Cursor engine. The wire definition stays [docs/protocol](../../docs/protocol/).
 
 ## What it does
 
@@ -50,13 +52,20 @@ Then **Extensions: Install from VSIX…**
 
 ## Grammar
 
-[syntaxes/xaiop.tmLanguage.json](syntaxes/xaiop.tmLanguage.json) is the TextMate source for this host. Line order matches [syntax.md](../../docs/protocol/syntax.md) §3 / SDK `classifyLine`.
+[syntaxes/xaiop.tmLanguage.json](syntaxes/xaiop.tmLanguage.json) is the TextMate source for this host. Line **order** aims to match [syntax.md](../../docs/protocol/syntax.md) §3 / SDK `classifyLine`. Scopes are presentation only: if TextMate and `classifyLine` disagree, **`classifyLine` / protocol wins**.
 
 ```text
 cd plugins/vscode-xaiop
 npm test
 ```
 
+## Isolation (host)
+
+- Default lint is **strict** wire. `xaiop.lint.compat` is SDK ingestion, not wire permission.
+- Live inspect / outline / rename / path completions are **best-effort UX**, not Cursor semantics.
+- Quick Fixes rewrite toward already-legal forms; they do not enlarge the grammar.
+- Vendor bundle: regenerate with `npm run bundle` when the cited SDK parse/encode tip changes; bump the extension version.
+
 ## Not included yet
 
-A language server, or SDK compatibility repairs (those are off unless `xaiop.lint.compat` is enabled). Encode uses the bundled Node core, not a live npm dependency.
+A language server. Encode uses the bundled Node core, not a live npm dependency.

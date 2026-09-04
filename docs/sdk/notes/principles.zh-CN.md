@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档 ID | `SDK-NOTE-PRIN` |
 | 状态 | 信息性 |
-| 最近更新 | 2026-08-27 |
+| 最近更新 | 2026-09-04 |
 | 规范性 | **否** |
 
 ---
@@ -18,7 +18,8 @@
 3. **API 形态**（方法名、Diff 边界、存储 id、传输辅助）写在 SDK 文档/notes。  
 4. 兼容 / 恢复模式是 **SDK 摄入**特性，不由良构线暗示。  
 5. Encode（JSON→XAIOP）是 SDK 工具；LLM 评测双通道方法论另见 [../../performance.zh-CN.md](../../performance.zh-CN.md)。  
-6. **两套路径记法。** 线上 `@` / `=` / `!` / `&` 用 `>` 分段（`@items>it_1`）。主机侧 `parseJsonPath` / `formatJsonPath`（encode 切相、typeCheck、Annotation Span）用 JSON 路径（`items[0]`、`sections[2].heading`）。不要混用。
+6. **两套路径记法。** 线上 `@` / `=` / `!` / `&` 用 `>` 分段（`@items>it_1`）。主机侧 `parseJsonPath` / `formatJsonPath`（encode 切相、typeCheck、Annotation Span）用 JSON 路径（`items[0]`、`sections[2].heading`）。不要混用。  
+7. **编辑器插件**（[`../../../plugins/`](../../../plugins/)）是可选宿主，**不是**线权威；冲突顺序见 [../../SEPARATION.zh-CN.md](../../SEPARATION.zh-CN.md) §0。
 
 ---
 
